@@ -1902,7 +1902,8 @@ class DashboardRestApi(BaseSupersetModelRestApi):
               $ref: '#/components/responses/500'
         """
         try:
-            dashboards = db.session.query(Dashboard).all()
+            # Only return dashboards marked as published (public)
+            dashboards = db.session.query(Dashboard).filter(Dashboard.published == True).all()
             result = [
                 {
                     "id": dash.id,
@@ -1978,6 +1979,12 @@ class DashboardRestApi(BaseSupersetModelRestApi):
             dash = db.session.query(Dashboard).filter_by(id=pk).first()
             if not dash:
                 return self.response_404()
+
+            # Check if dashboard is published (public)
+            if not dash.published:
+                return self.response(
+                    403, message="This dashboard is not published for public access"
+                )
 
             result = {
                 "id": dash.id,
