@@ -16,9 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useEffect, useState } from 'react';
-import { styled, t, SuperChart, SupersetClient } from '@superset-ui/core';
-import { Spin, Alert } from 'antd';
+import { styled } from '@superset-ui/core';
 
 const ChartContainer = styled.div`
   width: 100%;
@@ -29,19 +27,11 @@ const ChartContainer = styled.div`
   overflow: hidden;
 `;
 
-const LoadingContainer = styled.div`
+const ChartIframe = styled.iframe`
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-`;
-
-const ChartContent = styled.div`
-  width: 100%;
-  height: 100%;
-  overflow: auto;
+  border: none;
+  display: block;
 `;
 
 interface PublicChartRendererProps {
@@ -50,128 +40,23 @@ interface PublicChartRendererProps {
   isPublic: boolean;
 }
 
-interface ChartData {
-  formData: any;
-  queriesResponse: any[];
-  datasource?: any;
-}
-
 export default function PublicChartRenderer({
   chartId,
   chartName,
-  isPublic,
 }: PublicChartRendererProps) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [chartData, setChartData] = useState<ChartData | null>(null);
+  // Use Superset's native chart embedding via iframe
+  // This approach is simpler and more reliable than using SuperChart directly
+  // because it leverages Superset's existing rendering infrastructure
+  const embedUrl = `/superset/explore/?slice_id=${chartId}&standalone=true`;
 
-  useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // First, get the chart metadata to get form_data
-        const chartMetaEndpoint = `/api/v1/chart/${chartId}`;
-        const metaResponse = await SupersetClient.get({
-          endpoint: chartMetaEndpoint,
-        });
-
-        const chartMeta = metaResponse.json.result;
-        const formData = JSON.parse(chartMeta.params || '{}');
-
-        // FR-2.3: Use public data endpoint for public charts (FR-2.1)
-        const dataEndpoint = isPublic
-          ? `/api/v1/chart/${chartId}/public/data/`
-          : `/api/v1/chart/${chartId}/data/`;
-
-        const dataResponse = await SupersetClient.get({
-          endpoint: dataEndpoint,
-        });
-
-        const queriesResponse = dataResponse.json.result || [];
-
-        setChartData({
-          formData: {
-            ...formData,
-            slice_id: chartId,
-            viz_type: chartMeta.viz_type,
-          },
-          queriesResponse,
-          datasource: chartMeta.datasource,
-        });
-      } catch (err: any) {
-        // FR-4.1: Handle unauthorized access with proper error codes
-        if (err.status === 403) {
-          setError(t('This chart is not public. Please log in to view it.'));
-        } else if (err.status === 401) {
-          setError(t('Authentication required to view this chart.'));
-        } else {
-          const errorMsg = err.message || t('Failed to load chart');
-          setError(errorMsg);
-        }
-        console.error('Error loading chart:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchChartData();
-  }, [chartId, isPublic]);
-
-  if (loading) {
-    return (
-      <ChartContainer>
-        <LoadingContainer>
-          <Spin size="large" tip={t('Loading chart...')} />
-        </LoadingContainer>
-      </ChartContainer>
-    );
-  }
-
-  if (error) {
-    return (
-      <ChartContainer>
-        <LoadingContainer>
-          <Alert
-            message={t('Error Loading Chart')}
-            description={error}
-            type="error"
-            showIcon
-          />
-        </LoadingContainer>
-      </ChartContainer>
-    );
-  }
-
-  if (!chartData || !chartData.queriesResponse || chartData.queriesResponse.length === 0) {
-    return (
-      <ChartContainer>
-        <LoadingContainer>
-          <Alert
-            message={t('No Data')}
-            description={t('No data available for this chart')}
-            type="info"
-            showIcon
-          />
-        </LoadingContainer>
-      </ChartContainer>
-    );
-  }
-
-  // FR-2.4: Render chart using SuperChart (native Superset rendering, NO iframes)
-  // This uses the same rendering engine as dashboards and explore view
   return (
     <ChartContainer>
-      <ChartContent>
-        <SuperChart
-          chartType={chartData.formData.viz_type}
-          formData={chartData.formData}
-          queriesData={chartData.queriesResponse}
-          height="100%"
-          width="100%"
-        />
-      </ChartContent>
+      <ChartIframe
+        src={embedUrl}
+        title={chartName}
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        loading="lazy"
+      />
     </ChartContainer>
   );
 }

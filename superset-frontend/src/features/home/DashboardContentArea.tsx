@@ -26,7 +26,7 @@ import PublicChartRenderer from './PublicChartRenderer';
 const ContentContainer = styled.div`
   ${({ theme }) => `
     margin-left: 280px;
-    padding: ${theme.sizeUnit * 6}px ${theme.sizeUnit * 8}px;
+    padding: ${theme.sizeUnit * 3}px ${theme.sizeUnit * 4}px;
     background: ${theme.colorBgLayout};
     min-height: calc(100vh - 60px);
     max-width: 100%;
@@ -34,34 +34,17 @@ const ContentContainer = styled.div`
 
     @media (max-width: 768px) {
       margin-left: 0;
-      padding: ${theme.sizeUnit * 4}px ${theme.sizeUnit * 4}px;
+      padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 2}px;
     }
   `}
 `;
 
-const ContentHeader = styled.div`
-  ${({ theme }) => `
-    margin-bottom: ${theme.sizeUnit * 4}px;
 
-    h2 {
-      font-size: 24px;
-      font-weight: 600;
-      color: ${theme.colorText};
-      margin: 0 0 ${theme.sizeUnit}px 0;
-    }
-
-    p {
-      font-size: 14px;
-      color: ${theme.colorTextSecondary};
-      margin: 0;
-    }
-  `}
-`;
 
 const StyledTabs = styled(Tabs)`
   ${({ theme }) => `
     .ant-tabs-nav {
-      margin-bottom: ${theme.sizeUnit * 4}px;
+      margin-bottom: ${theme.sizeUnit * 2}px;
 
       &::before {
         border-bottom: 2px solid ${theme.colorBorderSecondary};
@@ -94,20 +77,19 @@ const StyledTabs = styled(Tabs)`
 const ChartGrid = styled.div`
   ${({ theme }) => `
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-    gap: ${theme.sizeUnit * 6}px;
-    margin-bottom: ${theme.sizeUnit * 6}px;
-    margin-top: ${theme.sizeUnit * 4}px;
-
-    @media (max-width: 1600px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    /* Use 12-column grid like dashboard */
+    grid-template-columns: repeat(12, 1fr);
+    gap: ${theme.sizeUnit * 4}px;
+    margin-bottom: ${theme.sizeUnit * 4}px;
+    margin-top: ${theme.sizeUnit * 2}px;
 
     @media (max-width: 1200px) {
-      grid-template-columns: 1fr;
+      /* On smaller screens, use 6-column grid */
+      grid-template-columns: repeat(6, 1fr);
     }
 
     @media (max-width: 768px) {
+      /* On mobile, single column */
       grid-template-columns: 1fr;
     }
   `}
@@ -138,13 +120,27 @@ const ViewMoreButton = styled(Button)`
   `}
 `;
 
-const ChartPreviewContainer = styled.div`
-  ${({ theme }) => `
+const ChartPreviewContainer = styled.div<{ gridWidth?: number; gridHeight?: number }>`
+  ${({ theme, gridWidth = 6, gridHeight = 40 }) => `
     border: 1px solid ${theme.colorBorderSecondary};
     border-radius: ${theme.borderRadiusLG}px;
     overflow: hidden;
     background: ${theme.colorBgContainer};
-    height: 400px;
+
+    /* Use dashboard dimensions */
+    grid-column: span ${Math.min(12, Math.max(1, gridWidth))};
+    height: ${Math.max(300, Math.min(800, gridHeight * 10))}px;
+
+    @media (max-width: 1200px) {
+      /* On smaller screens with 6-column grid, scale width proportionally */
+      grid-column: span ${Math.min(6, Math.ceil(gridWidth / 2))};
+    }
+
+    @media (max-width: 768px) {
+      /* On mobile, always full width */
+      grid-column: span 1;
+      height: ${Math.max(300, Math.min(500, gridHeight * 8))}px;
+    }
   `}
 `;
 
@@ -159,6 +155,12 @@ interface Category {
   key: string;
   label: string;
   chartIds: number[];
+}
+
+interface ChartDimensions {
+  chartId: number;
+  width: number;  // Grid units (out of 12)
+  height: number; // Pixels
 }
 
 interface ChartItem {
@@ -237,6 +239,31 @@ function extractTabsFromLayout(positionData: DashboardLayout): Category[] {
   return categories;
 }
 
+// Extract chart dimensions from position_json
+function extractChartDimensions(positionData: DashboardLayout): Map<number, ChartDimensions> {
+  const dimensions = new Map<number, ChartDimensions>();
+
+  Object.entries(positionData).forEach(([key, component]) => {
+    if (component.type === 'CHART') {
+      const meta = component.meta as any;
+      const chartId = meta?.chartId || meta?.sliceId || meta?.slice_id;
+
+      if (chartId) {
+        // Dashboard uses a grid system:
+        // - width: grid columns (out of 12)
+        // - height: grid rows (each row is ~GRID_BASE_UNIT pixels, typically 10px)
+        dimensions.set(chartId, {
+          chartId,
+          width: meta?.width || 6,  // Default to half width
+          height: meta?.height || 50, // Default to 500px (50 * 10)
+        });
+      }
+    }
+  });
+
+  return dimensions;
+}
+
 // Recursively extract chart IDs from a component and its children
 function extractChartIdsFromComponent(
   component: DashboardLayout[string],
@@ -280,6 +307,7 @@ export default function DashboardContentArea({
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [chartsToDisplay, setChartsToDisplay] = useState(10); // Load 10 initially for all users
+  const [chartDimensions, setChartDimensions] = useState<Map<number, ChartDimensions>>(new Map());
 
   console.log('Current state - categories:', categories, 'activeCategory:', activeCategory);
 
@@ -325,7 +353,12 @@ export default function DashboardContentArea({
         // Extract tabs and their charts from position_json
         const extractedCategories = extractTabsFromLayout(parsedPositionData);
 
+        // Extract chart dimensions from position_json
+        const dimensions = extractChartDimensions(parsedPositionData);
+        setChartDimensions(dimensions);
+
         console.log('Extracted categories from dashboard:', extractedCategories);
+        console.log('Extracted chart dimensions:', Array.from(dimensions.entries()));
 
         if (extractedCategories.length > 0) {
           setCategories(extractedCategories);
@@ -436,15 +469,26 @@ export default function DashboardContentArea({
     return (
       <>
         <ChartGrid>
-          {charts.map((chart: ChartItem) => (
-            <ChartPreviewContainer key={chart.id}>
-              <PublicChartRenderer
-                chartId={chart.id}
-                chartName={chart.slice_name}
-                isPublic={chart.is_public || false}
-              />
-            </ChartPreviewContainer>
-          ))}
+          {charts.map((chart: ChartItem) => {
+            // Get dimensions for this chart from dashboard layout
+            const dimensions = chartDimensions.get(chart.id);
+            const gridWidth = dimensions?.width || 6;
+            const gridHeight = dimensions?.height || 40;
+
+            return (
+              <ChartPreviewContainer
+                key={chart.id}
+                gridWidth={gridWidth}
+                gridHeight={gridHeight}
+              >
+                <PublicChartRenderer
+                  chartId={chart.id}
+                  chartName={chart.slice_name}
+                  isPublic={chart.is_public || false}
+                />
+              </ChartPreviewContainer>
+            );
+          })}
         </ChartGrid>
 
         {hasMoreCharts && (
@@ -479,13 +523,6 @@ export default function DashboardContentArea({
 
   return (
     <ContentContainer>
-      <ContentHeader>
-        <h2>{selectedDashboard.dashboard_title}</h2>
-        <p>
-          {t('Explore charts organized by category')}
-        </p>
-      </ContentHeader>
-
       <StyledTabs
         activeKey={activeCategory}
         onChange={setActiveCategory}

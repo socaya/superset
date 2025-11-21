@@ -41,9 +41,13 @@ interface MenuProps {
 
 const StyledHeader = styled.header`
   ${({ theme }) => `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
       background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
       border-bottom: 1px solid ${theme.colorBorderSecondary};
-      z-index: 10;
+      z-index: 1000;
 
       &:nth-last-of-type(2) nav {
         margin-bottom: 2px;

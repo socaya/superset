@@ -29,6 +29,7 @@ const PageContainer = styled.div`
   width: 100%;
   min-height: calc(100vh - 60px);
   position: relative;
+  margin-top: 60px; /* Account for fixed navbar */
 `;
 
 export default function EnhancedHome() {
