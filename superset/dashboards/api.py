@@ -184,6 +184,9 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         "screenshot",
         "put_filters",
         "put_colors",
+        "get_public_dashboards",
+        "get_public_dashboard",
+        "get_public_entry_dashboard",
     }
     resource_name = "dashboard"
     allow_browser_login = True
@@ -1856,3 +1859,135 @@ class DashboardRestApi(BaseSupersetModelRestApi):
                 ).timestamp(),
             },
         )
+
+    @expose("/public/", methods=("GET",))
+    @statsd_metrics
+    @event_logger.log_this_with_context(
+        action=lambda self, *args, **kwargs: f"{self.__class__.__name__}.get_public_dashboards",
+        log_to_statsd=False,
+    )
+    def get_public_dashboards(self) -> Response:
+        """Get public dashboards (no authentication required).
+        ---
+        get:
+          summary: Get all dashboards for public view
+          description: >-
+            Returns a list of all dashboards that can be accessed without authentication.
+          responses:
+            200:
+              description: List of dashboards
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      result:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            dashboard_title:
+                              type: string
+                            slug:
+                              type: string
+                            url:
+                              type: string
+                            changed_on_delta_humanized:
+                              type: string
+                            thumbnail_url:
+                              type: string
+            500:
+              $ref: '#/components/responses/500'
+        """
+        try:
+            dashboards = db.session.query(Dashboard).all()
+            result = [
+                {
+                    "id": dash.id,
+                    "dashboard_title": dash.dashboard_title,
+                    "slug": dash.slug or "",
+                    "url": f"/superset/dashboard/{dash.slug or dash.id}/",
+                }
+                for dash in dashboards
+            ]
+            return self.response(200, result=result)
+        except Exception as ex:
+            logger.error(f"Error fetching public dashboards: {ex}")
+            return self.response_500(message=str(ex))
+
+    @expose("/public/entry", methods=("GET",))
+    @statsd_metrics
+    @event_logger.log_this_with_context(
+        action=lambda self, *args, **kwargs: f"{self.__class__.__name__}.get_public_entry_dashboard",
+        log_to_statsd=False,
+    )
+    def get_public_entry_dashboard(self) -> Response:
+        """Get the designated public entry dashboard (FR-1.2, FR-1.3)."""
+        from flask import current_app
+
+        # Check if public dashboard entry is enabled (FR-1.1)
+        if not current_app.config.get("PUBLIC_DASHBOARD_ENTRY_ENABLED", False):
+            return self.response(
+                403, message="Public dashboard access is not enabled on this server"
+            )
+
+        try:
+            # Find dashboard marked as public entry
+            dash = (
+                db.session.query(Dashboard)
+                .filter_by(is_public_entry=True)
+                .first()
+            )
+            if not dash:
+                return self.response_404(
+                    message="No public entry dashboard has been designated"
+                )
+
+            result = {
+                "id": dash.id,
+                "dashboard_title": dash.dashboard_title,
+                "slug": dash.slug or "",
+                "position_json": dash.position_json,
+                "metadata": dash.params,
+                "is_public_entry": True,
+            }
+            return self.response(200, result=result)
+        except Exception as ex:
+            logger.error(f"Error fetching public entry dashboard: {ex}")
+            return self.response_500(message=str(ex))
+
+    @expose("/public/<int:pk>", methods=("GET",))
+    @statsd_metrics
+    @event_logger.log_this_with_context(
+        action=lambda self, *args, **kwargs: f"{self.__class__.__name__}.get_public_dashboard",
+        log_to_statsd=False,
+    )
+    def get_public_dashboard(self, pk: int) -> Response:
+        """Get a single dashboard for public view (no authentication required)."""
+        from flask import current_app
+
+        # Check if public dashboard entry is enabled (FR-1.1)
+        if not current_app.config.get("PUBLIC_DASHBOARD_ENTRY_ENABLED", False):
+            return self.response(
+                403, message="Public dashboard access is not enabled on this server"
+            )
+
+        try:
+            dash = db.session.query(Dashboard).filter_by(id=pk).first()
+            if not dash:
+                return self.response_404()
+
+            result = {
+                "id": dash.id,
+                "dashboard_title": dash.dashboard_title,
+                "slug": dash.slug or "",
+                "position_json": dash.position_json,
+                "metadata": dash.params,
+                "is_public_entry": getattr(dash, "is_public_entry", False),
+            }
+            return self.response(200, result=result)
+        except Exception as ex:
+            logger.error(f"Error fetching public dashboard {pk}: {ex}")
+            return self.response_500(message=str(ex))

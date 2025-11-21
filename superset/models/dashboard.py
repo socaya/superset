@@ -162,6 +162,7 @@ class Dashboard(AuditMixinNullable, ImportExportMixin, Model):
     published = Column(Boolean, default=False)
     is_managed_externally = Column(Boolean, nullable=False, default=False)
     external_url = Column(Text, nullable=True)
+    is_public_entry = Column(Boolean, nullable=False, default=False)  # FR-1.2
     roles = relationship(security_manager.role_model, secondary=DashboardRoles)
     embedded = relationship(
         "EmbeddedDashboard",

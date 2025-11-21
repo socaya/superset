@@ -17,7 +17,7 @@
  * under the License.
  */
 import React, { useEffect, useState } from 'react';
-import { Select, Tabs, Tag, Alert } from 'antd';
+import { Select, Tabs, Tag } from 'antd';
 import { styled, SupersetClient, t } from '@superset-ui/core';
 
 const { TabPane } = Tabs;

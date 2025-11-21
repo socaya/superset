@@ -21,6 +21,7 @@ import { useState, useEffect } from 'react';
 import { styled, t, SupersetClient } from '@superset-ui/core';
 import { Tabs, Empty, Spin, Button } from 'antd';
 import { Icons } from '@superset-ui/core/components/Icons';
+import PublicChartRenderer from './PublicChartRenderer';
 
 const ContentContainer = styled.div`
   ${({ theme }) => `
@@ -167,11 +168,13 @@ interface ChartItem {
   thumbnail_url?: string;
   url: string;
   viz_type: string;
+  is_public?: boolean;  // FR-2.1: Chart-level public access flag
   tags?: Array<{ id: number; name: string; type: string }>;
 }
 
 interface DashboardContentAreaProps {
   selectedDashboard: Dashboard;
+  isPublic?: boolean;
 }
 
 interface DashboardLayout {
@@ -268,6 +271,7 @@ function extractChartIdsFromComponent(
 
 export default function DashboardContentArea({
   selectedDashboard,
+  isPublic = false,
 }: DashboardContentAreaProps) {
   console.log('DashboardContentArea rendered with dashboard:', selectedDashboard);
 
@@ -275,6 +279,7 @@ export default function DashboardContentArea({
   const [allCharts, setAllCharts] = useState<ChartItem[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
+  const [chartsToDisplay, setChartsToDisplay] = useState(10); // Load 10 initially for all users
 
   console.log('Current state - categories:', categories, 'activeCategory:', activeCategory);
 
@@ -295,9 +300,11 @@ export default function DashboardContentArea({
       setActiveCategory('all');
       try {
         // Fetch dashboard details including position_json
-        const dashboardResponse = await SupersetClient.get({
-          endpoint: `/api/v1/dashboard/${selectedDashboard.id}`,
-        });
+        const endpoint = isPublic
+          ? `/api/v1/dashboard/public/${selectedDashboard.id}`
+          : `/api/v1/dashboard/${selectedDashboard.id}`;
+
+        const dashboardResponse = await SupersetClient.get({ endpoint });
 
         const dashboardData = dashboardResponse.json.result;
         console.log('Full dashboard data:', dashboardData);
@@ -331,18 +338,13 @@ export default function DashboardContentArea({
         }
 
         // Fetch all charts for this dashboard
+        // Use the same query logic for both public and authenticated to ensure consistency
+        const chartsEndpoint = isPublic
+          ? `/api/v1/chart/public/?dashboard_id=${selectedDashboard.id}`
+          : `/api/v1/chart/dashboard/${selectedDashboard.id}/charts`;
+
         const chartsResponse = await SupersetClient.get({
-          endpoint: `/api/v1/chart/?q=${JSON.stringify({
-            filters: [
-              {
-                col: 'dashboards',
-                opr: 'dashboard_is',
-                value: selectedDashboard.id,
-              },
-            ],
-            page: 0,
-            page_size: 1000,
-          })}`,
+          endpoint: chartsEndpoint,
         });
 
         const charts = chartsResponse.json.result || [];
@@ -363,26 +365,48 @@ export default function DashboardContentArea({
   const getChartsForCategory = (categoryKey: string): ChartItem[] => {
     const currentCategory = categories.find(cat => cat.key === categoryKey);
 
-    // If it's the default "all" category or no chart IDs specified, show all charts
-    if (categoryKey === 'all' || !currentCategory || currentCategory.chartIds.length === 0) {
+    // If no current category found, return all charts as fallback
+    if (!currentCategory) {
       return allCharts;
     }
 
-    // Filter charts based on the tab's chart IDs
+    // If it's the default "all" category
+    if (categoryKey === 'all') {
+      // If we have chart IDs from position_json, use them
+      if (currentCategory.chartIds.length > 0) {
+        return allCharts.filter(chart => currentCategory.chartIds.includes(chart.id));
+      }
+      // Otherwise collect all chart IDs from all categories (tabs)
+      const allChartIds = new Set<number>();
+      categories.forEach(cat => {
+        cat.chartIds.forEach(id => allChartIds.add(id));
+      });
+      // If we found chart IDs in tabs, use them; otherwise show all charts
+      if (allChartIds.size > 0) {
+        return allCharts.filter(chart => allChartIds.has(chart.id));
+      }
+      return allCharts;
+    }
+
+    // Filter charts based on the category's chart IDs from position_json
+    // If no chart IDs specified for this category, return all charts as fallback
+    if (currentCategory.chartIds.length === 0) {
+      return allCharts;
+    }
     return allCharts.filter(chart => currentCategory.chartIds.includes(chart.id));
   };
 
   const allChartsForCategory = getChartsForCategory(activeCategory);
-  // Show first 5 charts as preview
-  const charts = allChartsForCategory.slice(0, 5);
-  const hasMoreCharts = allChartsForCategory.length > 5;
+  const charts = allChartsForCategory.slice(0, chartsToDisplay);
+  const hasMoreCharts = allChartsForCategory.length > chartsToDisplay;
 
   console.log('Rendering charts for category:', activeCategory);
   console.log('All charts for this category:', allChartsForCategory);
-  console.log('Charts to display (first 5):', charts);
+  console.log(`Charts to display:`, charts);
 
-  const handleViewDashboard = () => {
-    window.location.href = selectedDashboard.url;
+  const handleLoadMore = () => {
+    // Load 5 more charts at a time for all users
+    setChartsToDisplay(prev => prev + 5);
   };
 
   const renderTabContent = () => {
@@ -414,14 +438,10 @@ export default function DashboardContentArea({
         <ChartGrid>
           {charts.map((chart: ChartItem) => (
             <ChartPreviewContainer key={chart.id}>
-              <iframe
-                src={`/superset/explore/?standalone=1&slice_id=${chart.id}`}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                }}
-                title={chart.slice_name}
+              <PublicChartRenderer
+                chartId={chart.id}
+                chartName={chart.slice_name}
+                isPublic={chart.is_public || false}
               />
             </ChartPreviewContainer>
           ))}
@@ -431,10 +451,10 @@ export default function DashboardContentArea({
           <ViewMoreButton
             type="primary"
             size="large"
-            icon={<Icons.DashboardOutlined />}
-            onClick={handleViewDashboard}
+            icon={<Icons.PlusOutlined />}
+            onClick={handleLoadMore}
           >
-            {t('View Full Dashboard')} ({allChartsForCategory.length} {t('charts')})
+            {t('Load 5 More Charts')} ({allChartsForCategory.length - chartsToDisplay} {t('remaining')})
           </ViewMoreButton>
         )}
       </>

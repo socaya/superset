@@ -114,11 +114,13 @@ interface Dashboard {
 interface DataSourceSidebarProps {
   selectedKey?: string;
   onSelect?: (dashboard: Dashboard) => void;
+  isPublic?: boolean;
 }
 
 export default function DataSourceSidebar({
   selectedKey,
   onSelect,
+  isPublic = false,
 }: DataSourceSidebarProps) {
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,14 +129,16 @@ export default function DataSourceSidebar({
     const fetchDashboards = async () => {
       setLoading(true);
       try {
-        const response = await SupersetClient.get({
-          endpoint: `/api/v1/dashboard/?q=${JSON.stringify({
-            page: 0,
-            page_size: 100,
-            order_column: 'dashboard_title',
-            order_direction: 'asc',
-          })}`,
-        });
+        const endpoint = isPublic
+          ? '/api/v1/dashboard/public/'
+          : `/api/v1/dashboard/?q=${JSON.stringify({
+              page: 0,
+              page_size: 100,
+              order_column: 'dashboard_title',
+              order_direction: 'asc',
+            })}`;
+
+        const response = await SupersetClient.get({ endpoint });
         const fetchedDashboards = response.json.result || [];
         setDashboards(fetchedDashboards);
 
@@ -151,7 +155,7 @@ export default function DataSourceSidebar({
     };
 
     fetchDashboards();
-  }, []);
+  }, [isPublic]);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     const dashboard = dashboards.find(d => d.id.toString() === key);

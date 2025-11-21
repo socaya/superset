@@ -301,6 +301,11 @@ class ChartPutSchema(Schema):
     )
     is_managed_externally = fields.Boolean(allow_none=True, dump_default=False)
     external_url = fields.String(allow_none=True)
+    is_public = fields.Boolean(
+        metadata={"description": "Allow unauthenticated users to view this chart"},
+        allow_none=True,
+        dump_default=False,
+    )
     tags = fields.List(fields.Integer(metadata={"description": tags_description}))
     uuid = fields.UUID(allow_none=True)
 

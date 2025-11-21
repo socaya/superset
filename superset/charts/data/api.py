@@ -62,7 +62,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChartDataRestApi(ChartRestApi):
-    include_route_methods = {"get_data", "data", "data_from_cache"}
+    include_route_methods = {"get_data", "data", "data_from_cache", "get_public_data"}
 
     @expose("/<int:pk>/data/", methods=("GET",))
     @protect()
@@ -318,6 +318,99 @@ class ChartDataRestApi(ChartRestApi):
             )
 
         return self._get_data_response(command, True)
+
+    @expose("/<int:pk>/public/data/", methods=("GET",))
+    @statsd_metrics
+    @event_logger.log_this_with_context(
+        action=lambda self, *args, **kwargs: f"{self.__class__.__name__}.get_public_data",
+        log_to_statsd=False,
+    )
+    def get_public_data(self, pk: int) -> Response:
+        """
+        Get chart data for public charts (no authentication required).
+        Only works for charts marked as is_public=True.
+        ---
+        get:
+          summary: Return payload data for a public chart
+          description: >-
+            Takes a chart ID and returns data only if the chart is marked as public.
+          parameters:
+          - in: path
+            schema:
+              type: integer
+            name: pk
+            description: The chart ID
+          responses:
+            200:
+              description: Query result
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/ChartDataResponseSchema"
+            403:
+              description: Chart is not public
+            404:
+              description: Chart not found
+            500:
+              $ref: '#/components/responses/500'
+        """
+        from superset import db
+        from superset.models.slice import Slice
+
+        # Check if chart exists and is public
+        chart = db.session.query(Slice).filter_by(id=pk).first()
+        if not chart:
+            return self.response_404()
+
+        if not getattr(chart, "is_public", False):
+            return self.response(
+                403,
+                message="This chart is not public. Please log in to view it.",
+            )
+
+        # Use same logic as get_data but without @protect decorator
+        try:
+            json_body = json.loads(chart.query_context)
+        except (TypeError, json.JSONDecodeError):
+            json_body = None
+
+        if json_body is None:
+            return self.response_400(
+                message=_(
+                    "Chart has no query context saved. Please save the chart again."
+                )
+            )
+
+        # override saved query context
+        json_body["result_format"] = request.args.get(
+            "format", ChartDataResultFormat.JSON
+        )
+        json_body["result_type"] = request.args.get("type", ChartDataResultType.FULL)
+        json_body["force"] = request.args.get("force")
+
+        try:
+            query_context = self._create_query_context_from_form(json_body)
+            command = ChartDataCommand(query_context)
+            command.validate()
+        except DatasourceNotFound:
+            return self.response_404()
+        except QueryObjectValidationError as error:
+            return self.response_400(message=error.message)
+        except ValidationError as error:
+            return self.response_400(
+                message=_(
+                    "Request is incorrect: %(error)s", error=error.normalized_messages()
+                )
+            )
+
+        try:
+            form_data = json.loads(chart.params)
+        except (TypeError, json.JSONDecodeError):
+            form_data = {}
+
+        return self._get_data_response(
+            command=command, form_data=form_data, datasource=query_context.datasource
+        )
 
     def _run_async(
         self, form_data: dict[str, Any], command: ChartDataCommand

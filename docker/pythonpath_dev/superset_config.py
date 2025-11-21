@@ -113,6 +113,9 @@ CELERY_CONFIG = CeleryConfig
 PUBLIC_ROLE_LIKE = "Gamma"  # Grant Public role same read permissions as Gamma
 AUTH_ROLE_PUBLIC = "Public"  # Name of the public role
 
+# Enable public dashboard entry point (FR-1.1)
+PUBLIC_DASHBOARD_ENTRY_ENABLED = True  # Globally enable public dashboard access
+
 # Note: After enabling this, you must:
 # 1. Create the "Public" role via UI (Security -> List Roles)
 # 2. Grant specific dashboard permissions to the Public role

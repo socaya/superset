@@ -74,6 +74,7 @@ const DashboardBuilder = lazy(
 
 type PageProps = {
   idOrSlug: string;
+  isPublicView?: boolean;
 };
 
 // TODO: move to Dashboard.jsx when it's refactored to functional component

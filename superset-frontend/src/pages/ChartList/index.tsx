@@ -48,6 +48,7 @@ import {
   InfoTooltip,
   Loading,
   type LabeledValue,
+  Tag,
 } from '@superset-ui/core/components';
 import {
   FacePile,
@@ -350,6 +351,7 @@ function ChartList(props: ChartListProps) {
               certified_by: certifiedBy,
               certification_details: certificationDetails,
               description,
+              is_public: isPublic,
             },
           },
         }: any) => (
@@ -365,6 +367,11 @@ function ChartList(props: ChartListProps) {
               )}
               {sliceName}
             </Link>
+            {isPublic && (
+              <Tag color="green" style={{ marginLeft: '8px' }}>
+                🔓 PUBLIC
+              </Tag>
+            )}
             {description && <InfoTooltip tooltip={description} />}
           </FlexRowContainer>
         ),
@@ -483,6 +490,25 @@ function ChartList(props: ChartListProps) {
             );
           const openEditModal = () => openChartEditModal(original);
           const handleExport = () => handleBulkChartExport([original]);
+
+          // Toggle public access for chart (FR-2.1 Quick Toggle)
+          const handleTogglePublicAccess = async () => {
+            const newIsPublic = !original.is_public;
+            try {
+              await SupersetClient.put({
+                endpoint: `/api/v1/chart/${original.id}`,
+                jsonPayload: { is_public: newIsPublic },
+              });
+              addSuccessToast(
+                newIsPublic
+                  ? t('Chart is now publicly accessible')
+                  : t('Chart is now private')
+              );
+              refreshData();
+            } catch (error) {
+              addDangerToast(t('Failed to update chart access'));
+            }
+          };
           if (!canEdit && !canDelete && !canExport) {
             return null;
           }
@@ -547,6 +573,31 @@ function ChartList(props: ChartListProps) {
                     onClick={openEditModal}
                   >
                     <Icons.EditOutlined data-test="edit-alt" iconSize="l" />
+                  </span>
+                </Tooltip>
+              )}
+              {canEdit && (
+                <Tooltip
+                  id="public-access-toggle-tooltip"
+                  title={
+                    original.is_public
+                      ? t('Public - Click to make private')
+                      : t('Private - Click to make public')
+                  }
+                  placement="bottom"
+                >
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className="action-button"
+                    onClick={handleTogglePublicAccess}
+                    style={{
+                      color: original.is_public ? '#52c41a' : '#8c8c8c',
+                      fontSize: '18px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {original.is_public ? '🔓' : '🔒'}
                   </span>
                 </Tooltip>
               )}

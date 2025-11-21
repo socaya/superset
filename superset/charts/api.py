@@ -81,7 +81,7 @@ from superset.commands.importers.v1.utils import get_contents_from_bundle
 from superset.constants import MODEL_API_RW_METHOD_PERMISSION_MAP, RouteMethod
 from superset.daos.chart import ChartDAO
 from superset.exceptions import ScreenshotImageNotAvailableException
-from superset.extensions import event_logger
+from superset.extensions import db, event_logger
 from superset.models.slice import Slice
 from superset.tasks.thumbnails import cache_chart_thumbnail
 from superset.tasks.utils import get_current_user
@@ -130,12 +130,15 @@ class ChartRestApi(BaseSupersetModelRestApi):
         "screenshot",
         "cache_screenshot",
         "warm_up_cache",
+        "get_public_charts",
+        "get_dashboard_charts",
     }
     class_permission_name = "Chart"
     method_permission_name = MODEL_API_RW_METHOD_PERMISSION_MAP
 
     list_columns = [
         "is_managed_externally",
+        "is_public",
         "certified_by",
         "certification_details",
         "cache_timeout",
@@ -1183,3 +1186,59 @@ class ChartRestApi(BaseSupersetModelRestApi):
         )
         command.run()
         return self.response(200, message="OK")
+
+    @expose("/public/", methods=("GET",))
+    @statsd_metrics
+    def get_public_charts(self) -> Response:
+        """Get charts for public dashboard view (no authentication required)."""
+        return self._get_dashboard_charts_internal(is_public_access=True)
+
+    @expose("/dashboard/<int:dashboard_id>/charts", methods=("GET",))
+    @statsd_metrics
+    def get_dashboard_charts(self, dashboard_id: int) -> Response:
+        """Get charts for a specific dashboard (authenticated, uses same logic as public)."""
+        return self._get_dashboard_charts_internal(is_public_access=False, dashboard_id=dashboard_id)
+
+    def _get_dashboard_charts_internal(self, is_public_access: bool = False, dashboard_id: int | None = None) -> Response:
+        """Internal method to get charts for a dashboard."""
+        try:
+            from superset.models.dashboard import Dashboard
+
+            # Get dashboard_id from query param for public access, or from path for authenticated
+            if is_public_access:
+                dashboard_id_str = request.args.get("dashboard_id")
+                if not dashboard_id_str:
+                    return self.response_400(message="dashboard_id is required")
+                dashboard_id = int(dashboard_id_str)
+
+            if not dashboard_id:
+                return self.response_400(message="dashboard_id is required")
+
+            # Query charts that belong to the dashboard using the many-to-many relationship
+            # This ensures we get the SAME charts as shown in the actual dashboard
+            query = (
+                db.session.query(Slice)
+                .join(Slice.dashboards)
+                .filter(Dashboard.id == dashboard_id)
+            )
+
+            # For public access, only return charts marked as public (hide restricted charts)
+            if is_public_access:
+                query = query.filter(Slice.is_public == True)
+
+            charts = query.all()
+
+            result = [
+                {
+                    "id": chart.id,
+                    "slice_name": chart.slice_name,
+                    "description": chart.description or "",
+                    "viz_type": chart.viz_type,
+                    "is_public": getattr(chart, "is_public", False),
+                }
+                for chart in charts
+            ]
+            return self.response(200, result=result)
+        except Exception as ex:
+            logger.error(f"Error fetching charts for dashboard {dashboard_id}: {ex}")
+            return self.response_500(message=str(ex))

@@ -206,7 +206,11 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.views.datasource.views import DatasetEditor, Datasource
         from superset.views.dynamic_plugins import DynamicPluginsView
         from superset.views.error_handling import set_app_error_handlers
-        from superset.views.explore import ExplorePermalinkView, ExploreView
+        from superset.views.explore import (
+            ExplorePermalinkView,
+            ExploreView,
+            PublicExploreView,
+        )
         from superset.views.groups import GroupsListView
         from superset.views.log.api import LogRestApi
         from superset.views.logs import ActionLogView
@@ -423,6 +427,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         appbuilder.add_view_no_menu(EmbeddedView)
         appbuilder.add_view_no_menu(ExploreView)
         appbuilder.add_view_no_menu(ExplorePermalinkView)
+        appbuilder.add_view_no_menu(PublicExploreView)
         appbuilder.add_view_no_menu(SavedQueryView)
         appbuilder.add_view_no_menu(SqllabView)
         appbuilder.add_view_no_menu(Superset)
