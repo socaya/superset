@@ -26,7 +26,7 @@ import PublicChartRenderer from './PublicChartRenderer';
 const ContentContainer = styled.div`
   ${({ theme }) => `
     margin-left: 280px;
-    padding: ${theme.sizeUnit * 3}px ${theme.sizeUnit * 4}px;
+    padding: ${theme.sizeUnit * 8}px ${theme.sizeUnit * 8}px ${theme.sizeUnit * 6}px;
     background: ${theme.colorBgLayout};
     min-height: calc(100vh - 60px);
     max-width: 100%;
@@ -34,7 +34,7 @@ const ContentContainer = styled.div`
 
     @media (max-width: 768px) {
       margin-left: 0;
-      padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 2}px;
+      padding: ${theme.sizeUnit * 6}px ${theme.sizeUnit * 4}px ${theme.sizeUnit * 4}px;
     }
   `}
 `;
@@ -44,7 +44,7 @@ const ContentContainer = styled.div`
 const StyledTabs = styled(Tabs)`
   ${({ theme }) => `
     .ant-tabs-nav {
-      margin-bottom: ${theme.sizeUnit * 2}px;
+      margin-bottom: ${theme.sizeUnit * 4}px;
 
       &::before {
         border-bottom: 2px solid ${theme.colorBorderSecondary};
@@ -80,8 +80,8 @@ const ChartGrid = styled.div`
     /* Use 12-column grid like dashboard */
     grid-template-columns: repeat(12, 1fr);
     gap: ${theme.sizeUnit * 4}px;
-    margin-bottom: ${theme.sizeUnit * 4}px;
-    margin-top: ${theme.sizeUnit * 2}px;
+    margin-bottom: ${theme.sizeUnit * 6}px;
+    margin-top: ${theme.sizeUnit * 4}px;
 
     @media (max-width: 1200px) {
       /* On smaller screens, use 6-column grid */

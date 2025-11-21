@@ -90,6 +90,7 @@ const App = () => (
                   css={css`
                     display: flex;
                     flex-direction: column;
+                    padding-top: 48px;
                   `}
                 >
                   <ErrorBoundary

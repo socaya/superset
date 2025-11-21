@@ -78,6 +78,8 @@ const DEFAULT_TAB_ARR = ['dashboards', 'charts'];
 
 const WelcomeContainer = styled.div`
   background: ${({ theme }) => theme.colorBgLayout};
+  padding-top: ${({ theme }) => theme.sizeUnit * 12}px;
+
   .ant-row.menu {
     margin-top: -15px;
 

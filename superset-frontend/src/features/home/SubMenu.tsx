@@ -39,8 +39,9 @@ const StyledHeader = styled.div<{ backgroundColor?: string }>`
     backgroundColor || theme.colorBgContainer};
   align-items: center;
   position: relative;
-  padding: ${({ theme }) => theme.sizeUnit * 2}px
+  padding: ${({ theme }) => theme.sizeUnit * 4}px
     ${({ theme }) => theme.sizeUnit * 5}px;
+  margin-top: ${({ theme }) => theme.sizeUnit * 6}px;
   margin-bottom: ${({ theme }) => theme.sizeUnit * 4}px;
   .header {
     font-weight: ${({ theme }) => theme.fontWeightStrong};
