@@ -27,7 +27,7 @@ import { isUserAdmin } from 'src/dashboard/util/permissionUtils';
 import getBootstrapData from 'src/utils/getBootstrapData';
 
 // not lazy loaded since this is the home page.
-import EnhancedHome from 'src/pages/Home/EnhancedHome';
+import Welcome from 'src/pages/Home';
 // Public landing page for unauthenticated users
 import PublicLandingPage from 'src/pages/PublicLandingPage';
 
@@ -199,7 +199,7 @@ export const routes: Routes = [
   },
   {
     path: '/superset/welcome/',
-    Component: EnhancedHome,
+    Component: Welcome,
   },
   {
     path: '/superset/public/',

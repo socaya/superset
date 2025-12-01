@@ -109,6 +109,7 @@ interface Dashboard {
   dashboard_title: string;
   slug: string;
   url: string;
+  uuid?: string;
 }
 
 interface DataSourceSidebarProps {

@@ -120,6 +120,7 @@ export default function PublicLandingPage() {
           <DashboardContentArea
             selectedDashboard={selectedDashboard}
             isPublic={true}
+            showEmbeddingManager={false}
           />
         )}
       </ContentWrapper>

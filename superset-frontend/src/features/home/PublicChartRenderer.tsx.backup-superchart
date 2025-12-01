@@ -1,0 +1,367 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+import { useEffect, useState } from 'react';
+import { SuperChart, styled, Filter } from '@superset-ui/core';
+import { Spin, Alert } from 'antd';
+
+const ChartContainer = styled.div`
+  ${({ theme }) => `
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: ${theme.colorBgContainer};
+    border-radius: ${theme.borderRadiusLG}px;
+    border: 1px solid ${theme.colorBorderSecondary};
+    overflow: hidden;
+
+    /* Match dashboard chart styling */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+    & > div {
+      width: 100%;
+      height: 100%;
+    }
+  `}
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const ErrorContainer = styled.div`
+  padding: 16px;
+`;
+
+interface PublicChartRendererProps {
+  chartId: number;
+  chartName: string;
+  isPublic?: boolean;
+  filterValues?: Record<string, any>;
+  nativeFilters?: Filter[];
+}
+
+export default function PublicChartRenderer({
+  chartId,
+  chartName,
+  filterValues = {},
+  nativeFilters = [],
+}: PublicChartRendererProps) {
+  const [chartData, setChartData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const fetchChartData = async () => {
+      console.log('[PublicChartRenderer] Fetching chart data:', {
+        chartId,
+        filterValues,
+        nativeFilters,
+      });
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Step 1: Fetch chart configuration
+        const chartResponse = await fetch(`/api/v1/chart/${chartId}`, {
+          credentials: 'same-origin',
+        });
+
+        if (!chartResponse.ok) {
+          throw new Error(`Failed to fetch chart config: ${chartResponse.status}`);
+        }
+
+        const chartJson = await chartResponse.json();
+        const chartConfig = chartJson.result;
+
+        console.log('[PublicChartRenderer] Chart config loaded:', chartConfig);
+        console.log('[PublicChartRenderer] Available keys:', Object.keys(chartConfig));
+
+        // Parse form_data from params field (it's stored as JSON string)
+        let formDataBase = {};
+        if (chartConfig.params) {
+          try {
+            formDataBase = JSON.parse(chartConfig.params);
+            console.log('[PublicChartRenderer] Parsed form_data from params:', formDataBase);
+          } catch (e) {
+            console.error('[PublicChartRenderer] Failed to parse params:', e);
+          }
+        }
+
+        // Step 2: Convert filterValues to extra_filters format
+        const extra_filters = Object.entries(filterValues)
+          .filter(([_, value]) => {
+            // Skip empty filters
+            if (value === null || value === undefined) return false;
+            if (Array.isArray(value) && value.length === 0) return false;
+            return true;
+          })
+          .map(([filterId, value]) => {
+            // Find filter config to get column name
+            const filterConfig = nativeFilters.find(f => f.id === filterId);
+            const columnName = filterConfig?.targets?.[0]?.column?.name;
+
+            if (!columnName) {
+              console.warn(`[PublicChartRenderer] No column found for filter ${filterId}`);
+              return null;
+            }
+
+            console.log('[PublicChartRenderer] Mapping filter:', {
+              filterId,
+              columnName,
+              value,
+            });
+
+            return {
+              col: columnName,
+              op: 'IN',
+              val: Array.isArray(value) ? value : [value],
+            };
+          })
+          .filter(Boolean); // Remove null entries
+
+        console.log('[PublicChartRenderer] Mapped filters:', extra_filters);
+
+        // Step 3: Build formData with filters
+        if (Object.keys(formDataBase).length === 0) {
+          console.warn('[PublicChartRenderer] No form_data available, chart may not render');
+        }
+
+        // Remove datasource from formData since it goes at the top level
+        const { datasource: _datasource, ...formDataWithoutDatasource } = formDataBase as any;
+
+        // Normalize fields that should be arrays
+        const normalizedFormData = { ...formDataWithoutDatasource };
+
+        // Convert groupby to array if it's a string
+        if (normalizedFormData.groupby && typeof normalizedFormData.groupby === 'string') {
+          normalizedFormData.groupby = [normalizedFormData.groupby];
+        }
+
+        // Convert columns to array if it's a string
+        if (normalizedFormData.columns && typeof normalizedFormData.columns === 'string') {
+          normalizedFormData.columns = [normalizedFormData.columns];
+        }
+
+        const formData = {
+          ...normalizedFormData,
+          extra_filters,
+          slice_id: chartId,
+        };
+
+        // Fix "Empty query?" error - ensure query has required fields
+        const vizType = chartConfig.viz_type;
+
+        console.log('[PublicChartRenderer] Before fixes - formData has:', {
+          vizType,
+          hasMetrics: !!formData.metrics,
+          hasMetric: !!formData.metric,
+          hasColumns: !!formData.columns,
+          hasAllColumns: !!formData.all_columns,
+          hasGroupby: !!formData.groupby,
+        });
+
+        // Ensure metrics is always an array if it exists
+        if (formData.metric && !formData.metrics) {
+          formData.metrics = Array.isArray(formData.metric) ? formData.metric : [formData.metric];
+        }
+
+        // Ensure columns is always an array if it exists
+        if (formData.column && !formData.columns) {
+          formData.columns = Array.isArray(formData.column) ? formData.column : [formData.column];
+        }
+
+        // Table charts need either all_columns or (columns + metrics)
+        if (vizType === 'table' || vizType === 'pivot_table_v2') {
+          if (!formData.all_columns && !formData.columns) {
+            // If no columns specified, try to use groupby
+            if (formData.groupby && formData.groupby.length > 0) {
+              formData.columns = formData.groupby;
+            } else {
+              console.error('[PublicChartRenderer] Table chart has no columns or groupby!');
+              throw new Error('Table chart requires columns or groupby');
+            }
+          }
+          // Ensure metrics exist
+          if (!formData.metrics || formData.metrics.length === 0) {
+            console.warn('[PublicChartRenderer] Table chart missing metrics, adding count');
+            formData.metrics = ['count'];
+          }
+        }
+
+        // For other charts, ensure at least metrics OR groupby exists
+        if (!formData.metrics && !formData.groupby && !formData.columns && !formData.all_columns) {
+          console.error('[PublicChartRenderer] Query is empty! No metrics, groupby, or columns');
+          throw new Error('Empty query - chart has no metrics or dimensions');
+        }
+
+        console.log('[PublicChartRenderer] After fixes - formData has:', {
+          metrics: formData.metrics,
+          columns: formData.columns,
+          groupby: formData.groupby,
+          all_columns: formData.all_columns,
+        });
+
+        console.log('[PublicChartRenderer] Using formData:', JSON.stringify(formData, null, 2));
+
+        // Step 4: Build proper POST payload for chart data API
+        const dataPayload = {
+          datasource: {
+            id: chartConfig.datasource_id,
+            type: chartConfig.datasource_type || 'table',
+          },
+          queries: [
+            {
+              ...formData,
+            },
+          ],
+          result_format: 'json',
+          result_type: 'full',
+        };
+
+        console.log('[PublicChartRenderer] Chart type:', chartConfig.viz_type);
+        console.log('[PublicChartRenderer] POST payload:', JSON.stringify(dataPayload, null, 2));
+
+        const dataResponse = await fetch('/api/v1/chart/data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify(dataPayload),
+        });
+
+        if (!dataResponse.ok) {
+          const errorText = await dataResponse.text();
+          console.error(`[PublicChartRenderer] Chart ${chartId} (${chartConfig.viz_type}) failed:`, errorText);
+          throw new Error(`Failed to fetch chart data: ${dataResponse.status} - ${errorText.substring(0, 100)}`);
+        }
+
+        const dataJson = await dataResponse.json();
+
+        console.log('[PublicChartRenderer] Data loaded:', dataJson);
+        console.log('[PublicChartRenderer] Data result:', dataJson.result);
+        console.log('[PublicChartRenderer] Data result[0]:', dataJson.result?.[0]);
+
+        if (!isCancelled) {
+          // The API returns { result: [queryData] }
+          // SuperChart expects queriesData to be the array of query results
+          setChartData({
+            chartConfig,
+            formData,
+            queriesData: dataJson.result || [],
+          });
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('[PublicChartRenderer] Error:', err);
+        if (!isCancelled) {
+          setError(err instanceof Error ? err.message : 'Unknown error');
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchChartData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [chartId, filterValues, nativeFilters]);
+
+  if (loading) {
+    return (
+      <ChartContainer>
+        <LoadingContainer>
+          <Spin size="large" />
+          <div>Loading {chartName}...</div>
+        </LoadingContainer>
+      </ChartContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <ChartContainer>
+        <ErrorContainer>
+          <Alert
+            message="Error Loading Chart"
+            description={error}
+            type="error"
+            showIcon
+          />
+        </ErrorContainer>
+      </ChartContainer>
+    );
+  }
+
+  if (!chartData) {
+    return (
+      <ChartContainer>
+        <LoadingContainer>No data available</LoadingContainer>
+      </ChartContainer>
+    );
+  }
+
+  console.log('[PublicChartRenderer] Attempting to render chart type:', chartData.chartConfig.viz_type);
+  console.log('[PublicChartRenderer] Rendering with data:', {
+    chartType: chartData.chartConfig.viz_type,
+    hasFormData: !!chartData.formData,
+    hasQueriesData: !!chartData.queriesData,
+    queriesDataLength: chartData.queriesData?.length,
+  });
+
+  try {
+    return (
+      <ChartContainer>
+        <SuperChart
+          chartType={chartData.chartConfig.viz_type}
+          formData={chartData.formData}
+          queriesData={chartData.queriesData}
+          width="100%"
+          height={400}
+        />
+      </ChartContainer>
+    );
+  } catch (err) {
+    console.error(`[PublicChartRenderer] SuperChart render error for ${chartData.chartConfig.viz_type}:`, err);
+    return (
+      <ChartContainer>
+        <ErrorContainer>
+          <Alert
+            message={`Error Rendering ${chartData?.chartConfig?.viz_type || 'Chart'}`}
+            description={`${err instanceof Error ? err.message : 'Unknown error'}. Check browser console for details.`}
+            type="error"
+            showIcon
+          />
+        </ErrorContainer>
+      </ChartContainer>
+    );
+  }
+}

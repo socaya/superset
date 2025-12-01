@@ -36,6 +36,7 @@ import {
   Alert,
   Space,
 } from '@superset-ui/core/components';
+import { Switch } from 'antd';
 import { useToasts } from 'src/components/MessageToasts/withToasts';
 import { EmbeddedDashboard } from 'src/dashboard/types';
 import { Typography } from '@superset-ui/core/components/Typography';
@@ -67,8 +68,11 @@ export const DashboardEmbedControls = ({ dashboardId, onHide }: Props) => {
   const [embedded, setEmbedded] = useState<EmbeddedDashboard | null>(null); // the embedded dashboard config
   const [allowedDomains, setAllowedDomains] = useState<string>('');
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [isPublished, setIsPublished] = useState(false); // whether dashboard is publicly accessible
 
   const endpoint = `/api/v1/dashboard/${dashboardId}/embedded`;
+  const dashboardEndpoint = `/api/v1/dashboard/${dashboardId}`;
+
   // whether saveable changes have been made to the config
   const isDirty =
     !embedded ||
@@ -131,26 +135,72 @@ export const DashboardEmbedControls = ({ dashboardId, onHide }: Props) => {
       });
   }, [endpoint, addInfoToast, addDangerToast, onHide]);
 
+  const togglePublished = useCallback(
+    (checked: boolean) => {
+      setLoading(true);
+      makeApi<{ published: boolean }, {}>({
+        method: 'PUT',
+        endpoint: dashboardEndpoint,
+      })({ published: checked })
+        .then(
+          () => {
+            setIsPublished(checked);
+            addInfoToast(
+              checked
+                ? t('Dashboard is now publicly accessible')
+                : t('Dashboard is no longer publicly accessible'),
+            );
+          },
+          err => {
+            console.error(err);
+            addDangerToast(
+              t('Sorry, something went wrong. Please try again.'),
+            );
+          },
+        )
+        .finally(() => {
+          setLoading(false);
+        });
+    },
+    [dashboardEndpoint, addInfoToast, addDangerToast],
+  );
+
   useEffect(() => {
     setReady(false);
-    makeApi<{}, { result: EmbeddedDashboard }>({
-      method: 'GET',
-      endpoint,
-    })({})
-      .catch(err => {
+    Promise.all([
+      // Fetch embedded config
+      makeApi<{}, { result: EmbeddedDashboard }>({
+        method: 'GET',
+        endpoint,
+      })({}).catch(err => {
         if ((err as SupersetApiError).status === 404) {
           // 404 just means the dashboard isn't currently embedded
           return { result: null };
         }
         addDangerToast(t('Sorry, something went wrong. Please try again.'));
         throw err;
-      })
-      .then(({ result }) => {
+      }),
+      // Fetch dashboard to get published status
+      makeApi<{}, { result: { published: boolean } }>({
+        method: 'GET',
+        endpoint: dashboardEndpoint,
+      })({}),
+    ])
+      .then(([embeddedResult, dashboardResult]) => {
         setReady(true);
-        setEmbedded(result);
-        setAllowedDomains(result ? result.allowed_domains.join(', ') : '');
+        setEmbedded(embeddedResult.result);
+        setAllowedDomains(
+          embeddedResult.result
+            ? embeddedResult.result.allowed_domains.join(', ')
+            : '',
+        );
+        setIsPublished(dashboardResult.result?.published || false);
+      })
+      .catch(err => {
+        console.error('Error loading dashboard data:', err);
+        setReady(true);
       });
-  }, [dashboardId]);
+  }, [dashboardId, endpoint, dashboardEndpoint, addDangerToast]);
 
   if (!ready) {
     return <Loading />;
@@ -217,6 +267,39 @@ export const DashboardEmbedControls = ({ dashboardId, onHide }: Props) => {
             placeholder="superset.example.com"
             onChange={event => setAllowedDomains(event.target.value)}
           />
+        </FormItem>
+        <FormItem
+          name="make-public"
+          label={
+            <span>
+              {t('Make dashboard publicly accessible')}{' '}
+              <InfoTooltip
+                placement="top"
+                tooltip={t(
+                  'When enabled, this dashboard will appear on the public dashboard page (/superset/public/) and be accessible without login.',
+                )}
+              />
+            </span>
+          }
+        >
+          <Switch
+            checked={isPublished}
+            onChange={togglePublished}
+            disabled={!embedded || loading}
+            checkedChildren={t('Public')}
+            unCheckedChildren={t('Private')}
+          />
+          {!embedded && (
+            <div
+              css={theme => css`
+                margin-top: ${theme.margin}px;
+                color: ${theme.colorTextSecondary};
+                font-size: 12px;
+              `}
+            >
+              {t('Please enable embedding first to make the dashboard public.')}
+            </div>
+          )}
         </FormItem>
       </Form>
       {showDeactivateConfirm ? (

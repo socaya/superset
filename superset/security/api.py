@@ -35,6 +35,7 @@ from superset.commands.exceptions import ForbiddenError
 from superset.exceptions import SupersetGenericErrorException
 from superset.extensions import db, event_logger
 from superset.security.guest_token import GuestTokenResourceType
+from superset.models.dashboard import Dashboard
 from superset.views.base_api import (
     BaseSupersetApi,
     BaseSupersetModelRestApi,
@@ -99,6 +100,174 @@ class RolesResponseSchema(PermissiveSchema):
 
 
 guest_token_create_schema = GuestTokenCreateSchema()
+
+
+class PublicSecurityRestApi(BaseSupersetApi):
+    """Public security API endpoints that don't require CSRF tokens"""
+    resource_name = "security"
+    allow_browser_login = True
+    openapi_spec_tag = "Security"
+    csrf_exempt = True  # Public endpoints don't need CSRF protection
+
+    @expose("/public_guest_token/", methods=("POST",))
+    @event_logger.log_this
+    @safe
+    @statsd_metrics
+    def public_guest_token(self) -> Response:
+        """Get a guest token for public dashboards (no authentication required).
+        ---
+        post:
+          summary: Get a guest token for public dashboard
+          requestBody:
+            description: Dashboard ID for public access
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    dashboard_id:
+                      type: string
+          responses:
+            200:
+              description: Result contains the guest token
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                        token:
+                          type: string
+            400:
+              $ref: '#/components/responses/400'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        try:
+            dashboard_id = request.json.get("dashboard_id")
+            if not dashboard_id:
+                return self.response_400(message="dashboard_id is required")
+
+            # Get the dashboard and its embedded config
+            dashboard = Dashboard.get(str(dashboard_id))
+            if not dashboard:
+                return self.response_400(message=f"Dashboard {dashboard_id} not found")
+
+            # Get embedded UUID - required for guest token
+            if not dashboard.embedded or len(dashboard.embedded) == 0:
+                return self.response_400(
+                    message=f"Dashboard {dashboard_id} is not configured for embedding. "
+                    "Please enable embedding in dashboard settings first."
+                )
+
+            embedded_uuid = str(dashboard.embedded[0].uuid)
+
+            # Create guest token with embedded UUID (not dashboard ID!)
+            # This is critical - the guest token must use the embedded UUID
+            body = {
+                "user": {
+                    "username": "guest",
+                    "first_name": "Guest",
+                    "last_name": "User"
+                },
+                "resources": [{
+                    "type": "dashboard",
+                    "id": embedded_uuid  # Use embedded UUID, not dashboard ID!
+                }],
+                "rls": []
+            }
+
+            self.appbuilder.sm.validate_guest_token_resources(body["resources"])
+            token = self.appbuilder.sm.create_guest_access_token(
+                body["user"], body["resources"], body["rls"]
+            )
+            return self.response(200, token=token)
+        except EmbeddedDashboardNotFoundError as error:
+            return self.response_400(message=error.message)
+        except ValidationError as error:
+            return self.response_400(message=error.messages)
+        except Exception as error:
+            logger.exception("Error creating public guest token")
+            return self.response_500(message=str(error))
+
+    @expose("/guest_token_proxy/", methods=("POST",))
+    @event_logger.log_this
+    @safe
+    @statsd_metrics
+    def guest_token_proxy(self) -> Response:
+        """Proxy endpoint to mint a guest token using either dashboard_id or dashboard_uuid.
+        ---
+        post:
+          summary: Get a guest token by resolving dashboard ID to UUID when necessary
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    dashboard_id:
+                      type: integer
+                      description: Dashboard integer ID
+                    dashboard_uuid:
+                      type: string
+                      description: Dashboard UUID (preferred)
+          responses:
+            200:
+              description: Result contains the guest token
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+            400:
+              $ref: '#/components/responses/400'
+            404:
+              description: Dashboard not found
+            500:
+              $ref: '#/components/responses/500'
+        """
+        try:
+            payload = request.json or {}
+            dashboard_uuid = payload.get("dashboard_uuid")
+            dashboard_id = payload.get("dashboard_id")
+
+            if not dashboard_uuid:
+                if dashboard_id is None:
+                    return self.response_400(
+                        message="dashboard_id or dashboard_uuid is required"
+                    )
+                # Resolve to UUID
+                dashboard = db.session.query(Dashboard).filter_by(id=dashboard_id).one_or_none()
+                if not dashboard or not getattr(dashboard, "uuid", None):
+                    return self.response(404, message="Dashboard not found")
+                dashboard_uuid = str(dashboard.uuid)
+
+            # Build token request body always using UUID for the resource id
+            body = {
+                "user": {
+                    "username": "guest",
+                    "first_name": "Guest",
+                    "last_name": "User",
+                },
+                "resources": [
+                    {"type": "dashboard", "id": str(dashboard_uuid)}
+                ],
+                "rls": [],
+            }
+
+            self.appbuilder.sm.validate_guest_token_resources(body["resources"])
+            token = self.appbuilder.sm.create_guest_access_token(
+                body["user"], body["resources"], body["rls"]
+            )
+            return self.response(200, token=token)
+        except ValidationError as error:
+            return self.response_400(message=error.messages)
+        except Exception as error:
+            logger.exception("Error creating guest token via proxy")
+            return self.response_500(message=str(error))
 
 
 class SecurityRestApi(BaseSupersetApi):

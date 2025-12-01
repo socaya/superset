@@ -17,18 +17,16 @@
  * under the License.
  */
 
-import { useState, useEffect } from 'react';
-import { styled, t, SupersetClient } from '@superset-ui/core';
+import { useState, useEffect, useCallback } from 'react';
+import { styled, t, SupersetClient, Filter } from '@superset-ui/core';
 import { Tabs, Empty, Spin, Button } from 'antd';
 import { Icons } from '@superset-ui/core/components/Icons';
 import PublicChartRenderer from './PublicChartRenderer';
-import EmbeddedDashboard from './EmbeddedDashboard';
-import EmbeddingManager from './EmbeddingManager';
+import EnhancedHomeFilterBar from './EnhancedHomeFilterBar';
 
 const ContentContainer = styled.div`
   ${({ theme }) => `
     margin-left: 280px;
-    padding: ${theme.sizeUnit * 8}px ${theme.sizeUnit * 8}px ${theme.sizeUnit * 6}px;
     background: ${theme.colorBgLayout};
     min-height: calc(100vh - 60px);
     max-width: 100%;
@@ -36,20 +34,21 @@ const ContentContainer = styled.div`
 
     @media (max-width: 768px) {
       margin-left: 0;
+    }
+  `}
+`;
+
+const ContentInner = styled.div`
+  ${({ theme }) => `
+    padding: ${theme.sizeUnit * 8}px ${theme.sizeUnit * 8}px ${theme.sizeUnit * 6}px;
+
+    @media (max-width: 768px) {
       padding: ${theme.sizeUnit * 6}px ${theme.sizeUnit * 4}px ${theme.sizeUnit * 4}px;
     }
   `}
 `;
 
-const EmbeddingSection = styled.div`
-  ${({ theme }) => `
-    margin-bottom: ${theme.sizeUnit * 6}px;
-    padding: ${theme.sizeUnit * 4}px;
-    background: ${theme.colorBgContainer};
-    border: 1px solid ${theme.colorBorderSecondary};
-    border-radius: ${theme.borderRadiusLG}px;
-  `}
-`;
+
 
 const StyledTabs = styled(Tabs)`
   ${({ theme }) => `
@@ -159,8 +158,6 @@ interface Dashboard {
   dashboard_title: string;
   slug: string;
   url: string;
-  // Prefer UUIDs when available (see UUID Migration guidelines)
-  uuid?: string;
 }
 
 interface Category {
@@ -189,8 +186,6 @@ interface ChartItem {
 interface DashboardContentAreaProps {
   selectedDashboard: Dashboard;
   isPublic?: boolean;
-  useEmbeddedSDK?: boolean;
-  showEmbeddingManager?: boolean;
 }
 
 interface DashboardLayout {
@@ -313,8 +308,6 @@ function extractChartIdsFromComponent(
 export default function DashboardContentArea({
   selectedDashboard,
   isPublic = false,
-  useEmbeddedSDK = true,
-  showEmbeddingManager = false,
 }: DashboardContentAreaProps) {
   console.log('DashboardContentArea rendered with dashboard:', selectedDashboard);
 
@@ -324,8 +317,8 @@ export default function DashboardContentArea({
   const [loading, setLoading] = useState(true);
   const [chartsToDisplay, setChartsToDisplay] = useState(10); // Load 10 initially for all users
   const [chartDimensions, setChartDimensions] = useState<Map<number, ChartDimensions>>(new Map());
-  // Fetched embedded dashboard UUID to use with Embedded SDK
-  const [embeddedUuid, setEmbeddedUuid] = useState<string | null>(null);
+  const [nativeFilters, setNativeFilters] = useState<Filter[]>([]);
+  const [filterValues, setFilterValues] = useState<Record<string, any>>({});
 
   console.log('Current state - categories:', categories, 'activeCategory:', activeCategory);
 
@@ -344,7 +337,6 @@ export default function DashboardContentArea({
       setAllCharts([]);
       setCategories(DEFAULT_CATEGORIES);
       setActiveCategory('all');
-      setEmbeddedUuid(null);
       try {
         // Fetch dashboard details including position_json
         const endpoint = isPublic
@@ -355,18 +347,6 @@ export default function DashboardContentArea({
 
         const dashboardData = dashboardResponse.json.result;
         console.log('Full dashboard data:', dashboardData);
-
-        // Fetch embedded configuration to get the embedded UUID
-        try {
-          const embeddedEndpoint = `/api/v1/dashboard/${selectedDashboard.id}/embedded`;
-          const embeddedResponse = await SupersetClient.get({ endpoint: embeddedEndpoint });
-          const embeddedConfig = embeddedResponse.json.result;
-          console.log('Embedded config:', embeddedConfig);
-          setEmbeddedUuid(embeddedConfig.uuid || null);
-        } catch (embeddedError) {
-          console.warn('Dashboard has no embedded configuration:', embeddedError);
-          setEmbeddedUuid(null);
-        }
 
         const positionData = dashboardData.position_json || {};
         console.log('Position data type:', typeof positionData);
@@ -380,6 +360,21 @@ export default function DashboardContentArea({
         }
 
         console.log('Dashboard position data (parsed):', parsedPositionData);
+
+        // Extract native filters from json_metadata
+        const jsonMetadata = dashboardData.json_metadata || '{}';
+        console.log('Raw json_metadata:', jsonMetadata);
+        let parsedMetadata = jsonMetadata;
+        if (typeof jsonMetadata === 'string') {
+          parsedMetadata = JSON.parse(jsonMetadata);
+        }
+
+        console.log('Parsed metadata:', parsedMetadata);
+        const filterConfig = parsedMetadata?.native_filter_configuration || [];
+        console.log('Native filter configuration:', filterConfig);
+        console.log('Number of filters found:', filterConfig.length);
+        console.log('Is public view?', isPublic);
+        setNativeFilters(filterConfig);
 
         // Extract tabs and their charts from position_json
         const extractedCategories = extractTabsFromLayout(parsedPositionData);
@@ -473,15 +468,31 @@ export default function DashboardContentArea({
     setChartsToDisplay(prev => prev + 5);
   };
 
-  const handleEmbeddingEnabled = (uuid: string) => {
-    console.log('Embedding enabled with UUID:', uuid);
-    setEmbeddedUuid(uuid);
-  };
+  const handleFilterChange = useCallback((filterId: string, value: any) => {
+    setFilterValues(prev => ({ ...prev, [filterId]: value }));
+  }, []);
 
-  const handleEmbeddingDisabled = () => {
-    console.log('Embedding disabled');
-    setEmbeddedUuid(null);
-  };
+  const handleApplyFilters = useCallback(() => {
+    console.log('Applying filters:', filterValues);
+    // Force charts to reload by updating a key
+    // We do this by incrementing chartsToDisplay then resetting it
+    setChartsToDisplay(prev => {
+      const temp = prev;
+      // Trigger re-render by changing state
+      setTimeout(() => setChartsToDisplay(temp), 10);
+      return prev + 1;
+    });
+  }, [filterValues]);
+
+  const handleClearFilters = useCallback(() => {
+    setFilterValues({});
+    // Force reload after clearing
+    setChartsToDisplay(prev => {
+      const temp = prev;
+      setTimeout(() => setChartsToDisplay(temp), 10);
+      return prev + 1;
+    });
+  }, []);
 
   const renderTabContent = () => {
     if (loading) {
@@ -526,6 +537,8 @@ export default function DashboardContentArea({
                   chartId={chart.id}
                   chartName={chart.slice_name}
                   isPublic={chart.is_public || false}
+                  filterValues={filterValues}
+                  nativeFilters={nativeFilters}
                 />
               </ChartPreviewContainer>
             );
@@ -562,51 +575,21 @@ export default function DashboardContentArea({
     );
   }
 
-  // Use embedded SDK for full dashboard with native filters
-  if (useEmbeddedSDK) {
-    return (
-      <ContentContainer>
-        {showEmbeddingManager && (
-          <EmbeddingSection>
-            <EmbeddingManager
-              dashboardId={selectedDashboard.id}
-              dashboardTitle={selectedDashboard.dashboard_title}
-              embeddedUuid={embeddedUuid}
-              onEmbeddingEnabled={handleEmbeddingEnabled}
-              onEmbeddingDisabled={handleEmbeddingDisabled}
-            />
-          </EmbeddingSection>
-        )}
-
-        {!embeddedUuid ? (
-          <EmptyStateContainer>
-            <Empty
-              description={
-                showEmbeddingManager
-                  ? t(
-                      'This dashboard is not configured for embedding. Please enable embedding using the controls above.',
-                    )
-                  : t(
-                      'This dashboard is not available for public viewing. Please contact your administrator.',
-                    )
-              }
-            />
-          </EmptyStateContainer>
-        ) : (
-          <EmbeddedDashboard dashboardId={embeddedUuid} />
-        )}
-      </ContentContainer>
-    );
-  }
-
-  // Legacy mode: individual chart rendering with tabs
   return (
     <ContentContainer>
-      <StyledTabs
-        activeKey={activeCategory}
-        onChange={setActiveCategory}
-        items={tabItems}
+      <EnhancedHomeFilterBar
+        filters={nativeFilters}
+        onFilterChange={handleFilterChange}
+        onApply={handleApplyFilters}
+        onClear={handleClearFilters}
       />
+      <ContentInner>
+        <StyledTabs
+          activeKey={activeCategory}
+          onChange={setActiveCategory}
+          items={tabItems}
+        />
+      </ContentInner>
     </ContentContainer>
   );
 }
