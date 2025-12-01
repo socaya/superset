@@ -2402,18 +2402,29 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
 
         # Guest users MUST not modify the payload so it's requesting a
         # different chart or different ad-hoc metrics from what's saved.
+        # HOWEVER, for public dashboards, allow modifications since filters
+        # and cross-filters legitimately modify the query.
         if (
             query_context
             and self.is_guest_user()
             and query_context_modified(query_context)
         ):
-            raise SupersetSecurityException(
-                SupersetError(
-                    error_type=SupersetErrorType.DASHBOARD_SECURITY_ACCESS_ERROR,
-                    message=_("Guest user cannot modify chart payload"),
-                    level=ErrorLevel.WARNING,
+            # Check if this is for a public dashboard - if so, allow modifications
+            is_public_dashboard = False
+            if hasattr(query_context, 'slice_') and query_context.slice_:
+                for dashboard in query_context.slice_.dashboards:
+                    if dashboard.published:
+                        is_public_dashboard = True
+                        break
+
+            if not is_public_dashboard:
+                raise SupersetSecurityException(
+                    SupersetError(
+                        error_type=SupersetErrorType.DASHBOARD_SECURITY_ACCESS_ERROR,
+                        message=_("Guest user cannot modify chart payload"),
+                        level=ErrorLevel.WARNING,
+                    )
                 )
-            )
 
         if datasource or query_context or viz:
             form_data = None
