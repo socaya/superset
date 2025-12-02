@@ -2184,6 +2184,7 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
         level = request.args.get("level")  # Optional level filter for org units
         period_type = request.args.get("periodType", "YEARLY")  # For periods
         table_name = request.args.get("table")  # Optional table context for filtering
+        search_term = request.args.get("search", "")  # NEW: Search filter
 
         # Handle periods specially - generate fixed periods
         if metadata_type == "periods":
@@ -2221,11 +2222,12 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
                 filters = []
 
                 if table_name == "analytics":
-                    # Analytics requires aggregatable numeric data
-                    # Filter out TEXT types and non-aggregatable items
+                    # Analytics requires numeric data (but allow all aggregation types for now)
+                    # Filter to only numeric value types
                     if metadata_type == "dataElements":
-                        filters.append("aggregationType:!eq:NONE")  # Must be aggregatable
-                        filters.append("valueType:in:[NUMBER,INTEGER,PERCENTAGE,UNIT_INTERVAL]")  # Must be numeric
+                        # Expanded numeric types to include all integer variants
+                        filters.append("valueType:in:[NUMBER,INTEGER,INTEGER_POSITIVE,INTEGER_NEGATIVE,INTEGER_ZERO_OR_POSITIVE,PERCENTAGE,UNIT_INTERVAL]")
+                        # Don't filter by aggregationType - let users decide what to aggregate
                     # Indicators are always aggregatable, no filter needed
 
                 elif table_name == "events":
@@ -2242,6 +2244,11 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
 
                 # dataValueSets accepts any data element - no filtering needed
 
+                # Add search filter if provided
+                if search_term:
+                    filters.append(f"displayName:ilike:{search_term}")
+                    logger.info(f"[DHIS2 Metadata] Applying search filter: {search_term}")
+
                 if filters:
                     params["filter"] = filters
             else:
@@ -2250,9 +2257,25 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
                     "paging": "false",
                 }
 
+                # Add search filter for org units
+                if search_term:
+                    if "filter" in params:
+                        if isinstance(params["filter"], list):
+                            params["filter"].append(f"displayName:ilike:{search_term}")
+                        else:
+                            params["filter"] = [params["filter"], f"displayName:ilike:{search_term}"]
+                    else:
+                        params["filter"] = f"displayName:ilike:{search_term}"
+
             # Add level filter for organization units if specified
             if metadata_type == "organisationUnits" and level:
-                params["filter"] = f"level:eq:{level}"
+                if "filter" in params:
+                    if isinstance(params["filter"], list):
+                        params["filter"].append(f"level:eq:{level}")
+                    else:
+                        params["filter"] = [params["filter"], f"level:eq:{level}"]
+                else:
+                    params["filter"] = f"level:eq:{level}"
 
             # Fetch metadata from DHIS2
             response = requests.get(
@@ -2263,9 +2286,16 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
                 timeout=30,
             )
 
+            logger.info(f"[DHIS2 Metadata] Request URL: {base_url}/{metadata_type}")
+            logger.info(f"[DHIS2 Metadata] Response status: {response.status_code}")
+
             if response.status_code == 200:
                 data = response.json()
                 items = data.get(metadata_type, [])
+
+                logger.info(f"[DHIS2 Metadata] Found {len(items)} {metadata_type}")
+                if len(items) > 0:
+                    logger.info(f"[DHIS2 Metadata] First item: {items[0].get('displayName', items[0].get('name', 'N/A'))}")
 
                 # For org units, sort by level and then by name
                 if metadata_type == "organisationUnits":
@@ -2280,12 +2310,20 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
                         item["category"] = "Aggregatable Data Elements"
                         item["typeInfo"] = f"{value_type} ({agg_type})"
 
-                # Return limited results for performance
-                return self.response(200, result=items[:1000])
+                # Return limited results for performance (increased from 1000 to 5000)
+                # If searching, return all matching results
+                max_items = 5000 if not search_term else len(items)
+                logger.info(f"[DHIS2 Metadata] Returning {min(len(items), max_items)} items to frontend (total: {len(items)})")
+                return self.response(200, result=items[:max_items])
+            elif response.status_code == 401:
+                error_msg = f"DHIS2 API authentication failed. Status: {response.status_code}. Please check database credentials."
+                logger.error(f"[DHIS2 Metadata] {error_msg}")
+                logger.error(f"[DHIS2 Metadata] Response: {response.text[:500]}")
+                return self.response_400(message=error_msg)
             else:
-                return self.response_400(
-                    message=f"DHIS2 API error: {response.status_code} {response.text[:200]}"
-                )
+                error_msg = f"DHIS2 API error: {response.status_code} {response.text[:200]}"
+                logger.error(f"[DHIS2 Metadata] {error_msg}")
+                return self.response_400(message=error_msg)
 
         except Exception as ex:
             logger.exception("Failed to fetch DHIS2 metadata")
@@ -2324,19 +2362,25 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
                     })
 
         elif period_type == "MONTHLY":
-            # Generate months for last 2 years
+            # Generate months from January 2022 to present
             month_names = [
                 "January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"
             ]
-            for year in range(current_year - 1, current_year + 1):
-                for month in range(1, 13):
+            current_month = datetime.now().month
+            # Start from 2022 to current year
+            for year in range(2022, current_year + 1):
+                # For current year, only show months up to current month
+                max_month = current_month if year == current_year else 12
+                for month in range(1, max_month + 1):
                     month_id = f"{year}{month:02d}"
                     periods.append({
                         "id": month_id,
                         "displayName": f"{month_names[month-1]} {year}",
                         "type": "MONTHLY"
                     })
+            # Reverse to show most recent months first
+            periods.reverse()
 
         elif period_type == "RELATIVE":
             # Relative periods (kept for convenience)

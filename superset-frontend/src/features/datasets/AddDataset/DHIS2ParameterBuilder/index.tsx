@@ -127,6 +127,7 @@ export default function DHIS2ParameterBuilder({
   const [loading, setLoading] = useState(false);
   const [datasetName, setDatasetName] = useState<string>(initialDatasetName || '');
   const [userEditedName, setUserEditedName] = useState(false); // Track if user manually edited the name
+  const [searchTerm, setSearchTerm] = useState<string>(''); // NEW: Search filter for data elements
 
   // Selected values (use semicolons to split values within dimension)
   const [selectedData, setSelectedData] = useState<string[]>(
@@ -152,6 +153,17 @@ export default function DHIS2ParameterBuilder({
       loadMetadata();
     }
   }, [databaseId, endpoint, selectedOrgUnitLevel]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (!databaseId || !endpoint) return;
+
+    const timeoutId = setTimeout(() => {
+      loadMetadata(searchTerm);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   // Auto-generate suggested dataset name with pattern: {source_table}_{custom_suffix}
   useEffect(() => {
@@ -305,19 +317,20 @@ export default function DHIS2ParameterBuilder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedData, selectedPeriods, selectedOrgUnits, endpoint, dataElements, indicators]);
 
-  const loadMetadata = async () => {
+  const loadMetadata = async (search = '') => {
     if (!databaseId) return;
 
     // Determine table name from endpoint
     const tableName = endpoint || 'analytics';
-    console.log('[DHIS2 Query Builder] Loading metadata for database:', databaseId, 'table:', tableName);
+    console.log('[DHIS2 Query Builder] Loading metadata for database:', databaseId, 'table:', tableName, 'search:', search);
     setLoading(true);
     try {
       // Fetch data elements (filtered by table for analytics)
       console.log('[DHIS2 Query Builder] Fetching data elements for table:', tableName);
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
       const dataElementsUrl = tableName === 'analytics'
-        ? `/api/v1/database/${databaseId}/dhis2_metadata/?type=dataElements&table=${tableName}`
-        : `/api/v1/database/${databaseId}/dhis2_metadata/?type=dataElements`;
+        ? `/api/v1/database/${databaseId}/dhis2_metadata/?type=dataElements&table=${tableName}${searchParam}`
+        : `/api/v1/database/${databaseId}/dhis2_metadata/?type=dataElements${searchParam}`;
 
       const dataElementsResponse = await fetch(dataElementsUrl, {
         credentials: 'same-origin',
@@ -603,6 +616,14 @@ export default function DHIS2ParameterBuilder({
               ℹ Showing all data elements (any type)
             </div>
           )}
+          <Input
+            placeholder={t('Search data elements... (e.g., "105-EP01" or "malaria")')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            allowClear
+            style={{ marginBottom: 12 }}
+            prefix={<span style={{ color: '#8c8c8c' }}>🔍</span>}
+          />
           <StyledSelect
             mode="multiple"
             placeholder={t('Select data elements or indicators')}

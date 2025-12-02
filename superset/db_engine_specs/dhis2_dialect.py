@@ -410,13 +410,14 @@ class DHIS2ResponseNormalizer:
 
         Args:
             data: DHIS2 analytics API response
-            pivot: If True, return WIDE format (pivoted). If False, return LONG format (unpivoted)
+            pivot: If True, return WIDE format (pivoted). If False, return LONG/TIDY format (unpivoted)
 
         Formats:
         - WIDE (pivoted): Period, OrgUnit, DataElement_A, DataElement_B, ...
-          Used for browsing data
-        - LONG (unpivoted): Period, OrgUnit, DataElement, Value
-          Used for aggregation/grouping operations
+          Traditional format for browsing
+        - LONG/TIDY (unpivoted): Period, OrgUnit, DataElement, Value
+          Better for Superset - enables filters, metrics, cross-filters
+          This is used by default for analytics endpoint
 
         Returns:
             Tuple of (column_names, rows)
@@ -438,7 +439,12 @@ class DHIS2ResponseNormalizer:
 
         # If not pivoting, return long format immediately
         if not pivot:
+            print(f"[DHIS2] normalize_analytics: pivot={pivot}, using LONG format")
+            logger.info(f"normalize_analytics called with pivot={pivot}, returning LONG format")
             return DHIS2ResponseNormalizer._normalize_analytics_long_format(headers, rows_data, get_name)
+
+        print(f"[DHIS2] normalize_analytics: pivot={pivot}, using WIDE/PIVOTED format")
+        logger.info(f"normalize_analytics called with pivot={pivot}, returning WIDE format")
 
         # Find column indices - handle missing dimensions
         col_map = {}
@@ -857,9 +863,9 @@ class DHIS2Dialect(default.DefaultDialect):
             logger.debug(f"Could not load custom columns: {e}")
 
         # Default columns for common DHIS2 endpoints
-        # Note: analytics endpoint returns pivoted format with Period, OrgUnit, DataElement1, DataElement2, ...
+        # Note: analytics endpoint now returns TIDY/LONG format (pe, ou, dx, value) for Superset compatibility
         default_columns = {
-            "analytics": ["Period", "OrgUnit"],  # Pivoted format column names
+            "analytics": ["Period", "OrgUnit", "DataElement", "Value"],  # Tidy/long format - works with all Superset features
             "dataValueSets": ["dataElement", "period", "orgUnit", "value", "storedBy", "created"],
             "trackedEntityInstances": ["trackedEntityInstance", "orgUnit", "trackedEntityType", "attributes"],
             "events": ["event", "program", "orgUnit", "eventDate", "dataValues"],
@@ -870,74 +876,197 @@ class DHIS2Dialect(default.DefaultDialect):
         if source_table in default_columns:
             columns = []
             for col in default_columns[source_table]:
-                # Explicitly mark Period and OrgUnit as String to prevent numeric conversion
+                # Define column metadata based on role in tidy data format
                 col_def = {
                     "name": col,
-                    "type": types.String(),
                     "nullable": True,
                     "is_dttm": False,  # Not a datetime column
                 }
-                # Add extra metadata for categorical/groupable columns
-                if col in ["Period", "OrgUnit", "period", "orgUnit"]:
-                    col_def["groupby"] = True  # Can be used for grouping
-                    col_def["filterable"] = True  # Can be filtered
-                    col_def["verbose_name"] = col  # Display name
-                    col_def["is_numeric"] = False  # Explicitly NOT numeric - prevents aggregation
-                    col_def["python_date_format"] = None  # Not a date
-                else:
-                    # Data element columns are numeric and can be aggregated
-                    col_def["is_numeric"] = True
-                    col_def["filterable"] = True
-                columns.append(col_def)
 
+                # DIMENSIONS (categorical/groupable columns)
+                if col in ["Period", "OrgUnit", "DataElement", "period", "orgUnit", "dataElement"]:
+                    col_def.update({
+                        "type": types.String(),  # Always String to prevent numeric conversion
+                        "groupby": True,  # Can be used for grouping
+                        "filterable": True,  # Can be filtered
+                        "verbose_name": col,  # Display name
+                        "is_numeric": False,  # Explicitly NOT numeric - prevents aggregation
+                        "python_date_format": None,  # Not a date
+                    })
+                # MEASURES (numeric columns that can be aggregated)
+                elif col in ["Value", "value"]:
+                    col_def.update({
+                        "type": types.Float(),  # Numeric type for aggregation
+                        "is_numeric": True,  # Can be aggregated (SUM, AVG, etc.)
+                        "filterable": True,  # Can be filtered
+                        "verbose_name": col,
+                    })
+                else:
+                    # Default for other columns
+                    col_def.update({
+                        "type": types.String(),
+                        "is_numeric": False,
+                        "filterable": True,
+                    })
+
+                columns.append(col_def)
                 logger.debug(f"Column '{col}': type={col_def['type']}, groupby={col_def.get('groupby')}, is_numeric={col_def.get('is_numeric')}")
             return columns
 
-        # For dataset tables, try to fetch actual dataElements from DHIS2
-        # Dataset table names are typically cleaned display names
-        try:
-            # Try to fetch dataElements for this dataset from DHIS2
-            from sqlalchemy.engine.url import make_url
-            url = make_url(str(connection.url))
+        # For analytics, try to fetch ALL available indicators and data elements from DHIS2
+        # and show them as individual columns
+        if source_table == "analytics" or table_name == "analytics":
+            try:
+                from sqlalchemy.engine.url import make_url
+                url = make_url(str(connection.url))
 
-            base_url = f"https://{url.host}{url.database or '/api'}"
-            auth = (url.username, url.password) if url.username else None
+                base_url = f"https://{url.host}{url.database or '/api'}"
+                auth = (url.username, url.password) if url.username else None
 
-            # Search for dataset by name
-            response = requests.get(
-                f"{base_url}/dataSets",
-                params={
-                    "filter": f"displayName:ilike:{table_name.replace('_', ' ')}",
-                    "fields": "id,displayName,dataSetElements[dataElement[id,displayName,valueType]]",
-                    "paging": "false"
-                },
-                auth=auth,
-                timeout=5,
-            )
+                logger.info(f"[DHIS2] Fetching ALL data elements and indicators from {base_url}")
 
-            if response.status_code == 200:
-                datasets = response.json().get("dataSets", [])
-                if datasets:
-                    dataset = datasets[0]
-                    columns = [
-                        {"name": "period", "type": types.String(), "nullable": True},
-                        {"name": "orgUnit", "type": types.String(), "nullable": True},
-                    ]
+                # Base dimension columns
+                columns = [
+                    {
+                        "name": "Period",
+                        "type": types.String(),
+                        "nullable": True,
+                        "groupby": True,
+                        "filterable": True,
+                        "is_numeric": False,
+                    },
+                    {
+                        "name": "OrgUnit",
+                        "type": types.String(),
+                        "nullable": True,
+                        "groupby": True,
+                        "filterable": True,
+                        "is_numeric": False,
+                    },
+                ]
 
-                    # Add columns for each dataElement
-                    for dse in dataset.get("dataSetElements", []):
-                        de = dse.get("dataElement", {})
-                        col_name = de.get("displayName", de.get("id", "")).replace(" ", "_").lower()
-                        columns.append({
-                            "name": col_name,
-                            "type": types.String(),
-                            "nullable": True
-                        })
+                # Fetch ALL data elements and indicators
+                metadata_endpoints = {
+                    'dataElements': '/dataElements',
+                    'indicators': '/indicators',
+                    'programIndicators': '/programIndicators',
+                }
 
-                    logger.info(f"Discovered {len(columns)} columns for dataset {table_name}")
-                    return columns
-        except Exception as e:
-            logger.debug(f"Could not fetch dataElements for {table_name}: {e}")
+                total_items = 0
+                for meta_type, endpoint in metadata_endpoints.items():
+                    try:
+                        logger.info(f"[DHIS2] Fetching {meta_type} from {base_url}{endpoint}")
+
+                        # Fetch all items (no pagination limit)
+                        response = requests.get(
+                            f"{base_url}{endpoint}",
+                            params={
+                                "fields": "id,name,displayName,shortName,code,valueType",
+                                "paging": "false",  # Get ALL items
+                            },
+                            auth=auth,
+                            timeout=60,  # Longer timeout for large metadata
+                        )
+
+                        if response.status_code == 200:
+                            data = response.json()
+                            items = data.get(meta_type, [])
+
+                            logger.info(f"[DHIS2] Found {len(items)} {meta_type}")
+
+                            # Add each data element/indicator as a column
+                            for item in items:
+                                item_name = item.get('displayName') or item.get('name', '')
+                                item_id = item.get('id', '')
+                                value_type = item.get('valueType', 'NUMBER')
+
+                                # Determine SQL type based on DHIS2 valueType
+                                if value_type in ['NUMBER', 'INTEGER', 'PERCENTAGE', 'UNIT_INTERVAL']:
+                                    sql_type = types.Float()
+                                    is_numeric = True
+                                elif value_type in ['DATE', 'DATETIME']:
+                                    sql_type = types.Date()
+                                    is_numeric = False
+                                elif value_type == 'BOOLEAN':
+                                    sql_type = types.Boolean()
+                                    is_numeric = False
+                                else:
+                                    sql_type = types.String()
+                                    is_numeric = False
+
+                                # Add column for this data element
+                                columns.append({
+                                    "name": item_name,
+                                    "type": sql_type,
+                                    "nullable": True,
+                                    "is_numeric": is_numeric,
+                                    "filterable": True,
+                                    "description": f"{meta_type[:-1]} - {item_id}",
+                                    "dhis2_id": item_id,  # Store DHIS2 ID for reference
+                                })
+                                total_items += 1
+
+                        else:
+                            logger.warning(f"[DHIS2] Failed to fetch {meta_type}: HTTP {response.status_code}")
+
+                    except Exception as e:
+                        logger.error(f"[DHIS2] Error fetching {meta_type}: {e}")
+
+                logger.info(f"[DHIS2] Total columns discovered: {len(columns)} (2 dimensions + {total_items} data elements)")
+
+                if total_items > 0:
+                    logger.info(f"[DHIS2] Sample columns: {[c['name'] for c in columns[:10]]}")
+
+                return columns
+
+            except Exception as e:
+                logger.error(f"[DHIS2] Failed to fetch metadata: {e}")
+                # Fall through to default columns
+
+        # For dataSets tables, try to fetch specific dataElements
+        elif "dataset" in table_name.lower() or source_table == "dataValueSets":
+            try:
+                from sqlalchemy.engine.url import make_url
+                url = make_url(str(connection.url))
+
+                base_url = f"https://{url.host}{url.database or '/api'}"
+                auth = (url.username, url.password) if url.username else None
+
+                # Search for dataset by name
+                response = requests.get(
+                    f"{base_url}/dataSets",
+                    params={
+                        "filter": f"displayName:ilike:{table_name.replace('_', ' ')}",
+                        "fields": "id,displayName,dataSetElements[dataElement[id,displayName,valueType]]",
+                        "paging": "false"
+                    },
+                    auth=auth,
+                    timeout=5,
+                )
+
+                if response.status_code == 200:
+                    datasets = response.json().get("dataSets", [])
+                    if datasets:
+                        dataset = datasets[0]
+                        columns = [
+                            {"name": "period", "type": types.String(), "nullable": True},
+                            {"name": "orgUnit", "type": types.String(), "nullable": True},
+                        ]
+
+                        # Add columns for each dataElement
+                        for dse in dataset.get("dataSetElements", []):
+                            de = dse.get("dataElement", {})
+                            col_name = de.get("displayName", de.get("id", "")).replace(" ", "_").lower()
+                            columns.append({
+                                "name": col_name,
+                                "type": types.String(),
+                                "nullable": True
+                            })
+
+                        logger.info(f"Discovered {len(columns)} columns for dataset {table_name}")
+                        return columns
+            except Exception as e:
+                logger.debug(f"Could not fetch dataElements for {table_name}: {e}")
 
         # Fallback: generic columns
         return [
@@ -1016,7 +1145,7 @@ class DHIS2Connection:
         # Store dynamic configuration
         self.default_params = kwargs.get("default_params", {})
         self.endpoint_params = kwargs.get("endpoint_params", {})
-        self.timeout = kwargs.get("timeout", 60)
+        self.timeout = kwargs.get("timeout", 300)  # Increased to 5 minutes for slow DHIS2 servers
         self.page_size = kwargs.get("page_size", 50)
 
         # Build base URL
@@ -1310,9 +1439,15 @@ class DHIS2Cursor:
 
             # Handle 409 Conflict - typically means missing required parameters
             if response.status_code == 409:
-                # During connection tests or schema introspection, return empty result
-                # instead of erroring. This allows the connection to succeed.
-                logger.warning(f"DHIS2 API 409 for {endpoint} - missing parameters. Returning empty result.")
+                # Log the actual error message from DHIS2
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("message", "Unknown error")
+                    print(f"[DHIS2] 409 Error from API: {error_msg}")
+                    logger.warning(f"DHIS2 API 409 for {endpoint} - {error_msg}")
+                except:
+                    print(f"[DHIS2] 409 Error (could not parse response)")
+                    logger.warning(f"DHIS2 API 409 for {endpoint} - missing parameters")
 
                 # Return empty dataset with generic columns
                 self._set_description(["id", "name", "value"])
@@ -1322,9 +1457,19 @@ class DHIS2Cursor:
 
             data = response.json()
 
+            # Debug: Log raw DHIS2 response structure
+            print(f"[DHIS2] Raw API response keys: {list(data.keys())}")
+            if "rows" in data:
+                print(f"[DHIS2] Raw DHIS2 rows count: {len(data.get('rows', []))}")
+                if data.get('rows'):
+                    print(f"[DHIS2] First raw row: {data['rows'][0]}")
+
             # Parse response based on endpoint structure - pass query for pivot detection
             rows = self._parse_response(endpoint, data, query)
 
+            print(f"[DHIS2] Transformed rows count: {len(rows)}")
+            if rows:
+                print(f"[DHIS2] First transformed row: {rows[0]}")
             logger.info(f"DHIS2 API returned {len(rows)} rows")
             return rows
 
@@ -1351,19 +1496,21 @@ class DHIS2Cursor:
         print(f"[DHIS2] Response keys: {list(data.keys())}")
         print(f"[DHIS2] Response sample: {str(data)[:500]}")
 
-        # Detect if query wants pivoted or unpivoted data
-        # SELECT * FROM analytics = wants pivoted (wide format) - typical for browsing data
-        # SELECT OrgUnit, metric FROM (SELECT * FROM analytics) = wants unpivoted (long format) - for aggregation
+        # Use TIDY/LONG format for analytics data - works best with Superset
+        # Tidy format (Period, OrgUnit, DataElement, Value) enables:
+        # - Native filters on DataElement
+        # - Cross-filters
+        # - Metrics (SUM, AVG, etc.) on Value
+        # - Grouping by Period, OrgUnit, DataElement
+        # - Public dashboards
+        # - Embedded SDK
         #
-        # Key insight: When Superset does GROUP BY operations, it uses a subquery pattern like:
-        # SELECT cols FROM (SELECT * FROM analytics) AS virtual_table GROUP BY cols
-        #
-        # If the outer query selects specific columns (not *), it means Superset will aggregate,
-        # so we should return unpivoted data to avoid string concatenation issues.
-        should_pivot = bool(re.search(r'SELECT\s+\*\s+FROM\s+' + re.escape(endpoint), query, re.IGNORECASE))
+        # ALWAYS use tidy format for analytics endpoint
+        should_pivot = endpoint != "analytics"  # analytics = tidy format, others = keep current behavior
 
-        print(f"[DHIS2] Query analysis: {'Simple SELECT * (will pivot)' if should_pivot else 'Grouped/aggregated query (no pivot)'}")
-        logger.info(f"Pivot mode for {endpoint}: {should_pivot}")
+        format_msg = "TIDY/LONG format (Period, OrgUnit, DataElement, Value)" if not should_pivot else "original format"
+        print(f"[DHIS2] Using {format_msg} for {endpoint}")
+        logger.info(f"Using {'tidy/long' if not should_pivot else 'original'} format for {endpoint}")
 
         # Use the normalizer to parse response
         col_names, rows = DHIS2ResponseNormalizer.normalize(endpoint, data, pivot=should_pivot)
@@ -1380,11 +1527,20 @@ class DHIS2Cursor:
         return rows
 
     def _set_description(self, col_names: list[str]):
-        """Set cursor description from column names"""
-        self._description = [
-            (name, types.String, None, None, None, None, True)
-            for name in col_names
-        ]
+        """Set cursor description from column names with proper types"""
+        self._description = []
+        for name in col_names:
+            # Set proper type based on column name
+            if name in ["Value", "value"]:
+                # Value column is numeric (can be aggregated)
+                col_type = types.Float
+            else:
+                # All other columns are strings (dimensions)
+                col_type = types.String
+
+            self._description.append((name, col_type, None, None, None, None, True))
+
+        print(f"[DHIS2] _set_description: columns={col_names}, types={[desc[1].__name__ for desc in self._description]}")
 
     def execute(self, query: str, parameters=None):
         """
@@ -1413,8 +1569,58 @@ class DHIS2Cursor:
         print(f"[DHIS2] Fetched {self.rowcount} rows")
 
     def fetchall(self):
-        """Fetch all rows"""
-        return self._rows
+        """
+        Fetch all rows with STRICT type enforcement to prevent Pandas numeric inference.
+
+        Problem: Pandas sees "105- Total Linked to HIV care" and tries to convert to numeric
+        Solution: Force dimensions to STRING, measures to FLOAT at cursor level
+
+        This prevents:
+        - Superset from treating dimensions as metrics
+        - Pandas from inferring wrong types
+        - Chart code from accidentally aggregating dimension columns
+        """
+        print(f"[DHIS2] fetchall() called - returning {len(self._rows)} rows")
+
+        if not self._rows:
+            return self._rows
+
+        print(f"[DHIS2] fetchall() - First row type: {type(self._rows[0])}")
+        print(f"[DHIS2] fetchall() - First row (original): {self._rows[0]}")
+        print(f"[DHIS2] fetchall() - Column description: {self._description}")
+
+        # Extract column names from cursor description
+        column_names = [desc[0] for desc in self._description]
+
+        # Process each row with strict type enforcement
+        fixed_rows = []
+        for row in self._rows:
+            fixed_row = []
+            for col_name, value in zip(column_names, row):
+                # DIMENSION columns: ALWAYS string (never aggregate)
+                if col_name in ['Period', 'OrgUnit', 'DataElement', 'period', 'orgUnit', 'dataElement']:
+                    # Force to string to prevent Pandas from treating "105-..." as numeric
+                    fixed_row.append(str(value) if value is not None else None)
+
+                # MEASURE columns: ALWAYS float (can aggregate)
+                elif col_name in ['Value', 'value']:
+                    # Safe numeric conversion
+                    try:
+                        fixed_row.append(float(value) if value is not None else None)
+                    except (ValueError, TypeError):
+                        fixed_row.append(None)
+
+                # Other columns: keep as-is
+                else:
+                    fixed_row.append(value)
+
+            fixed_rows.append(tuple(fixed_row))
+
+        if fixed_rows:
+            print(f"[DHIS2] fetchall() - First row (fixed types): {fixed_rows[0]}")
+            print(f"[DHIS2] fetchall() - Type enforcement: dimensions=STRING, measures=FLOAT")
+
+        return fixed_rows
 
     def fetchone(self):
         """Fetch one row"""

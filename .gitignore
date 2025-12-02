@@ -139,4 +139,20 @@ PROJECT.md
 TODO.md
 CHART_TAGGING_GUIDE.md
 
+# Planning and progress tracking documents
+ACTION_PLAN.md
+BETTER_APPROACH.md
+COMPONENT_REUSE_ACTION_PLAN.md
+CURRENT_STATUS.md
+CUSTOMIZATION_SUMMARY.md
+progress_report.md
+re_think.md
+DHIS2_DUCKDB_ACTION_PLAN.md
+
+# Backup files
+*.backup
+*.backup-*
+superset-frontend/src/features/home/*.backup
+superset-frontend/src/features/home/*.backup-*
+
 
