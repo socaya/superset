@@ -122,7 +122,86 @@ class QueryContextFactory:  # pylint: disable=too-few-public-methods
         self._apply_granularity(query_object, form_data, datasource)
         self._apply_filters(query_object)
         self._add_tooltip_columns(query_object, form_data)
+
+        # DHIS2 FIX: Override is_timeseries for DHIS2 datasets when non-temporal X-axis is selected
+        # DHIS2 data is multi-dimensional (period, orgUnit, dataElements, etc.)
+        # Charts should respect user's X-axis selection instead of forcing time-series mode
+        self._apply_dhis2_timeseries_fix(query_object, form_data, datasource)
+
         return query_object
+
+    def _apply_dhis2_timeseries_fix(
+        self,
+        query_object: QueryObject,
+        form_data: dict[str, Any] | None,
+        datasource: BaseDatasource,
+    ) -> None:
+        """
+        Fix for DHIS2 datasets: Override is_timeseries when user explicitly selects
+        a non-temporal X-axis (like OrgUnit) instead of Period.
+
+        This ensures charts display data grouped by the selected dimension rather than
+        forcing time-series behavior which always puts Period on X-axis.
+        """
+        if not datasource or not hasattr(datasource, 'database'):
+            return
+
+        # Check if this is a DHIS2 datasource
+        try:
+            db = datasource.database
+            uri = getattr(db, 'sqlalchemy_uri_decrypted', None) or getattr(db, 'sqlalchemy_uri', '')
+            is_dhis2 = 'dhis2://' in str(uri)
+
+            if not is_dhis2:
+                # Also check backend attribute
+                backend = getattr(db, 'backend', '')
+                is_dhis2 = backend in ['dhis2', 'dhis2.dhis2']
+        except Exception:
+            return
+
+        if not is_dhis2:
+            return
+
+        # For DHIS2 datasets, check if user has selected a non-temporal X-axis
+        x_axis = form_data.get('x_axis') if form_data else None
+
+        # Get temporal column names from datasource
+        temporal_columns = set()
+        try:
+            for col in datasource.columns:
+                if isinstance(col, dict):
+                    if col.get('is_dttm'):
+                        temporal_columns.add(col.get('column_name'))
+                elif hasattr(col, 'is_dttm') and col.is_dttm:
+                    temporal_columns.add(col.column_name)
+        except Exception:
+            pass
+
+        # Also consider Period as temporal for DHIS2
+        temporal_columns.add('Period')
+        temporal_columns.add('period')
+
+        # Check if x_axis is set and is non-temporal
+        if x_axis:
+            x_axis_name = x_axis
+            if isinstance(x_axis, dict):
+                x_axis_name = x_axis.get('column_name') or x_axis.get('sqlExpression')
+
+            # If user selected a non-temporal X-axis (like OrgUnit), disable time-series mode
+            if x_axis_name and x_axis_name not in temporal_columns:
+                query_object.is_timeseries = False
+
+        # Also check columns/groupby for non-temporal primary dimension
+        # If the first column in the query is non-temporal, it's likely intended as the X-axis
+        if query_object.columns and not x_axis:
+            first_col = query_object.columns[0]
+            first_col_name = first_col
+            if isinstance(first_col, dict):
+                first_col_name = first_col.get('column_name') or first_col.get('sqlExpression')
+
+            # If first column is OrgUnit or similar non-temporal dimension
+            if first_col_name and first_col_name.lower() in ['orgunit', 'ou', 'organisation_unit']:
+                query_object.is_timeseries = False
 
     def _add_tooltip_columns(
         self,

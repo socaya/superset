@@ -38,8 +38,10 @@ import { validatedInputField } from './ValidatedInputField';
 import { EncryptedField } from './EncryptedField';
 import { TableCatalog } from './TableCatalog';
 import SSHTunnelSwitch from '../SSHTunnelSwitch';
+import { DHIS2AuthenticationFields } from './DHIS2AuthenticationFields';
 
 export const FormFieldOrder = [
+  'dhis2_authentication', // DHIS2 custom component (includes host + auth fields)
   'host',
   'port',
   'database',
@@ -77,6 +79,7 @@ export const FORM_FIELD_MAP = {
   database: databaseField,
   default_catalog: defaultCatalogField,
   default_schema: defaultSchemaField,
+  dhis2_authentication: DHIS2AuthenticationFields, // DHIS2 custom auth component
   username: usernameField,
   password: passwordField,
   oauth2_client_info: OAuth2ClientField,

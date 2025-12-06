@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { SupersetTheme } from '@superset-ui/core';
-import { Form } from '@superset-ui/core/components';
+import { SupersetTheme, t } from '@superset-ui/core';
+import { Form, Button } from '@superset-ui/core/components';
 import { FormFieldOrder, FORM_FIELD_MAP } from './constants';
-import { formScrollableStyles, validatedFormStyles } from '../styles';
+import { formScrollableStyles, validatedFormStyles, wideButton } from '../styles';
 import { DatabaseConnectionFormProps } from '../../types';
 
 const DatabaseConnectionForm = ({
@@ -41,6 +41,8 @@ const DatabaseConnectionForm = ({
   validationErrors,
   clearValidationErrors,
   isValidating,
+  testConnection,
+  testInProgress = false,
 }: DatabaseConnectionFormProps) => {
   const parameters = dbModel?.parameters as {
     properties: {
@@ -62,11 +64,18 @@ const DatabaseConnectionForm = ({
         ]}
       >
         {parameters &&
-          FormFieldOrder.filter(
-            (key: string) =>
+          FormFieldOrder.filter((key: string) => {
+            const isStandardField =
               Object.keys(parameters.properties).includes(key) ||
-              key === 'database_name',
-          ).map(field =>
+              key === 'database_name' ||
+              key === 'dhis2_authentication'; // Include custom DHIS2 auth component
+
+            // Exclude fields marked as hidden (e.g., DHIS2 fields handled by custom component)
+            const isHidden =
+              (parameters.properties[key] as any)?.['x-hidden'] === true;
+
+            return isStandardField && !isHidden;
+          }).map(field =>
             // @ts-ignore TODO: fix ComponentClass for SSHTunnelSwitchComponent not having call signature.
             FORM_FIELD_MAP[field]({
               required: parameters.required?.includes(field),
@@ -96,6 +105,17 @@ const DatabaseConnectionForm = ({
             }),
           )}
       </div>
+      {testConnection && (
+        <Button
+          onClick={testConnection}
+          loading={testInProgress}
+          cta
+          buttonStyle="link"
+          css={(theme: SupersetTheme) => wideButton(theme)}
+        >
+          {t('Test connection')}
+        </Button>
+      )}
     </Form>
   );
 };

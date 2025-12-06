@@ -1095,15 +1095,121 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
             :param df: Original DataFrame returned by the engine
             :return: Mutated DataFrame
             """
+            import re
+            from superset.utils.column_trace_logger import ColumnTraceLogger, log_dataframe_snapshot
+            
             labels_expected = query_str_ext.labels_expected
+            datasource_name = getattr(self, 'table_name', 'unknown')
+            
+            log_dataframe_snapshot(df, "BEFORE assign_column_label (helpers.py)", labels_expected)
+            
+            def normalize_column_name(name: str) -> str:
+                """Normalize column name for fuzzy matching.
+                Removes special chars, converts to lowercase, collapses underscores.
+                """
+                if not isinstance(name, str):
+                    name = str(name)
+                # Remove parentheses, dots, dashes, and other special characters
+                normalized = re.sub(r'[.\-\s()]+', '_', name)
+                # Collapse multiple underscores
+                normalized = re.sub(r'_+', '_', normalized)
+                # Remove leading/trailing underscores
+                normalized = normalized.strip('_')
+                return normalized.lower()
+
+            def find_column_match(expected: str, df_columns: list) -> Optional[str]:
+                """Find best matching column in DataFrame for expected column name.
+                Uses normalized name comparison for fuzzy matching.
+                Also handles aggregate function wrappers like SUM(), AVG(), COUNT().
+                """
+                # Exact match first
+                if expected in df_columns:
+                    return expected
+
+                # Try stripping aggregate function wrapper (SUM(col), AVG(col), etc.)
+                # Pattern: FUNCTION_NAME(column_name)
+                agg_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', expected, re.IGNORECASE)
+                if agg_match:
+                    inner_col = agg_match.group(2)
+                    # Try exact match with inner column
+                    if inner_col in df_columns:
+                        logger.debug(f"[COLUMN_TRACE] Matched aggregate '{expected}' -> '{inner_col}' (stripped wrapper)")
+                        return inner_col
+                    # Try normalized match with inner column
+                    inner_normalized = normalize_column_name(inner_col)
+                    for col in df_columns:
+                        if normalize_column_name(col) == inner_normalized:
+                            logger.debug(f"[COLUMN_TRACE] Fuzzy matched aggregate '{expected}' -> '{col}'")
+                            return col
+
+                # Normalize expected name
+                expected_normalized = normalize_column_name(expected)
+
+                # Try to find fuzzy match
+                for col in df_columns:
+                    if normalize_column_name(col) == expected_normalized:
+                        logger.debug(f"[COLUMN_TRACE] Fuzzy matched '{expected}' -> '{col}'")
+                        return col
+
+                return None
+
             if df is not None and not df.empty:
                 if len(df.columns) < len(labels_expected):
                     raise QueryObjectValidationError(
                         _("Db engine did not return all queried columns")
                     )
                 if len(df.columns) > len(labels_expected):
-                    df = df.iloc[:, 0 : len(labels_expected)]
+                    logger.info(f"[COLUMN_TRACE] Column truncation needed: df has {len(df.columns)} columns, expected {len(labels_expected)}")
+                    logger.info(f"[COLUMN_TRACE]   DataFrame actual columns: {list(df.columns)}")
+                    logger.info(f"[COLUMN_TRACE]   Expected columns: {labels_expected}")
+                    
+                    # Build column mapping: expected_name -> actual_column_name
+                    df_columns = list(df.columns)
+                    column_mapping = {}
+                    matched_columns = []
+
+                    for expected in labels_expected:
+                        match = find_column_match(expected, df_columns)
+                        if match:
+                            column_mapping[expected] = match
+                            matched_columns.append(match)
+
+                    all_matched = len(column_mapping) == len(labels_expected)
+
+                    if all_matched:
+                        logger.info(f"[COLUMN_TRACE] ✓ Selecting columns BY NAME (matched all expected columns)")
+                        logger.info(f"[COLUMN_TRACE]   Column mapping: {column_mapping}")
+                        # Select columns by their actual names in the DataFrame
+                        df = df[matched_columns]
+                        ColumnTraceLogger.log_index_vs_name_selection(
+                            tried_by_name=True,
+                            success_by_name=True,
+                            fallback_to_index=False,
+                            columns=labels_expected,
+                            datasource_name=datasource_name,
+                        )
+                    else:
+                        # Log which columns could not be matched
+                        unmatched = [e for e in labels_expected if e not in column_mapping]
+                        logger.warning(
+                            f"[COLUMN_TRACE] ⚠️  Could not match all expected columns. "
+                            f"Using POSITION-BASED (INDEX) fallback for {len(labels_expected)} columns"
+                        )
+                        logger.warning(f"[COLUMN_TRACE]   Unmatched columns: {unmatched}")
+                        logger.warning(f"[COLUMN_TRACE]   Available columns: {df_columns}")
+                        df = df.iloc[:, 0 : len(labels_expected)]
+                        ColumnTraceLogger.log_index_vs_name_selection(
+                            tried_by_name=True,
+                            success_by_name=False,
+                            fallback_to_index=True,
+                            columns=labels_expected,
+                            datasource_name=datasource_name,
+                        )
+                
+                logger.info(f"[COLUMN_TRACE] Assigning column labels: {labels_expected}")
                 df.columns = labels_expected
+            
+            log_dataframe_snapshot(df, "AFTER assign_column_label (helpers.py)", labels_expected)
             return df
 
         try:
@@ -1222,31 +1328,73 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
         :returns: The metric defined as a sqlalchemy column
         :rtype: sqlalchemy.sql.column
         """
-        expression_type = metric.get("expressionType")
-        label = utils.get_metric_name(metric)
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            expression_type = metric.get("expressionType")
+            label = utils.get_metric_name(metric)
+            logger.error(f"[ADHOC-METRIC] Processing metric: label={label}, type={expression_type}")
 
-        if expression_type == utils.AdhocMetricExpressionType.SIMPLE:
-            metric_column = metric.get("column") or {}
-            column_name = cast(str, metric_column.get("column_name"))
-            sqla_column = sa.column(column_name)
-            sqla_metric = self.sqla_aggregations[metric["aggregate"]](sqla_column)
-        elif expression_type == utils.AdhocMetricExpressionType.SQL:
-            expression = metric.get("sqlExpression")
+            if expression_type == utils.AdhocMetricExpressionType.SIMPLE:
+                metric_column = metric.get("column") or {}
+                column_name = cast(str, metric_column.get("column_name"))
+                logger.error(f"[ADHOC-METRIC]   column_name={column_name}")
+                
+                sanitized_column_name = self._sanitize_column_reference(column_name)
+                logger.error(f"[ADHOC-METRIC]   sanitized={sanitized_column_name}")
+                
+                sqla_column = sa.column(sanitized_column_name)
+                logger.error(f"[ADHOC-METRIC]   sqla_column created: {sqla_column}")
+                
+                aggregate = metric.get("aggregate", "").upper()
+                logger.error(f"[ADHOC-METRIC]   aggregate={aggregate}")
+                
+                if aggregate not in self.sqla_aggregations:
+                    logger.error(f"[ADHOC-METRIC]   ERROR: Unknown aggregate '{aggregate}'")
+                    logger.error(f"[ADHOC-METRIC]   Available: {list(self.sqla_aggregations.keys())}")
+                    raise QueryObjectValidationError(
+                        _(
+                            "Unknown aggregation function: %(agg)s",
+                            agg=aggregate,
+                        )
+                    )
+                
+                sqla_metric = self.sqla_aggregations[aggregate](sqla_column)
+                logger.error(f"[ADHOC-METRIC]   sqla_metric created: {sqla_metric}")
+                
+                # For DHIS2 datasets, update label to use sanitized column name to match actual SQL columns
+                if sanitized_column_name != column_name and metric.get("label") is None:
+                    if aggregate:
+                        label = f"{aggregate}({sanitized_column_name})"
+                        logger.error(f"[ADHOC-METRIC]   label updated to: {label}")
+                        
+            elif expression_type == utils.AdhocMetricExpressionType.SQL:
+                expression = metric.get("sqlExpression")
+                logger.error(f"[ADHOC-METRIC]   SQL expression: {expression}")
 
-            if not processed:
-                expression = self._process_select_expression(
-                    expression=metric["sqlExpression"],
-                    database_id=self.database_id,
-                    engine=self.database.backend,
-                    schema=self.schema,
-                    template_processor=template_processor,
-                )
+                if not processed:
+                    expression = self._process_select_expression(
+                        expression=metric["sqlExpression"],
+                        database_id=self.database_id,
+                        engine=self.database.backend,
+                        schema=self.schema,
+                        template_processor=template_processor,
+                    )
+                    logger.error(f"[ADHOC-METRIC]   processed expression: {expression}")
 
-            sqla_metric = literal_column(expression)
-        else:
-            raise QueryObjectValidationError("Adhoc metric expressionType is invalid")
+                sqla_metric = literal_column(expression)
+            else:
+                logger.error(f"[ADHOC-METRIC]   ERROR: Invalid expression type: {expression_type}")
+                raise QueryObjectValidationError("Adhoc metric expressionType is invalid")
 
-        return self.make_sqla_column_compatible(sqla_metric, label)
+            result = self.make_sqla_column_compatible(sqla_metric, label)
+            logger.error(f"[ADHOC-METRIC]   ✓ SUCCESS: {label}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"[ADHOC-METRIC] EXCEPTION processing metric: {str(e)}", exc_info=True)
+            raise
 
     @property
     def template_params_dict(self) -> dict[Any, Any]:
@@ -1500,6 +1648,30 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
                 )
             )
         return and_(*l)
+
+    def _sanitize_column_reference(self, column_ref: str) -> str:
+        """
+        Sanitize a column reference for datasources.
+        For DHIS2, apply sanitization to match the column metadata stored in the database.
+        """
+        if not column_ref:
+            return column_ref
+            
+        # Check if this is a DHIS2 dataset
+        is_dhis2 = False
+        if hasattr(self, 'database') and self.database:
+            uri = getattr(self.database, 'sqlalchemy_uri_decrypted', None) or getattr(self.database, 'sqlalchemy_uri', '')
+            is_dhis2 = 'dhis2://' in str(uri)
+        
+        if is_dhis2:
+            # Apply DHIS2 column name sanitization
+            try:
+                from superset.db_engine_specs.dhis2_dialect import sanitize_dhis2_column_name
+                return sanitize_dhis2_column_name(column_ref)
+            except (ImportError, ModuleNotFoundError):
+                pass
+        
+        return column_ref
 
     def values_for_column(  # pylint: disable=too-many-locals
         self,
@@ -1805,7 +1977,21 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
             m.metric_name: m for m in self.metrics
         }
 
-        if not granularity and is_timeseries:
+        # DHIS2 FIX: Skip temporal validation for DHIS2 datasets
+        # DHIS2 data is multi-dimensional (period, orgUnit, dataElements, etc.)
+        # and doesn't require a datetime column for categorical charts
+        is_dhis2_datasource = False
+        if hasattr(self, 'database') and self.database:
+            try:
+                # Check if sqlalchemy_uri contains dhis2://
+                uri = getattr(self.database, 'sqlalchemy_uri_decrypted', None) or getattr(self.database, 'sqlalchemy_uri', '')
+                is_dhis2_datasource = 'dhis2://' in str(uri)
+            except:
+                # Fallback: check backend attribute if it exists
+                backend = getattr(self.database, 'backend', '')
+                is_dhis2_datasource = backend in ['dhis2', 'dhis2.dhis2']
+
+        if not granularity and is_timeseries and not is_dhis2_datasource:
             raise QueryObjectValidationError(
                 _(
                     "Datetime column not provided as part table configuration "
@@ -1816,26 +2002,35 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
             raise QueryObjectValidationError(_("Empty query?"))
 
         metrics_exprs: list[ColumnElement] = []
-        for metric in metrics:
-            if utils.is_adhoc_metric(metric):
-                assert isinstance(metric, dict)
-                metrics_exprs.append(
-                    self.adhoc_metric_to_sqla(
+        logger.error(f"[METRICS-TRACE] Processing {len(metrics)} metrics")
+        for idx, metric in enumerate(metrics):
+            try:
+                if utils.is_adhoc_metric(metric):
+                    assert isinstance(metric, dict)
+                    logger.error(f"[METRICS-TRACE] Metric {idx}: adhoc - {metric.get('label', metric.get('aggregate'))}")
+                    metric_expr = self.adhoc_metric_to_sqla(
                         metric=metric,
                         columns_by_name=columns_by_name,
                         template_processor=template_processor,
                     )
-                )
-            elif isinstance(metric, str) and metric in metrics_by_name:
-                metrics_exprs.append(
-                    metrics_by_name[metric].get_sqla_col(
+                    metrics_exprs.append(metric_expr)
+                    logger.error(f"[METRICS-TRACE]   ✓ Added: {metric_expr.key if hasattr(metric_expr, 'key') else metric_expr.name}")
+                elif isinstance(metric, str) and metric in metrics_by_name:
+                    logger.error(f"[METRICS-TRACE] Metric {idx}: saved - {metric}")
+                    metric_expr = metrics_by_name[metric].get_sqla_col(
                         template_processor=template_processor
                     )
-                )
-            else:
-                raise QueryObjectValidationError(
-                    _("Metric '%(metric)s' does not exist", metric=metric)
-                )
+                    metrics_exprs.append(metric_expr)
+                    logger.error(f"[METRICS-TRACE]   ✓ Added: {metric_expr.key if hasattr(metric_expr, 'key') else metric_expr.name}")
+                else:
+                    logger.error(f"[METRICS-TRACE] Metric {idx}: ERROR - not found: {metric}")
+                    raise QueryObjectValidationError(
+                        _("Metric '%(metric)s' does not exist", metric=metric)
+                    )
+            except Exception as e:
+                logger.error(f"[METRICS-TRACE] Metric {idx} EXCEPTION: {str(e)}", exc_info=True)
+                raise
+        logger.error(f"[METRICS-TRACE] Total metrics added: {len(metrics_exprs)}")
 
         if metrics_exprs:
             main_metric_expr = metrics_exprs[0]
@@ -1900,7 +2095,8 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
 
         # filter out the pseudo column  __timestamp from columns
         columns = [col for col in columns if col != utils.DTTM_ALIAS]
-        dttm_col = columns_by_name.get(granularity) if granularity else None
+        dttm_col_key = self._sanitize_column_reference(granularity) if granularity else granularity
+        dttm_col = columns_by_name.get(dttm_col_key) if granularity else None
 
         if need_groupby:
             # dedup columns while preserving order
@@ -1908,17 +2104,29 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
             for selected in columns:
                 if isinstance(selected, str):
                     # if groupby field/expr equals granularity field/expr
-                    if selected == granularity:
-                        table_col = columns_by_name[selected]
-                        outer = table_col.get_timestamp_expression(
-                            time_grain=time_grain,
-                            label=selected,
-                            template_processor=template_processor,
-                        )
+                    selected_key = self._sanitize_column_reference(selected)
+                    granularity_key = self._sanitize_column_reference(granularity) if granularity else granularity
+                    if selected_key == granularity_key:
+                        table_col = columns_by_name[selected_key]
+                        # DHIS2 FIX: For DHIS2 datasets, Period is a categorical dimension (is_dttm=False)
+                        # not a datetime column, so treat it as a regular column instead of timestamp expression
+                        if is_dhis2_datasource and not table_col.is_dttm:
+                            # DHIS2 Period is not a datetime column, treat as regular categorical column
+                            outer = self.convert_tbl_column_to_sqla_col(
+                                table_col,
+                                template_processor=template_processor,
+                            )
+                        else:
+                            # Regular datetime column handling
+                            outer = table_col.get_timestamp_expression(
+                                time_grain=time_grain,
+                                label=selected,
+                                template_processor=template_processor,
+                            )
                     # if groupby field equals a selected column
-                    elif selected in columns_by_name:
+                    elif selected_key in columns_by_name:
                         outer = self.convert_tbl_column_to_sqla_col(
-                            columns_by_name[selected],
+                            columns_by_name[selected_key],
                             template_processor=template_processor,
                         )
                     else:
@@ -1948,7 +2156,9 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
                     _sql = selected["sqlExpression"]
                     _column_label = selected["label"]
                 elif isinstance(selected, str):
-                    _sql = quote(selected)
+                    # Sanitize column references for DHIS2 datasets before quoting
+                    sanitized_selected = self._sanitize_column_reference(selected)
+                    _sql = quote(sanitized_selected)
                     _column_label = selected
 
                 selected = self._process_select_expression(
@@ -1970,10 +2180,20 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
                         literal_column(selected), _column_label
                     )
                 )
-            metrics_exprs = []
+            if not metrics:
+                metrics_exprs = []
 
         if granularity:
-            if granularity not in columns_by_name or not dttm_col:
+            # DHIS2 FIX: For DHIS2 datasets, Period can be a categorical dimension (is_dttm=False)
+            # In that case, dttm_col will be None, which is acceptable
+            if dttm_col_key not in columns_by_name:
+                raise QueryObjectValidationError(
+                    _(
+                        'Column "%(col)s" does not exist in dataset',
+                        col=granularity,
+                    )
+                )
+            if not dttm_col and not (is_dhis2_datasource and granularity in columns_by_name):
                 raise QueryObjectValidationError(
                     _(
                         'Time column "%(col)s" does not exist in dataset',
@@ -1982,46 +2202,77 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
                 )
             time_filters = []
 
-            if is_timeseries:
+            if is_timeseries and dttm_col:
+                # DHIS2 FIX: For DHIS2 datasets with categorical Period (is_dttm=False),
+                # dttm_col is None so skip timestamp expression
                 timestamp = dttm_col.get_timestamp_expression(
                     time_grain=time_grain, template_processor=template_processor
                 )
-                # always put timestamp as the first column
-                select_exprs.insert(0, timestamp)
+                # DHIS2 FIX: For DHIS2 datasets, don't force timestamp as first column
+                # This allows users to select OrgUnit or other dimensions as their X-axis
+                # while still having Period available as a dimension
+                if is_dhis2_datasource:
+                    # For DHIS2, append timestamp to end instead of forcing it first
+                    # This respects the user's column selection order
+                    select_exprs.append(timestamp)
+                else:
+                    # Standard behavior: always put timestamp as the first column
+                    select_exprs.insert(0, timestamp)
                 groupby_all_columns[timestamp.name] = timestamp
 
             # Use main dttm column to support index with secondary dttm columns.
+            # DHIS2 FIX: Skip if dttm_col is None (Period is categorical, not temporal)
             if (
-                self.always_filter_main_dttm
+                dttm_col
+                and self.always_filter_main_dttm
                 and self.main_dttm_col in self.dttm_cols
                 and self.main_dttm_col != dttm_col.column_name
             ):
+                main_dttm_col_key = self._sanitize_column_reference(self.main_dttm_col)
                 time_filters.append(
                     self.get_time_filter(
-                        time_col=columns_by_name[self.main_dttm_col],
+                        time_col=columns_by_name[main_dttm_col_key],
                         start_dttm=from_dttm,
                         end_dttm=to_dttm,
                         template_processor=template_processor,
                     )
                 )
 
-            time_filter_column = self.get_time_filter(
-                time_col=dttm_col,
-                start_dttm=from_dttm,
-                end_dttm=to_dttm,
-                template_processor=template_processor,
-            )
-            time_filters.append(time_filter_column)
+            # DHIS2 FIX: Only get time filter if dttm_col exists (Period is temporal)
+            if dttm_col:
+                time_filter_column = self.get_time_filter(
+                    time_col=dttm_col,
+                    start_dttm=from_dttm,
+                    end_dttm=to_dttm,
+                    template_processor=template_processor,
+                )
+                time_filters.append(time_filter_column)
 
-        # Always remove duplicates by column name, as sometimes `metrics_exprs`
+        # Always remove duplicates by full expression, as sometimes `metrics_exprs`
         # can have the same name as a groupby column (e.g. when users use
         # raw columns as custom SQL adhoc metric).
+        # IMPORTANT: For multi-metric charts, use full expression as key (not just .name)
+        # to allow multiple aggregations on the same column (SUM, AVG, COUNT all on same column)
+        logger.error(f"[METRICS-TRACE] Before dedup: {len(select_exprs)} select_exprs + {len(metrics_exprs)} metrics_exprs")
+        combined = select_exprs + metrics_exprs
+        
+        # Use expression string as key instead of just name, so SUM(col), AVG(col), COUNT(col) all survive
         select_exprs = remove_duplicates(
-            select_exprs + metrics_exprs, key=lambda x: x.name
+            combined, key=lambda x: (str(x), x.name)  # Key by both expression AND name for uniqueness
         )
+        logger.error(f"[METRICS-TRACE] After dedup: {len(select_exprs)} total select_exprs")
 
         # Expected output columns
         labels_expected = [c.key for c in select_exprs]
+        
+        logger.info(f"[COLUMN_TRACE] SQL Query Building:")
+        logger.info(f"[COLUMN_TRACE]   columns: {columns}")
+        logger.info(f"[COLUMN_TRACE]   metrics: {metrics}")
+        logger.info(f"[COLUMN_TRACE]   groupby: {groupby}")
+        logger.info(f"[COLUMN_TRACE]   labels_expected: {labels_expected}")
+        logger.info(f"[COLUMN_TRACE]   select_exprs count: {len(select_exprs)}")
+        for idx, expr in enumerate(select_exprs):
+            logger.info(f"[COLUMN_TRACE]     [{idx}] key={expr.key}, name={expr.name}, type={type(expr)}")
 
         # Order by columns are "hidden" columns, some databases require them
         # always be present in SELECT if an aggregation function is used
@@ -2057,7 +2308,9 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
                     rejected_adhoc_filters_columns.append(flt_col)
                     continue
             else:
-                col_obj = columns_by_name.get(cast(str, flt_col))
+                flt_col_name = cast(str, flt_col)
+                # Sanitize column name for DHIS2 filters
+                col_obj = columns_by_name.get(flt_col_name)
             filter_grain = flt.get("grain")
 
             if get_column_name(flt_col) in removed_filters:

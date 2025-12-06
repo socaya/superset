@@ -145,16 +145,156 @@ def _get_aggregate_funcs(
     :param aggregates: Mapping from column name to aggregate config.
     :return: Mapping from metric name to function that takes a single input argument.
     """
+    import logging
+    import re
+    logger = logging.getLogger(__name__)
+    
+    # Sanitize column names in aggregates for DHIS2 datasets if needed
+    # This handles cases where formData contains unsanitized column names like "SUM(105-EP01a. Suspected fever)"
+    try:
+        from superset.db_engine_specs.dhis2_dialect import sanitize_dhis2_column_name
+        sanitized_aggregates = {}
+        for name, agg_obj in aggregates.items():
+            sanitized_agg_obj = agg_obj.copy()
+            column = agg_obj.get("column", name)
+            
+            # Handle aggregate function wrappers: SUM(col), AVG(col), etc. (case-insensitive)
+            agg_wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', column, re.IGNORECASE)
+            if agg_wrapper_match:
+                # Extract the inner column from wrapper
+                agg_func = agg_wrapper_match.group(1).upper()  # Normalize to uppercase
+                inner_column = agg_wrapper_match.group(2)
+                
+                # Check if inner column needs sanitization
+                if inner_column and any(c in inner_column for c in '- .()/@#$%^&*'):
+                    sanitized_inner = sanitize_dhis2_column_name(inner_column)
+                    if sanitized_inner != inner_column:
+                        # Reconstruct with wrapper
+                        sanitized_column = f"{agg_func}({sanitized_inner})"
+                        logger.error(f"[POSTPROCESSING] Auto-sanitizing wrapped aggregate: '{column}' -> '{sanitized_column}'")
+                        sanitized_agg_obj["column"] = sanitized_column
+            else:
+                # Not wrapped - sanitize the column directly if it has special chars
+                if column and any(c in column for c in '- .()/@#$%^&*'):
+                    sanitized_column = sanitize_dhis2_column_name(column)
+                    if sanitized_column != column:
+                        logger.error(f"[POSTPROCESSING] Auto-sanitizing unsanitized column: '{column}' -> '{sanitized_column}'")
+                        sanitized_agg_obj["column"] = sanitized_column
+            
+            sanitized_aggregates[name] = sanitized_agg_obj
+        aggregates = sanitized_aggregates
+    except (ImportError, ModuleNotFoundError):
+        pass
+    
+    logger.error(f"[POSTPROCESSING-DEBUG] DataFrame columns: {list(df.columns)}")
+    logger.error(f"[POSTPROCESSING-DEBUG] Aggregates: {aggregates}")
+    
     agg_funcs: dict[str, NamedAgg] = {}
     for name, agg_obj in aggregates.items():
         column = agg_obj.get("column", name)
+        logger.error(f"[POSTPROCESSING-DEBUG] Processing aggregate: name='{name}', column='{column}'")
+        
         if column not in df:
-            raise InvalidPostProcessingError(
-                _(
-                    "Column referenced by aggregate is undefined: %(column)s",
-                    column=column,
+            # Try to find a matching column using various sanitization methods
+            found_column = None
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"[DHIS2] Column not found directly: '{column}'. Available columns: {list(df.columns)}")
+
+            # Method 0: Strip aggregate function wrapper (SUM(col), AVG(col), etc. - case insensitive)
+            # Chart formData may request "SUM(105_EP01b_Malaria_Total)" but DataFrame has "105_EP01b_Malaria_Total"
+            import re
+            agg_wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', column, re.IGNORECASE)
+            if agg_wrapper_match:
+                inner_column = agg_wrapper_match.group(2)
+                logger.warning(f"[DHIS2] Extracted inner column from aggregate wrapper: '{inner_column}'")
+                if inner_column in df:
+                    found_column = inner_column
+                else:
+                    # Use the inner column name for subsequent matching attempts
+                    column = inner_column
+            
+            # Also try the opposite: if column is not wrapped, try finding it wrapped with aggregate function
+            if not found_column and "(" not in column and ")" not in column:
+                # Try to find a column that is the aggregated version of this column
+                for df_col in df.columns:
+                    # Check if df_col looks like "AGG(column_name)" (case insensitive)
+                    wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', df_col, re.IGNORECASE)
+                    if wrapper_match:
+                        inner_from_df = wrapper_match.group(2)
+                        if inner_from_df == column:
+                            found_column = df_col
+                            logger.warning(f"[DHIS2] Found aggregated column: '{column}' -> '{df_col}'")
+                            break
+
+            # Method 1: Try DHIS2 sanitization
+            if not found_column:
+                try:
+                    from superset.db_engine_specs.dhis2_dialect import sanitize_dhis2_column_name
+                    sanitized_column = sanitize_dhis2_column_name(column)
+                    logger.warning(f"[DHIS2] Trying DHIS2 sanitization: '{column}' -> '{sanitized_column}'")
+                    if sanitized_column in df:
+                        found_column = sanitized_column
+                        logger.warning(f"[DHIS2] Found matching column after DHIS2 sanitization!")
+                except (ImportError, ModuleNotFoundError):
+                    pass
+
+            # Method 2: Try case-insensitive matching
+            if not found_column:
+                for df_col in df.columns:
+                    if df_col.lower() == column.lower():
+                        found_column = df_col
+                        logger.warning(f"[DHIS2] Found matching column with case-insensitive match: '{df_col}'")
+                        break
+
+            # Method 3: Try fuzzy matching with common transformations
+            if not found_column:
+                # Normalize both names for comparison
+                def normalize(s: str) -> str:
+                    s = s.lower()
+                    # Use the same sanitization as DHIS2 to ensure consistency
+                    s = re.sub(r'[^\w]', '_', s)
+                    s = re.sub(r'_+', '_', s)
+                    return s.strip('_')
+
+                normalized_column = normalize(column)
+                logger.error(f"[POSTPROCESSING] Trying fuzzy matching. Normalized query column: '{normalized_column}'")
+                logger.error(f"[POSTPROCESSING] Available DF columns (normalized): {[(df_col, normalize(df_col)) for df_col in df.columns]}")
+                for df_col in df.columns:
+                    # Try both direct column and wrapped version
+                    norm_df_col = normalize(df_col)
+                    
+                    # Check direct match
+                    if norm_df_col == normalized_column:
+                        found_column = df_col
+                        logger.error(f"[POSTPROCESSING] Found matching column with fuzzy matching: '{df_col}' (normalized: '{norm_df_col}')")
+                        break
+                    
+                    # Check if df_col is wrapped and inner matches (case insensitive)
+                    wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', df_col, re.IGNORECASE)
+                    if wrapper_match:
+                        inner_from_df = wrapper_match.group(2)
+                        norm_inner = normalize(inner_from_df)
+                        if norm_inner == normalized_column:
+                            found_column = df_col
+                            logger.error(f"[POSTPROCESSING] Found wrapped column with fuzzy matching: '{df_col}' (inner normalized: '{norm_inner}')")
+                            break
+
+            if found_column:
+                column = found_column
+            else:
+                logger.error(f"[POSTPROCESSING] CRITICAL: Could not find column '{column}' in dataframe")
+                logger.error(f"[POSTPROCESSING] Available columns in DataFrame: {list(df.columns)}")
+                logger.error(f"[POSTPROCESSING] DF shape: {df.shape}, dtypes: {df.dtypes.to_dict()}")
+                logger.error(f"[POSTPROCESSING] DataFrame head:\n{df.head()}")
+                raise InvalidPostProcessingError(
+                    _(
+                        "Column referenced by aggregate is undefined: %(column)s. "
+                        "Available columns: %(available)s",
+                        column=column,
+                        available=", ".join(str(c) for c in df.columns),
+                    )
                 )
-            )
         if "operator" not in agg_obj:
             raise InvalidPostProcessingError(
                 _(
@@ -176,6 +316,46 @@ def _get_aggregate_funcs(
                 )
             options = agg_obj.get("options", {})
             aggfunc = partial(func, **options)
+
+        # Validate column type before aggregation - prevent "Could not convert string to numeric" errors
+        # This happens when dimension columns (like OrgUnit with values "MOH - Uganda") are accidentally
+        # included in numeric aggregations
+        if column in df.columns:
+            col_dtype = df[column].dtype
+            # Check if column is object/string type
+            if col_dtype == 'object' or str(col_dtype).startswith('string'):
+                # Check if column contains non-numeric data
+                sample_values = df[column].dropna().head(5).tolist()
+                has_non_numeric = False
+                for val in sample_values:
+                    if isinstance(val, str):
+                        try:
+                            float(val)
+                        except (ValueError, TypeError):
+                            has_non_numeric = True
+                            break
+
+                if has_non_numeric:
+                    # This column contains string values and shouldn't be aggregated numerically
+                    # This is likely a configuration error - the wrong column was selected
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(
+                        f"[AGGREGATE] ERROR: Column '{column}' contains non-numeric string values "
+                        f"(sample: {sample_values[:2]}). Cannot apply numeric aggregation '{operator}'. "
+                        f"This usually means the wrong column was selected for the metric. "
+                        f"Available columns: {list(df.columns)}"
+                    )
+                    # Raise a clear error instead of silently returning wrong data
+                    raise InvalidPostProcessingError(
+                        _(
+                            "Cannot aggregate column '%(column)s' - it contains text values like '%(sample)s'. "
+                            "Please select a numeric column for metrics.",
+                            column=column,
+                            sample=str(sample_values[0])[:50] if sample_values else "N/A",
+                        )
+                    )
+
         agg_funcs[name] = NamedAgg(column=column, aggfunc=aggfunc)
 
     return agg_funcs

@@ -237,6 +237,9 @@ class BaseViz:  # pylint: disable=too-many-public-methods
     @deprecated(deprecated_in="3.0")
     def get_samples(self) -> dict[str, Any]:
         query_obj = self.query_obj()
+        
+        columns = [o.column_name for o in self.datasource.columns]
+        
         query_obj.update(
             {
                 "is_timeseries": False,
@@ -244,7 +247,7 @@ class BaseViz:  # pylint: disable=too-many-public-methods
                 "metrics": [],
                 "orderby": [],
                 "row_limit": current_app.config["SAMPLES_ROW_LIMIT"],
-                "columns": [o.column_name for o in self.datasource.columns],
+                "columns": columns,
                 "from_dttm": None,
                 "to_dttm": None,
             }
@@ -283,6 +286,23 @@ class BaseViz:  # pylint: disable=too-many-public-methods
         self.errors = self.results.errors
 
         df = self.results.df
+        
+        from superset.utils.column_trace_logger import ColumnTraceLogger, log_dataframe_snapshot
+        
+        log_dataframe_snapshot(df, "AFTER datasource.query() in viz.get_df", 
+                              columns_expected=query_obj.get("columns", []))
+        logger.info(f"[COLUMN_TRACE] Query object columns: {query_obj.get('columns', [])}")
+        logger.info(f"[COLUMN_TRACE] Query object metrics: {query_obj.get('metrics', [])}")
+        
+        if not df.empty:
+            logger.info(f"[COLUMN_TRACE] DataFrame returned columns: {list(df.columns)}")
+            logger.info(f"[COLUMN_TRACE] DataFrame shape: {df.shape}")
+            if df.shape[0] > 0:
+                logger.info(f"[COLUMN_TRACE] DataFrame first row: {dict(df.iloc[0])}")
+                logger.info(f"[COLUMN_TRACE] DataFrame dtypes: {dict(df.dtypes)}")
+        else:
+            logger.warning(f"[COLUMN_TRACE] Empty DataFrame returned!")
+        
         # Transform the timestamp we received from database to pandas supported
         # datetime format. If no python_date_format is specified, the pattern will
         # be considered as the default ISO date format
@@ -491,6 +511,18 @@ class BaseViz:  # pylint: disable=too-many-public-methods
 
         if self.status != QueryStatus.FAILED:
             payload["data"] = self.get_data(df)
+            
+            logger.info(f"[COLUMN_TRACE] Payload data generated:")
+            if payload.get("data"):
+                if isinstance(payload["data"], list) and len(payload["data"]) > 0:
+                    logger.info(f"[COLUMN_TRACE]   data rows: {len(payload['data'])}")
+                    logger.info(f"[COLUMN_TRACE]   first row keys: {list(payload['data'][0].keys()) if isinstance(payload['data'][0], dict) else 'not dict'}")
+                    logger.info(f"[COLUMN_TRACE]   first row: {payload['data'][0]}")
+                elif isinstance(payload["data"], dict):
+                    logger.info(f"[COLUMN_TRACE]   data type: dict")
+                    logger.info(f"[COLUMN_TRACE]   data keys: {list(payload['data'].keys())}")
+            else:
+                logger.warning(f"[COLUMN_TRACE]   No data in payload!")
         if "df" in payload:
             del payload["df"]
 

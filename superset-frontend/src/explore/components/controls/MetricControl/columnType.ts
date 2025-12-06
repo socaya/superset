@@ -17,9 +17,13 @@
  * under the License.
  */
 import { Column } from '@superset-ui/core';
+import PropTypes from 'prop-types';
 
 export type ColumnType = Pick<Column, 'column_name' | 'type'>;
 
-// For backward compatibility with PropTypes usage - create a placeholder object
-const columnType = {} as any;
+const columnType = PropTypes.shape({
+  column_name: PropTypes.string,
+  type: PropTypes.string,
+});
+
 export default columnType;

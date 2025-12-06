@@ -28,10 +28,8 @@ import {
   HeaderContainer,
   LabelsContainer,
 } from 'src/explore/components/controls/OptionControls';
-import columnType from './columnType';
 import MetricDefinitionValue from './MetricDefinitionValue';
 import AdhocMetric from './AdhocMetric';
-import savedMetricType from './savedMetricType';
 import adhocMetricType from './adhocMetricType';
 import AdhocMetricPopoverTrigger from './AdhocMetricPopoverTrigger';
 
@@ -42,8 +40,8 @@ const propTypes = {
     PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, adhocMetricType])),
     PropTypes.oneOfType([PropTypes.string, adhocMetricType]),
   ]),
-  columns: PropTypes.arrayOf(columnType),
-  savedMetrics: PropTypes.arrayOf(savedMetricType),
+  columns: PropTypes.arrayOf(PropTypes.object),
+  savedMetrics: PropTypes.arrayOf(PropTypes.object),
   isLoading: PropTypes.bool,
   multi: PropTypes.bool,
   clearable: PropTypes.bool,

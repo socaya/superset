@@ -737,7 +737,7 @@ function ExploreViewContainer(props) {
         ownState={props.ownState}
         user={props.user}
         reports={props.reports}
-        saveDisabled={errorMessage || props.chart.chartStatus === 'loading'}
+        saveDisabled={!!errorMessage || props.chart.chartStatus === 'loading'}
         metadata={props.metadata}
         isSaveModalVisible={props.isSaveModalVisible}
       />

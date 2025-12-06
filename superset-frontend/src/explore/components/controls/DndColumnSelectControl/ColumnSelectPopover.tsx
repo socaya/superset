@@ -106,6 +106,7 @@ export interface ColumnSelectPopoverProps {
   metrics?: Metric[];
   selectedMetrics?: QueryFormMetric[];
   datasource?: any;
+  filterGroupby?: boolean;
 }
 
 const getInitialColumnValues = (
@@ -138,6 +139,7 @@ const ColumnSelectPopover = ({
   metrics = [],
   selectedMetrics = [],
   datasource,
+  filterGroupby = false,
 }: ColumnSelectPopoverProps) => {
   // const theme = useTheme(); // Unused variable
   const datasourceType = useSelector<ExplorePageState, string | undefined>(
@@ -172,6 +174,9 @@ const ColumnSelectPopover = ({
     () =>
       columns?.reduce(
         (acc: [ColumnMeta[], ColumnMeta[]], column: ColumnMeta) => {
+          if (filterGroupby && !column.groupby) {
+            return acc;
+          }
           if (column.expression) {
             acc[0].push(column);
           } else {
@@ -181,7 +186,7 @@ const ColumnSelectPopover = ({
         },
         [[], []],
       ),
-    [columns],
+    [columns, filterGroupby],
   );
 
   // Filter metrics that are already selected in the chart

@@ -134,6 +134,7 @@
     "chrono-node": "^2.7.8",
     "classnames": "^2.2.5",
     "content-disposition": "^0.5.4",
+    "currencyformatter.js": "^2.2.0",
     "d3-color": "^3.1.0",
     "d3-scale": "^2.1.2",
     "dayjs": "^1.11.18",
@@ -171,6 +172,7 @@
     "ol": "^7.5.2",
     "polished": "^4.3.1",
     "prop-types": "^15.8.1",
+    "query-string": "^6.14.1",
     "re-resizable": "^6.10.1",
     "react": "^17.0.2",
     "react-checkbox-tree": "^1.8.0",
@@ -358,8 +360,8 @@
     "regenerator-runtime": "^0.14.1"
   },
   "engines": {
-    "node": "^20.18.1",
-    "npm": "^10.8.1"
+    "node": "^20.18.1 || ^22.17.0",
+    "npm": "^10.8.1 || ^11.4.2"
   },
   "overrides": {
     "core-js": "^3.38.1",

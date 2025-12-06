@@ -49,6 +49,7 @@ interface ColumnSelectPopoverTriggerProps {
   disabledTabs?: Set<string>;
   metrics?: Metric[];
   selectedMetrics?: QueryFormMetric[];
+  filterGroupby?: boolean;
 }
 
 const ColumnSelectPopoverTriggerWrapper = (
@@ -77,6 +78,7 @@ const ColumnSelectPopoverTriggerInner = ({
   metrics,
   selectedMetrics,
   datasource,
+  filterGroupby,
   ...props
 }: ColumnSelectPopoverTriggerInnerProps) => {
   const [popoverLabel, setPopoverLabel] = useState(defaultPopoverLabel);
@@ -142,6 +144,7 @@ const ColumnSelectPopoverTriggerInner = ({
           metrics={metrics}
           selectedMetrics={selectedMetrics}
           datasource={datasource}
+          filterGroupby={filterGroupby}
         />
       </ExplorePopoverContent>
     ),
@@ -158,6 +161,7 @@ const ColumnSelectPopoverTriggerInner = ({
       metrics,
       selectedMetrics,
       datasource,
+      filterGroupby,
     ],
   );
 

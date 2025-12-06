@@ -56,7 +56,7 @@ const propTypes = {
   ownState: PropTypes.object,
   timeout: PropTypes.number,
   chart: chartPropShape,
-  saveDisabled: PropTypes.bool,
+  saveDisabled: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
   isSaveModalVisible: PropTypes.bool,
 };
 

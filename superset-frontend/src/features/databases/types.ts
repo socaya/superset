@@ -346,6 +346,8 @@ export interface DatabaseConnectionFormProps {
   dbModel: DatabaseForm;
   db: Partial<DatabaseObject> | null;
   isValidating: boolean;
+  testConnection?: (event?: React.MouseEvent) => void;
+  testInProgress?: boolean;
   onParametersChange: (
     event: FormEvent<InputProps> | { target: HTMLInputElement },
   ) => void;

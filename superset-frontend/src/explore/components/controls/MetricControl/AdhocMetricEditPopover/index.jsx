@@ -43,8 +43,6 @@ import {
   POPOVER_INITIAL_HEIGHT,
   POPOVER_INITIAL_WIDTH,
 } from 'src/explore/constants';
-import columnType from 'src/explore/components/controls/MetricControl/columnType';
-import savedMetricType from 'src/explore/components/controls/MetricControl/savedMetricType';
 import AdhocMetric, {
   EXPRESSION_TYPES,
 } from 'src/explore/components/controls/MetricControl/AdhocMetric';
@@ -62,18 +60,37 @@ const propTypes = {
   getCurrentTab: PropTypes.func,
   getCurrentLabel: PropTypes.func,
   adhocMetric: PropTypes.instanceOf(AdhocMetric).isRequired,
-  columns: PropTypes.arrayOf(columnType),
-  savedMetricsOptions: PropTypes.arrayOf(savedMetricType),
-  savedMetric: savedMetricType,
+  columns: PropTypes.arrayOf(PropTypes.shape({
+    column_name: PropTypes.string,
+    type: PropTypes.string,
+  })),
+  savedMetricsOptions: PropTypes.arrayOf(PropTypes.shape({
+    metric_name: PropTypes.string,
+    verbose_name: PropTypes.string,
+    expression: PropTypes.string,
+  })),
+  // savedMetric is optional - can be undefined when no saved metric is selected
+  savedMetric: PropTypes.oneOfType([
+    PropTypes.shape({
+      metric_name: PropTypes.string,
+      verbose_name: PropTypes.string,
+      expression: PropTypes.string,
+    }),
+    PropTypes.oneOf([undefined, null]),
+  ]),
   datasource: PropTypes.object,
   isNewMetric: PropTypes.bool,
   isLabelModified: PropTypes.bool,
+  handleDatasetModal: PropTypes.func,
 };
 
 const defaultProps = {
   columns: [],
   getCurrentTab: noOp,
   isNewMetric: false,
+  savedMetric: undefined,
+  savedMetricsOptions: [],
+  handleDatasetModal: noOp,
 };
 
 const StyledSelect = styled(Select)`
@@ -153,7 +170,7 @@ export default class AdhocMetricEditPopover extends PureComponent {
       return adhocMetric.expressionType;
     }
     if (
-      (isNewMetric || savedMetric.metric_name) &&
+      (isNewMetric || savedMetric?.metric_name) &&
       Array.isArray(savedMetricsOptions) &&
       savedMetricsOptions.length > 0
     ) {
@@ -300,6 +317,7 @@ export default class AdhocMetricEditPopover extends PureComponent {
       datasource,
       isNewMetric,
       isLabelModified,
+      handleDatasetModal,
       ...popoverProps
     } = this.props;
     const { adhocMetric, savedMetric } = this.state;
@@ -378,13 +396,17 @@ export default class AdhocMetricEditPopover extends PureComponent {
                 ensureIsArray(savedMetricsOptions).length > 0 ? (
                   <FormItem label={t('Saved metric')}>
                     <StyledSelect
-                      options={ensureIsArray(savedMetricsOptions).map(
-                        savedMetric => ({
+                      options={ensureIsArray(savedMetricsOptions)
+                        .filter(
+                          savedMetric =>
+                            savedMetric.metric_name !== undefined &&
+                            savedMetric.metric_name !== null,
+                        )
+                        .map(savedMetric => ({
                           value: savedMetric.metric_name,
                           label: this.renderMetricOption(savedMetric),
                           key: savedMetric.id,
-                        }),
-                      )}
+                        }))}
                       {...savedSelectProps}
                     />
                   </FormItem>
@@ -408,8 +430,8 @@ export default class AdhocMetricEditPopover extends PureComponent {
                           tabIndex={0}
                           role="button"
                           onClick={() => {
-                            this.props.handleDatasetModal(true);
-                            this.props.onClose();
+                            handleDatasetModal?.(true);
+                            onClose();
                           }}
                         >
                           {t('Create a dataset')}
@@ -438,11 +460,17 @@ export default class AdhocMetricEditPopover extends PureComponent {
                 <>
                   <FormItem label={t('column')}>
                     <Select
-                      options={columns.map(column => ({
-                        value: column.column_name,
-                        key: column.id,
-                        label: this.renderColumnOption(column),
-                      }))}
+                      options={columns
+                        .filter(
+                          column =>
+                            column.column_name !== undefined &&
+                            column.column_name !== null,
+                        )
+                        .map(column => ({
+                          value: column.column_name,
+                          key: column.id,
+                          label: this.renderColumnOption(column),
+                        }))}
                       {...columnSelectProps}
                     />
                   </FormItem>

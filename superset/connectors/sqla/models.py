@@ -1664,6 +1664,10 @@ class SqlaTable(
         status = QueryStatus.SUCCESS
         errors = None
         error_message = None
+        
+        logger.info(f"[COLUMN_TRACE] Query execution in connectors/sqla/models.py:")
+        logger.info(f"[COLUMN_TRACE]   SQL (first 500 chars): {sql[:500]}")
+        logger.info(f"[COLUMN_TRACE]   labels_expected: {query_str_ext.labels_expected}")
 
         def assign_column_label(df: pd.DataFrame) -> pd.DataFrame | None:
             """
@@ -1679,15 +1683,121 @@ class SqlaTable(
             :param df: Original DataFrame returned by the engine
             :return: Mutated DataFrame
             """
+            import re
+            from superset.utils.column_trace_logger import ColumnTraceLogger, log_dataframe_snapshot
+            
             labels_expected = query_str_ext.labels_expected
+            datasource_name = getattr(self, 'table_name', 'unknown')
+            
+            log_dataframe_snapshot(df, "BEFORE assign_column_label", labels_expected)
+            
+            def normalize_column_name(name: str) -> str:
+                """Normalize column name for fuzzy matching.
+                Removes special chars, converts to lowercase, collapses underscores.
+                """
+                if not isinstance(name, str):
+                    name = str(name)
+                # Remove parentheses, dots, dashes, and other special characters
+                normalized = re.sub(r'[.\-\s()]+', '_', name)
+                # Collapse multiple underscores
+                normalized = re.sub(r'_+', '_', normalized)
+                # Remove leading/trailing underscores
+                normalized = normalized.strip('_')
+                return normalized.lower()
+
+            def find_column_match(expected: str, df_columns: list) -> str | None:
+                """Find best matching column in DataFrame for expected column name.
+                Uses normalized name comparison for fuzzy matching.
+                Also handles aggregate function wrappers like SUM(), AVG(), COUNT().
+                """
+                # Exact match first
+                if expected in df_columns:
+                    return expected
+
+                # Try stripping aggregate function wrapper (SUM(col), AVG(col), etc.)
+                # Pattern: FUNCTION_NAME(column_name)
+                agg_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', expected, re.IGNORECASE)
+                if agg_match:
+                    inner_col = agg_match.group(2)
+                    # Try exact match with inner column
+                    if inner_col in df_columns:
+                        logger.debug(f"[COLUMN_TRACE] Matched aggregate '{expected}' -> '{inner_col}' (stripped wrapper)")
+                        return inner_col
+                    # Try normalized match with inner column
+                    inner_normalized = normalize_column_name(inner_col)
+                    for col in df_columns:
+                        if normalize_column_name(col) == inner_normalized:
+                            logger.debug(f"[COLUMN_TRACE] Fuzzy matched aggregate '{expected}' -> '{col}'")
+                            return col
+
+                # Normalize expected name
+                expected_normalized = normalize_column_name(expected)
+
+                # Try to find fuzzy match
+                for col in df_columns:
+                    if normalize_column_name(col) == expected_normalized:
+                        logger.debug(f"[COLUMN_TRACE] Fuzzy matched '{expected}' -> '{col}'")
+                        return col
+
+                return None
+
             if df is not None and not df.empty:
                 if len(df.columns) < len(labels_expected):
                     raise QueryObjectValidationError(
                         _("Db engine did not return all queried columns")
                     )
                 if len(df.columns) > len(labels_expected):
-                    df = df.iloc[:, 0 : len(labels_expected)]
+                    logger.info(f"[COLUMN_TRACE] Column truncation needed: df has {len(df.columns)} columns, expected {len(labels_expected)}")
+                    logger.info(f"[COLUMN_TRACE]   DataFrame actual columns: {list(df.columns)}")
+                    logger.info(f"[COLUMN_TRACE]   Expected columns: {labels_expected}")
+                    
+                    # Build column mapping: expected_name -> actual_column_name
+                    df_columns = list(df.columns)
+                    column_mapping = {}
+                    matched_columns = []
+
+                    for expected in labels_expected:
+                        match = find_column_match(expected, df_columns)
+                        if match:
+                            column_mapping[expected] = match
+                            matched_columns.append(match)
+
+                    all_matched = len(column_mapping) == len(labels_expected)
+
+                    if all_matched:
+                        logger.info(f"[COLUMN_TRACE] ✓ Selecting columns BY NAME (matched all expected columns)")
+                        logger.info(f"[COLUMN_TRACE]   Column mapping: {column_mapping}")
+                        # Select columns by their actual names in the DataFrame
+                        df = df[matched_columns]
+                        ColumnTraceLogger.log_index_vs_name_selection(
+                            tried_by_name=True,
+                            success_by_name=True,
+                            fallback_to_index=False,
+                            columns=labels_expected,
+                            datasource_name=datasource_name,
+                        )
+                    else:
+                        # Log which columns could not be matched
+                        unmatched = [e for e in labels_expected if e not in column_mapping]
+                        logger.warning(
+                            f"[COLUMN_TRACE] ⚠️  Could not match all expected columns. "
+                            f"Using POSITION-BASED (INDEX) fallback for {len(labels_expected)} columns"
+                        )
+                        logger.warning(f"[COLUMN_TRACE]   Unmatched columns: {unmatched}")
+                        logger.warning(f"[COLUMN_TRACE]   Available columns: {df_columns}")
+                        df = df.iloc[:, 0 : len(labels_expected)]
+                        ColumnTraceLogger.log_index_vs_name_selection(
+                            tried_by_name=True,
+                            success_by_name=False,
+                            fallback_to_index=True,
+                            columns=labels_expected,
+                            datasource_name=datasource_name,
+                        )
+                
+                logger.info(f"[COLUMN_TRACE] Assigning column labels: {labels_expected}")
                 df.columns = labels_expected
+            
+            log_dataframe_snapshot(df, "AFTER assign_column_label", labels_expected)
             return df
 
         try:

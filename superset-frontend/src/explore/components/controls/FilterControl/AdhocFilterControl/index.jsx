@@ -28,7 +28,6 @@ import {
 
 import ControlHeader from 'src/explore/components/ControlHeader';
 import adhocMetricType from 'src/explore/components/controls/MetricControl/adhocMetricType';
-import savedMetricType from 'src/explore/components/controls/MetricControl/savedMetricType';
 import AdhocMetric from 'src/explore/components/controls/MetricControl/AdhocMetric';
 import {
   Operators,
@@ -46,7 +45,6 @@ import AdhocFilterPopoverTrigger from 'src/explore/components/controls/FilterCon
 import AdhocFilterOption from 'src/explore/components/controls/FilterControl/AdhocFilterOption';
 import AdhocFilter from 'src/explore/components/controls/FilterControl/AdhocFilter';
 import adhocFilterType from 'src/explore/components/controls/FilterControl/adhocFilterType';
-import columnType from 'src/explore/components/controls/FilterControl/columnType';
 import { toQueryString } from 'src/utils/urlUtils';
 import { Clauses, ExpressionTypes } from '../types';
 
@@ -65,8 +63,8 @@ const propTypes = {
   onChange: PropTypes.func,
   value: PropTypes.arrayOf(adhocFilterType),
   datasource: PropTypes.object,
-  columns: PropTypes.arrayOf(columnType),
-  savedMetrics: PropTypes.arrayOf(savedMetricType),
+  columns: PropTypes.arrayOf(PropTypes.object),
+  savedMetrics: PropTypes.arrayOf(PropTypes.object),
   selectedMetrics: PropTypes.oneOfType([
     selectedMetricType,
     PropTypes.arrayOf(selectedMetricType),

@@ -247,6 +247,10 @@ class SupersetResultSet:
         return None
 
     def to_pandas_df(self) -> pd.DataFrame:
+        # Check if db_engine_spec has a custom convert_table_to_df method
+        # This allows engine specs like DHIS2 to force correct dtypes
+        if hasattr(self.db_engine_spec, 'convert_table_to_df'):
+            return self.db_engine_spec.convert_table_to_df(self.table)
         return self.convert_table_to_df(self.table)
 
     @property

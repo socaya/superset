@@ -31,12 +31,12 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    # Add is_public column to slices table
-    op.add_column('slices', sa.Column('is_public', sa.Boolean(), nullable=True))
-    # Set default value to False for existing charts
-    op.execute("UPDATE slices SET is_public = false WHERE is_public IS NULL")
-    # Make the column non-nullable
-    op.alter_column('slices', 'is_public', nullable=False, server_default=sa.false())
+    # Add is_public column to slices table with default value
+    # SQLite doesn't support ALTER COLUMN, so we add with nullable=False and server_default directly
+    with op.batch_alter_table('slices') as batch_op:
+        batch_op.add_column(
+            sa.Column('is_public', sa.Boolean(), nullable=False, server_default=sa.false())
+        )
 
 
 def downgrade():

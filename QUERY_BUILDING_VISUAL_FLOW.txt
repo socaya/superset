@@ -1,0 +1,370 @@
+╔════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                     SQL QUERY BUILDING FLOW WITH MULTIPLE METRICS                              ║
+║                           AND GROUPBY DIMENSIONS (DHIS2)                                       ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+
+SCENARIO: User selects 3 metrics on same column with 2 groupby dimensions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Chart Configuration:
+  ┌─────────────────────────────────────┐
+  │ X-Axis: Period                      │
+  │ Dimension: OrgUnit                  │
+  │ Metrics:                            │
+  │   - SUM(105-EP01b. Malaria Total)  │
+  │   - AVG(105-EP01b. Malaria Total)  │
+  │   - COUNT(105-EP01b. Malaria Total) │
+  └─────────────────────────────────────┘
+
+
+STEP 1: METRIC PROCESSING LOOP (Lines 2004-2033)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  for metric in metrics:  # 3 iterations
+  
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ METRIC 0: SUM aggregate                                                     │
+  ├─────────────────────────────────────────────────────────────────────────────┤
+  │                                                                              │
+  │  Input:                                                                      │
+  │    column_name = "105-EP01b. Malaria Total"  (UNSANITIZED)                 │
+  │    aggregate = "SUM"                                                        │
+  │                                                                              │
+  │  adhoc_metric_to_sqla():                                                   │
+  │    1. Sanitize column: "105-EP01b. Malaria Total" → "105_EP01b_Malaria_Total"
+  │    2. Create SQLA column: sa.column("105_EP01b_Malaria_Total")             │
+  │    3. Apply aggregate: self.sqla_aggregations["SUM"](sqla_column)           │
+  │    4. Create label: "SUM(105_EP01b_Malaria_Total)"                         │
+  │                                                                              │
+  │  Output:                                                                     │
+  │    metric_expr = SUM(105_EP01b_Malaria_Total)                              │
+  │                                                                              │
+  │  Action:                                                                     │
+  │    metrics_exprs.append(metric_expr)                                       │
+  │                                                                              │
+  └─────────────────────────────────────────────────────────────────────────────┘
+  
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ METRIC 1: AVG aggregate                                                     │
+  ├─────────────────────────────────────────────────────────────────────────────┤
+  │                                                                              │
+  │  Same process...                                                            │
+  │  Output: metric_expr = AVG(105_EP01b_Malaria_Total)                        │
+  │  Action: metrics_exprs.append(metric_expr)                                 │
+  │                                                                              │
+  └─────────────────────────────────────────────────────────────────────────────┘
+  
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ METRIC 2: COUNT aggregate                                                   │
+  ├─────────────────────────────────────────────────────────────────────────────┤
+  │                                                                              │
+  │  Same process...                                                            │
+  │  Output: metric_expr = COUNT(105_EP01b_Malaria_Total)                      │
+  │  Action: metrics_exprs.append(metric_expr)                                 │
+  │                                                                              │
+  └─────────────────────────────────────────────────────────────────────────────┘
+  
+  AFTER LOOP:
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ metrics_exprs = [                                                │
+  │   SUM(105_EP01b_Malaria_Total),                                 │
+  │   AVG(105_EP01b_Malaria_Total),                                 │
+  │   COUNT(105_EP01b_Malaria_Total),                               │
+  │ ]                                                                │
+  │                                                                  │
+  │ select_exprs = [] (still empty, will be populated next)         │
+  │ groupby_all_columns = {} (still empty)                          │
+  └──────────────────────────────────────────────────────────────────┘
+
+
+STEP 2: GROUPBY COLUMN PROCESSING (Lines 2101-2152)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  if need_groupby:  # TRUE because metrics are present
+    for selected in groupby:  # 2 iterations: Period, OrgUnit
+    
+    ┌──────────────────────────────────────────────────────────────────┐
+    │ GROUPBY COLUMN 0: Period                                         │
+    ├──────────────────────────────────────────────────────────────────┤
+    │                                                                  │
+    │  Input: selected = "Period"                                     │
+    │                                                                  │
+    │  Sanitize: selected_key = "Period" (no special chars)          │
+    │                                                                  │
+    │  Lookup: columns_by_name["Period"] = TableColumn(Period)       │
+    │                                                                  │
+    │  DHIS2 Check: is_dhis2_datasource and not table_col.is_dttm   │
+    │    - Period is categorical (not datetime) for DHIS2            │
+    │    - Use convert_tbl_column_to_sqla_col (not timestamp expr)   │
+    │                                                                  │
+    │  Output: outer = Column("Period")                              │
+    │                                                                  │
+    │  Actions:                                                       │
+    │    groupby_all_columns["Period"] = Column("Period")            │
+    │    select_exprs.append(Column("Period"))                       │
+    │                                                                  │
+    └──────────────────────────────────────────────────────────────────┘
+    
+    ┌──────────────────────────────────────────────────────────────────┐
+    │ GROUPBY COLUMN 1: OrgUnit                                        │
+    ├──────────────────────────────────────────────────────────────────┤
+    │                                                                  │
+    │  Same process...                                                │
+    │                                                                  │
+    │  Output: outer = Column("OrgUnit")                             │
+    │  Actions:                                                       │
+    │    groupby_all_columns["OrgUnit"] = Column("OrgUnit")          │
+    │    select_exprs.append(Column("OrgUnit"))                      │
+    │                                                                  │
+    └──────────────────────────────────────────────────────────────────┘
+  
+  AFTER LOOP:
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ groupby_all_columns = {                                          │
+  │   "Period": Column("Period"),                                   │
+  │   "OrgUnit": Column("OrgUnit"),                                 │
+  │ }                                                                │
+  │                                                                  │
+  │ select_exprs = [                                                │
+  │   Column("Period"),    ← Added by groupby processing           │
+  │   Column("OrgUnit"),   ← Added by groupby processing           │
+  │ ]                                                               │
+  │                                                                  │
+  │ metrics_exprs = [                                               │
+  │   SUM(105_EP01b_Malaria_Total),                                │
+  │   AVG(105_EP01b_Malaria_Total),                                │
+  │   COUNT(105_EP01b_Malaria_Total),                              │
+  │ ] (NOT added to select_exprs yet)                              │
+  └──────────────────────────────────────────────────────────────────┘
+
+
+STEP 3: DEDUPLICATION (Lines 2251-2263) ⚠️ CRITICAL STEP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  BEFORE:
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ select_exprs (from groupby)                                                │
+  │   [0] Column("Period")                                                     │
+  │   [1] Column("OrgUnit")                                                    │
+  │                                                                             │
+  │ metrics_exprs (from metric processing)                                     │
+  │   [2] SUM(105_EP01b_Malaria_Total)                                         │
+  │   [3] AVG(105_EP01b_Malaria_Total)                                         │
+  │   [4] COUNT(105_EP01b_Malaria_Total)                                       │
+  │                                                                             │
+  │ combined = select_exprs + metrics_exprs  →  5 items total                  │
+  └────────────────────────────────────────────────────────────────────────────┘
+  
+  DEDUPLICATION:
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ for expr in combined:                                                      │
+  │   key = (str(expr), expr.name)                                             │
+  │   if key not seen before → KEEP IT                                         │
+  │                                                                             │
+  │ Column("Period")           → key = ("Period", "Period")       ✓ UNIQUE     │
+  │ Column("OrgUnit")          → key = ("OrgUnit", "OrgUnit")     ✓ UNIQUE     │
+  │ SUM(105_EP01b_Mal...)      → key = ("SUM(105_EP01b_Mal...)", "105_EP01b_Malaria_Total")
+  │                                     ↑ String representation is UNIQUE ✓    │
+  │                                                                             │
+  │ AVG(105_EP01b_Mal...)      → key = ("AVG(105_EP01b_Mal...)", "105_EP01b_Malaria_Total")
+  │                                     ↑ Different str() from SUM! ✓ UNIQUE   │
+  │                                                                             │
+  │ COUNT(105_EP01b_Mal...)    → key = ("COUNT(105_EP01b_Mal...)", "105_EP01b_Malaria_Total")
+  │                                     ↑ Different str() from AVG! ✓ UNIQUE   │
+  │                                                                             │
+  │ ✓ All 5 expressions survive deduplication!                                │
+  │   (If we used key=lambda x: x.name only, all 3 metrics would have same    │
+  │    key "105_EP01b_Malaria_Total" → only 1 would survive = BUG!)          │
+  └────────────────────────────────────────────────────────────────────────────┘
+  
+  AFTER:
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ select_exprs = [                                                           │
+  │   [0] Column("Period"),                                                    │
+  │   [1] Column("OrgUnit"),                                                   │
+  │   [2] SUM(105_EP01b_Malaria_Total),                                        │
+  │   [3] AVG(105_EP01b_Malaria_Total),                                        │
+  │   [4] COUNT(105_EP01b_Malaria_Total),                                      │
+  │ ]                                                                           │
+  │ Count: 5 items (all preserved!)                                            │
+  └────────────────────────────────────────────────────────────────────────────┘
+
+
+STEP 4: SQL ASSEMBLY (Lines 2282-2287)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  SELECT Clause:
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ qry = sa.select(select_exprs)                                              │
+  │                                                                             │
+  │ SELECT clause includes:                                                    │
+  │   - Column("Period")                    ← Groupby dimension               │
+  │   - Column("OrgUnit")                   ← Groupby dimension               │
+  │   - SUM(105_EP01b_Malaria_Total)       ← Metric aggregate                │
+  │   - AVG(105_EP01b_Malaria_Total)       ← Metric aggregate                │
+  │   - COUNT(105_EP01b_Malaria_Total)     ← Metric aggregate                │
+  │                                                                             │
+  │ Generated SQL (partial):                                                   │
+  │   SELECT Period, OrgUnit,                                                  │
+  │          SUM(105_EP01b_Malaria_Total),                                     │
+  │          AVG(105_EP01b_Malaria_Total),                                     │
+  │          COUNT(105_EP01b_Malaria_Total)                                    │
+  └────────────────────────────────────────────────────────────────────────────┘
+  
+  FROM Clause:
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ tbl, cte = self.get_from_clause(template_processor)                        │
+  │                                                                             │
+  │ FROM dhis2_analytics                                                       │
+  └────────────────────────────────────────────────────────────────────────────┘
+  
+  GROUP BY Clause:
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ if groupby_all_columns:                                                    │
+  │   qry = qry.group_by(*groupby_all_columns.values())                        │
+  │                                                                             │
+  │ GROUP BY clause includes:                                                  │
+  │   - Period        ← From groupby_all_columns                              │
+  │   - OrgUnit       ← From groupby_all_columns                              │
+  │                                                                             │
+  │ Note: Metrics are NOT in GROUP BY clause!                                 │
+  │       (SUM, AVG, COUNT are aggregations, not grouping dimensions)         │
+  │                                                                             │
+  │ Generated SQL:                                                             │
+  │   GROUP BY Period, OrgUnit                                                 │
+  └────────────────────────────────────────────────────────────────────────────┘
+  
+  FINAL COMPILED SQL:
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ SELECT "Period",                                                           │
+  │        "OrgUnit",                                                          │
+  │        SUM("105_EP01b_Malaria_Total"),                                     │
+  │        AVG("105_EP01b_Malaria_Total"),                                     │
+  │        COUNT("105_EP01b_Malaria_Total")                                    │
+  │ FROM dhis2_analytics                                                       │
+  │ GROUP BY "Period", "OrgUnit"                                               │
+  └────────────────────────────────────────────────────────────────────────────┘
+
+
+STEP 5: QUERY EXECUTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Database executes the SQL query:
+  
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ Result Set (DataFrame):                                                    │
+  │                                                                             │
+  │ Period  │ OrgUnit   │ SUM(105_...)  │ AVG(105_...)  │ COUNT(105_...)       │
+  ├─────────┼───────────┼───────────────┼───────────────┼─────────────────────┤
+  │ 2024-Q1 │ District1 │      1500     │     25.5      │         59          │
+  │ 2024-Q1 │ District2 │      2100     │     35.0      │         60          │
+  │ 2024-Q2 │ District1 │      1650     │     27.5      │         60          │
+  │ 2024-Q2 │ District2 │      2300     │     38.3      │         60          │
+  │ 2024-Q3 │ District1 │      1800     │     30.0      │         60          │
+  │ 2024-Q3 │ District2 │      2400     │     40.0      │         60          │
+  └────────────────────────────────────────────────────────────────────────────┘
+  
+  Structure:
+    - 5 columns (2 dimensions + 3 metrics) ✓
+    - 6 rows (4 combinations of Period × OrgUnit) ✓
+    - Each row grouped by Period + OrgUnit combination ✓
+    - Each metric calculated independently for each group ✓
+
+
+STEP 6: POSTPROCESSING (pandas_postprocessing/utils.py)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Match DataFrame columns with aggregate specifications:
+  
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ Request: "SUM(105_EP01b_Malaria_Total)"                                    │
+  │ DataFrame columns: [Period, OrgUnit, SUM(105_EP01b_Malaria_Total),         │
+  │                     AVG(105_EP01b_Malaria_Total),                          │
+  │                     COUNT(105_EP01b_Malaria_Total)]                        │
+  │                                                                             │
+  │ Method 1: Direct match                                                     │
+  │   "SUM(105_EP01b_Malaria_Total)" in df.columns? NO (it's a LABEL)        │
+  │                                                                             │
+  │ Method 2: Unwrap aggregate                                                 │
+  │   Extract inner: "105_EP01b_Malaria_Total"                                │
+  │   "105_EP01b_Malaria_Total" in df.columns? NO (doesn't exist)             │
+  │                                                                             │
+  │ Method 3: Use the aggregated column directly                               │
+  │   The query result HAS the aggregated value already                        │
+  │   No further aggregation needed                                            │
+  │                                                                             │
+  │ Result: Use column "SUM(105_EP01b_Malaria_Total)" for charting           │
+  └────────────────────────────────────────────────────────────────────────────┘
+
+
+STEP 7: CHART RENDERING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Chart Visualization:
+  
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                          MALARIA STATISTICS CHART                           │
+  │                                                                              │
+  │  Values (per Quarter & District)                                            │
+  │  ▲                                                                           │
+  │  │                                                                           │
+  │4000│ SUM (Total Cases)                                                      │
+  │  │  ┌─┐ ┌─┐ ┌─┐ ┌─┐ ┌─┐ ┌─┐                                               │
+  │  │  │ │ │ │ │ │ │ │ │ │ │ │ District1 (Blue), District2 (Orange)        │
+  │3500│  │ │ │ │ │ │ │ │ │ │ │ │                                           │
+  │  │  │ │ │ │ │ │ │ │ │ │ │ │                                             │
+  │3000│ ├─┤ ├─┤ ├─┤ ├─┤ ├─┤ ├─┤                                               │
+  │  │  │ │ │ │ │ │ │ │ │ │ │ │                                             │
+  │2500│ │ │ │ │ │ │ │ │ │ │ │ │                                            │
+  │  │  │ │ │ │ │ │ │ │ │ │ │ │                                             │
+  │2000│ │ │ │ │ │ │ │ │ │ │ │ │  Legend:                                   │
+  │  │  │ │ │ │ │ │ │ │ │ │ │ │  ■ SUM (Total)                             │
+  │1500│ │ │ │ │ │ │ │ │ │ │ │ │  ■ AVG (Average)                           │
+  │  │  │ │ │ │ │ │ │ │ │ │ │ │  ■ COUNT (Cases)                           │
+  │1000│ └─┘ └─┘ └─┘ └─┘ └─┘ └─┘                                               │
+  │  │                                                                           │
+  │   └──────────────────────────────────────────────────────────────────────   │
+  │      2024-Q1  2024-Q2  2024-Q3                                              │
+  │       Period                                                                │
+  │                                                                              │
+  │  X-Axis: Period (2024-Q1, Q2, Q3)                                          │
+  │  Series 1: SUM (3 separate bars per period)                                │
+  │  Series 2: AVG (3 separate bars per period)                                │
+  │  Series 3: COUNT (3 separate bars per period)                              │
+  │  Grouped By: District (D1=Blue, D2=Orange)                                │
+  │                                                                              │
+  │  Each metric displays independently with its own scale/color                │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+
+KEY INSIGHTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ SELECT clause includes:
+  - Groupby dimensions (Period, OrgUnit) - for grouping rows
+  - All metrics (SUM, AVG, COUNT) - one per metric selected
+
+✗ GROUP BY clause includes ONLY:
+  - Groupby dimensions (Period, OrgUnit)
+  - NOT metrics (they're aggregation functions)
+
+✓ Column Sanitization:
+  - Happens early in adhoc_metric_to_sqla (step 1)
+  - "105-EP01b. Malaria Total" → "105_EP01b_Malaria_Total"
+  - Applied to EVERY metric column name
+
+✓ Metrics Deduplication:
+  - Uses (str(expr), expr.name) as key
+  - Allows SUM, AVG, COUNT on same column to all survive
+  - Without this: only first metric would be processed
+
+✓ Query Execution:
+  - Database runs aggregations once
+  - Result has pre-computed SUM, AVG, COUNT values
+  - No additional aggregation needed in postprocessing
+
+✓ Chart Rendering:
+  - Each metric becomes a separate series
+  - Grouped by dimensions (District1, District2)
+  - Multiple bars/lines per period

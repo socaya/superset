@@ -702,18 +702,30 @@ const DatabaseModal: FunctionComponent<DatabaseModalProps> = ({
   // Test Connection logic
   const testConnection = () => {
     handleClearValidationErrors();
-    if (!db?.sqlalchemy_uri) {
+
+    // For parameter-based databases (dynamic form), send parameters and engine
+    // Backend will call build_sqlalchemy_uri() to generate the URI
+    const isParameterBased = db?.parameters && db?.engine;
+
+    if (!isParameterBased && !db?.sqlalchemy_uri) {
       addDangerToast(t('Please enter a SQLAlchemy URI to test'));
       return;
     }
 
-    const connection = {
+    const connection: Partial<DatabaseObject> = {
       sqlalchemy_uri: db?.sqlalchemy_uri || '',
       database_name: db?.database_name?.trim() || undefined,
       impersonate_user: db?.impersonate_user || undefined,
       extra: db?.extra,
       masked_encrypted_extra: db?.masked_encrypted_extra || '',
       server_cert: db?.server_cert || undefined,
+      // For parameter-based databases, include parameters and engine
+      ...(isParameterBased && {
+        parameters: db.parameters,
+        engine: db.engine,
+        driver: db?.driver,
+        configuration_method: db?.configuration_method || ConfigurationMethod.DynamicForm,
+      }),
       ssh_tunnel:
         !isEmpty(db?.ssh_tunnel) && useSSHTunneling
           ? {
@@ -1725,6 +1737,8 @@ const DatabaseModal: FunctionComponent<DatabaseModalProps> = ({
         db={db as DatabaseObject}
         sslForced={false}
         dbModel={dbModel}
+        testConnection={testConnection}
+        testInProgress={testInProgress}
         onAddTableCatalog={() => {
           setDB({ type: ActionType.AddTableCatalogSheet });
         }}

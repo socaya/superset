@@ -20,18 +20,20 @@ import { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { OptionControlLabel } from 'src/explore/components/controls/OptionControls';
 import { DndItemType } from 'src/explore/components/DndItemType';
-import columnType from './columnType';
 import AdhocMetric from './AdhocMetric';
-import savedMetricType from './savedMetricType';
 import AdhocMetricPopoverTrigger from './AdhocMetricPopoverTrigger';
 
 const propTypes = {
   adhocMetric: PropTypes.instanceOf(AdhocMetric),
   onMetricEdit: PropTypes.func.isRequired,
   onRemoveMetric: PropTypes.func,
-  columns: PropTypes.arrayOf(columnType),
-  savedMetricsOptions: PropTypes.arrayOf(savedMetricType),
-  savedMetric: savedMetricType,
+  columns: PropTypes.arrayOf(PropTypes.object),
+  savedMetricsOptions: PropTypes.arrayOf(PropTypes.object),
+  savedMetric: PropTypes.shape({
+    metric_name: PropTypes.string,
+    verbose_name: PropTypes.string,
+    expression: PropTypes.string,
+  }),
   datasource: PropTypes.object,
   onMoveLabel: PropTypes.func,
   onDropLabel: PropTypes.func,

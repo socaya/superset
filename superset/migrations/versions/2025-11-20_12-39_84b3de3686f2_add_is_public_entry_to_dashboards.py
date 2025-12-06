@@ -28,15 +28,22 @@ down_revision = 'f80f89fd0494'
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 def upgrade():
     # Add is_public_entry column to dashboards table (FR-1.2)
-    op.add_column('dashboards', sa.Column('is_public_entry', sa.Boolean(), nullable=True))
-    # Set default value to False for existing dashboards
-    op.execute("UPDATE dashboards SET is_public_entry = false WHERE is_public_entry IS NULL")
-    # Make the column non-nullable
-    op.alter_column('dashboards', 'is_public_entry', nullable=False, server_default=sa.false())
+    # Check if column already exists to avoid duplicate column error
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    columns = [col['name'] for col in inspector.get_columns('dashboards')]
+
+    if 'is_public_entry' not in columns:
+        # SQLite doesn't support ALTER COLUMN, so use batch_alter_table
+        with op.batch_alter_table('dashboards') as batch_op:
+            batch_op.add_column(
+                sa.Column('is_public_entry', sa.Boolean(), nullable=False, server_default=sa.false())
+            )
 
 
 def downgrade():

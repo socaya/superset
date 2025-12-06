@@ -18,8 +18,9 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { t, styled, SupersetClient } from '@superset-ui/core';
-import { Select, Typography, Space, Tag, Divider, Button, Modal, Table as AntTable, Input } from 'antd';
+import { Select, Typography, Space, Tag, Divider, Button, Modal, Table as AntTable, Input, Spin, Empty, message } from 'antd';
 import { PeriodSelector } from './PeriodSelector';
+import { sanitizeDHIS2ColumnName } from './sanitize';
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
@@ -279,36 +280,37 @@ export default function DHIS2ParameterBuilder({
       if (endpoint === 'analytics' && selectedData.length > 0) {
         console.log('[DHIS2 Columns] Generating analytics columns - selectedData:', selectedData.length, 'dataElements:', dataElements.length);
 
-        // Always include Period and OrgUnit columns
-        columns.push({ name: 'Period', type: 'VARCHAR(255)' });
-        columns.push({ name: 'OrgUnit', type: 'VARCHAR(255)' });
+        // Always include Period and OrgUnit columns (sanitized to match backend output)
+        columns.push({ name: sanitizeDHIS2ColumnName('Period'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('OrgUnit'), type: 'VARCHAR(255)' });
 
-        // Add a column for each selected data element/indicator
+        // Add a column for each selected data element/indicator (sanitized to match backend output)
         const allDataDimensions = [...dataElements, ...indicators];
         selectedData.forEach(dataId => {
           const dimension = allDataDimensions.find(d => d.id === dataId);
           const columnName = dimension?.displayName || dataId;
-          columns.push({ name: columnName, type: 'FLOAT' });
-          console.log('[DHIS2 Columns] Added column:', columnName, 'for ID:', dataId);
+          const sanitizedName = sanitizeDHIS2ColumnName(columnName);
+          columns.push({ name: sanitizedName, type: 'FLOAT' });
+          console.log('[DHIS2 Columns] Added column:', sanitizedName, '(from:', columnName, ') for ID:', dataId);
         });
       } else if (endpoint === 'dataValueSets') {
-        // dataValueSets returns unpivoted data
-        columns.push({ name: 'dataElement', type: 'VARCHAR(255)' });
-        columns.push({ name: 'period', type: 'VARCHAR(255)' });
-        columns.push({ name: 'orgUnit', type: 'VARCHAR(255)' });
-        columns.push({ name: 'value', type: 'VARCHAR(255)' });
-        columns.push({ name: 'storedBy', type: 'VARCHAR(255)' });
-        columns.push({ name: 'created', type: 'TIMESTAMP' });
-        columns.push({ name: 'lastUpdated', type: 'TIMESTAMP' });
+        // dataValueSets returns unpivoted data (sanitized to match backend output)
+        columns.push({ name: sanitizeDHIS2ColumnName('dataElement'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('period'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('orgUnit'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('value'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('storedBy'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('created'), type: 'TIMESTAMP' });
+        columns.push({ name: sanitizeDHIS2ColumnName('lastUpdated'), type: 'TIMESTAMP' });
       } else {
-        // For any other DHIS2 endpoint, generate generic columns
+        // For any other DHIS2 endpoint, generate generic columns (sanitized to match backend output)
         // This will be dynamically populated when data is actually fetched
-        columns.push({ name: 'id', type: 'VARCHAR(255)' });
-        columns.push({ name: 'displayName', type: 'VARCHAR(255)' });
-        columns.push({ name: 'name', type: 'VARCHAR(255)' });
-        columns.push({ name: 'code', type: 'VARCHAR(255)' });
-        columns.push({ name: 'created', type: 'TIMESTAMP' });
-        columns.push({ name: 'lastUpdated', type: 'TIMESTAMP' });
+        columns.push({ name: sanitizeDHIS2ColumnName('id'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('displayName'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('name'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('code'), type: 'VARCHAR(255)' });
+        columns.push({ name: sanitizeDHIS2ColumnName('created'), type: 'TIMESTAMP' });
+        columns.push({ name: sanitizeDHIS2ColumnName('lastUpdated'), type: 'TIMESTAMP' });
       }
 
       console.log('Generated DHIS2 columns for', endpoint, ':', columns);
@@ -426,7 +428,13 @@ export default function DHIS2ParameterBuilder({
   // Function to fetch preview data (can be called on initial preview or refresh)
   const fetchPreviewData = async () => {
     if (!databaseId) {
-      alert('No database selected');
+      message.error('No database selected');
+      return;
+    }
+
+    // Validate that at least one data element is selected
+    if (selectedData.length === 0) {
+      message.warning('Please select at least one data element or indicator');
       return;
     }
 
@@ -466,12 +474,6 @@ export default function DHIS2ParameterBuilder({
       }
       params.fields = 'id,displayName,name,code,created,lastUpdated';
       params.paging = 'false';
-    }
-
-    // Validate that at least one data element is selected
-    if (!params.dimension && !params.dataElement && !params.filter) {
-      alert('Please select at least one data element or indicator');
-      return;
     }
 
     setIsRefreshing(true);
@@ -521,17 +523,21 @@ export default function DHIS2ParameterBuilder({
 
       console.log('Preview data response:', response.json);
 
-      if (response.json.data && response.json.data.length > 0) {
+      // Handle response - ensure data is properly structured
+      const responseData = response?.json?.data || [];
+      const responseColumns = response?.json?.columns || [];
+
+      if (responseData.length > 0 && responseColumns.length > 0) {
         // Convert columns to Ant Design Table format
-        const columns = response.json.columns.map((col: any) => ({
-          title: col.name,
-          dataIndex: col.name,
-          key: col.name,
+        const columns = responseColumns.map((col: any) => ({
+          title: typeof col === 'string' ? col : col.name,
+          dataIndex: typeof col === 'string' ? col : col.name,
+          key: typeof col === 'string' ? col : col.name,
           ellipsis: true,
         }));
 
         // Add row keys for Ant Design Table
-        const dataWithKeys = response.json.data.map((row: any, idx: number) => ({
+        const dataWithKeys = responseData.map((row: any, idx: number) => ({
           ...row,
           key: idx,
         }));
@@ -539,14 +545,19 @@ export default function DHIS2ParameterBuilder({
         setPreviewColumns(columns);
         setPreviewData(dataWithKeys);
         setPreviewVisible(true);
+        message.success(`Preview loaded: ${responseData.length} rows`);
       } else {
-        alert('⚠️ No data returned.\n\nPossible reasons:\n- No data exists for these parameters\n- Check if IDs are correct\n- Try different date range');
-        console.log('Empty response:', response.json);
+        // Show empty state in modal instead of alert
+        setPreviewColumns([]);
+        setPreviewData([]);
+        setPreviewVisible(true);
+        message.info('No data returned for these parameters');
+        console.log('Empty response:', response?.json);
       }
     } catch (error: any) {
       console.error('Preview error:', error);
-      const errorMsg = error.message || error.toString();
-      alert(`❌ Error loading preview:\n\n${errorMsg}\n\nCheck browser console for details.`);
+      const errorMsg = error?.response?.json?.message || error?.message || error?.toString() || 'Unknown error';
+      message.error(`Failed to load preview: ${errorMsg}`);
     } finally {
       setIsRefreshing(false);
     }
@@ -779,7 +790,7 @@ export default function DHIS2ParameterBuilder({
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 18, fontWeight: 600 }}>DHIS2 Data Preview</span>
-            <Tag color="blue">{previewData.length} rows</Tag>
+            {previewData.length > 0 && <Tag color="blue">{previewData.length} rows</Tag>}
           </div>
         }
         open={previewVisible}
@@ -790,6 +801,7 @@ export default function DHIS2ParameterBuilder({
             key="refresh"
             onClick={fetchPreviewData}
             loading={isRefreshing}
+            disabled={isRefreshing}
             icon={<span>🔄</span>}
           >
             Refresh Data
@@ -798,8 +810,9 @@ export default function DHIS2ParameterBuilder({
             key="copy"
             onClick={() => {
               navigator.clipboard.writeText(generatedApiUrl);
-              alert('API URL copied to clipboard!');
+              message.success('API URL copied to clipboard!');
             }}
+            disabled={!generatedApiUrl}
           >
             Copy API URL
           </Button>,
@@ -809,65 +822,75 @@ export default function DHIS2ParameterBuilder({
         ]}
         bodyStyle={{ padding: 0 }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', height: 600 }}>
-          {/* API URL Section - Single Decoded URL */}
-          <div style={{
-            padding: 20,
-            backgroundColor: '#f5f5f5',
-            borderBottom: '1px solid #d9d9d9'
-          }}>
-            <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Text strong style={{ fontSize: 14 }}>🔗 Generated API URL</Text>
-              <Tag color="green">Ready to use</Tag>
-            </div>
-            <TextArea
-              value={generatedApiUrl}
-              readOnly
-              autoSize={{ minRows: 2, maxRows: 4 }}
-              style={{
-                fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-                fontSize: 12,
-                backgroundColor: '#fff',
-                border: '1px solid #d9d9d9',
-                borderRadius: 4,
-                padding: 12
-              }}
-            />
-            <Paragraph
-              type="secondary"
-              style={{ marginTop: 8, marginBottom: 0, fontSize: 12 }}
-            >
-              💡 Use this URL to query DHIS2 directly or paste it into other tools. URL uses readable format with <code>:</code> and <code>;</code> characters.
-            </Paragraph>
-          </div>
-
-          {/* Data Table with better spacing */}
-          <div style={{
-            padding: 20,
-            flex: 1,
-            overflow: 'auto',
-            backgroundColor: '#fff'
-          }}>
-            <div style={{ marginBottom: 12 }}>
-              <Text strong style={{ fontSize: 14 }}>📊 Data Sample</Text>
-              <Paragraph type="secondary" style={{ marginTop: 4, marginBottom: 0, fontSize: 12 }}>
-                Showing first {previewData.length} rows from your query
+        <Spin spinning={isRefreshing} tip="Loading preview data...">
+          <div style={{ display: 'flex', flexDirection: 'column', height: 600 }}>
+            {/* API URL Section - Single Decoded URL */}
+            <div style={{
+              padding: 20,
+              backgroundColor: '#f5f5f5',
+              borderBottom: '1px solid #d9d9d9'
+            }}>
+              <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Text strong style={{ fontSize: 14 }}>🔗 Generated API URL</Text>
+                <Tag color="green">Ready to use</Tag>
+              </div>
+              <TextArea
+                value={generatedApiUrl}
+                readOnly
+                autoSize={{ minRows: 2, maxRows: 4 }}
+                style={{
+                  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                  fontSize: 12,
+                  backgroundColor: '#fff',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: 4,
+                  padding: 12
+                }}
+              />
+              <Paragraph
+                type="secondary"
+                style={{ marginTop: 8, marginBottom: 0, fontSize: 12 }}
+              >
+                💡 Use this URL to query DHIS2 directly or paste it into other tools. URL uses readable format with <code>:</code> and <code>;</code> characters.
               </Paragraph>
             </div>
-            <AntTable
-              columns={previewColumns}
-              dataSource={previewData}
-              scroll={{ x: 'max-content', y: 350 }}
-              pagination={false}
-              size="small"
-              bordered
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: 4
-              }}
-            />
+
+            {/* Data Table with better spacing */}
+            <div style={{
+              padding: 20,
+              flex: 1,
+              overflow: 'auto',
+              backgroundColor: '#fff'
+            }}>
+              {previewData.length > 0 ? (
+                <>
+                  <div style={{ marginBottom: 12 }}>
+                    <Text strong style={{ fontSize: 14 }}>📊 Data Sample</Text>
+                    <Paragraph type="secondary" style={{ marginTop: 4, marginBottom: 0, fontSize: 12 }}>
+                      Showing first {previewData.length} rows from your query
+                    </Paragraph>
+                  </div>
+                  <AntTable
+                    columns={previewColumns}
+                    dataSource={previewData}
+                    scroll={{ x: 'max-content', y: 350 }}
+                    pagination={false}
+                    size="small"
+                    bordered
+                    style={{
+                      backgroundColor: '#fff',
+                      borderRadius: 4
+                    }}
+                  />
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <Empty description="No data to display" />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </Spin>
       </Modal>
     </Container>
   );

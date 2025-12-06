@@ -143,14 +143,22 @@ export const LayoutStory: Story = {
               background: '#ffffff30',
             }}
           />
-          <Menu defaultSelectedKeys={['1']} mode="inline">
-            <Menu.Item key="1" icon={<Icons.MenuUnfoldOutlined />}>
-              Option 1
-            </Menu.Item>
-            <Menu.Item key="2" icon={<Icons.MenuFoldOutlined />}>
-              Option 2
-            </Menu.Item>
-          </Menu>
+          <Menu
+            defaultSelectedKeys={['1']}
+            mode="inline"
+            items={[
+              {
+                key: '1',
+                icon: <Icons.MenuUnfoldOutlined />,
+                label: 'Option 1',
+              },
+              {
+                key: '2',
+                icon: <Icons.MenuFoldOutlined />,
+                label: 'Option 2',
+              },
+            ]}
+          />
         </Sider>
       )}
       <Layout>

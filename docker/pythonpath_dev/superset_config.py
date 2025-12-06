@@ -130,6 +130,7 @@ FEATURE_FLAGS = {
     "DASHBOARD_RBAC": True,      # Enable role-based dashboard access control
     "EMBEDDED_SUPERSET": True,   # Enable embedded dashboards (for MOH website)
     "TAGGING_SYSTEM": True,      # Enable dashboard tagging/organization
+    "GENERIC_CHART_AXES": True,  # Allow non-temporal columns on time-series charts
 }
 
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True

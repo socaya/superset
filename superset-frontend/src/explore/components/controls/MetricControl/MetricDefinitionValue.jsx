@@ -17,10 +17,8 @@
  * under the License.
  */
 import PropTypes from 'prop-types';
-import columnType from './columnType';
 import AdhocMetricOption from './AdhocMetricOption';
 import AdhocMetric from './AdhocMetric';
-import savedMetricType from './savedMetricType';
 
 const propTypes = {
   option: PropTypes.oneOfType([PropTypes.object, PropTypes.string]).isRequired,
@@ -29,9 +27,9 @@ const propTypes = {
   onRemoveMetric: PropTypes.func,
   onMoveLabel: PropTypes.func,
   onDropLabel: PropTypes.func,
-  columns: PropTypes.arrayOf(columnType),
-  savedMetrics: PropTypes.arrayOf(savedMetricType),
-  savedMetricsOptions: PropTypes.arrayOf(savedMetricType),
+  columns: PropTypes.arrayOf(PropTypes.object),
+  savedMetrics: PropTypes.arrayOf(PropTypes.object),
+  savedMetricsOptions: PropTypes.arrayOf(PropTypes.object),
   multi: PropTypes.bool,
   datasource: PropTypes.object,
   datasourceWarningMessage: PropTypes.string,

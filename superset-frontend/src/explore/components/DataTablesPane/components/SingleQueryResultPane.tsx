@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { t } from '@superset-ui/core';
 import {
   TableView,
@@ -42,18 +42,36 @@ export const SingleQueryResultPane = ({
 }: SingleQueryResultPaneProp) => {
   const [filterText, setFilterText] = useState('');
 
+  // Normalize rows to objects keyed by colnames to avoid N/A rendering
+  const normalizedData = useMemo(() => {
+    if (!data || !colnames || data.length === 0) return [];
+    // If rows already look like objects, keep them
+    const first = data[0];
+    const looksObject =
+      first && typeof first === 'object' && !Array.isArray(first);
+    if (looksObject) return data as Record<string, any>[];
+    // Map array rows to objects keyed by colnames
+    return (data as any[][]).map(row => {
+      const obj: Record<string, any> = {};
+      colnames.forEach((col, i) => {
+        // Ensure row is an array and has the expected index
+        obj[col] = Array.isArray(row) ? row[i] : null;
+      });
+      return obj;
+    });
+  }, [data, colnames]);
+
   // this is to preserve the order of the columns, even if there are integer values,
   // while also only grabbing the first column's keys
   const columns = useTableColumns(
     colnames,
     coltypes,
-    data,
+    normalizedData,
     datasourceId,
     isVisible,
     {}, // moreConfig
-    true, // allowHTML
   );
-  const filteredData = useFilteredTableData(filterText, data);
+  const filteredData = useFilteredTableData(filterText, normalizedData);
 
   const handleInputChange = useCallback(
     (input: string) => setFilterText(input),

@@ -66,6 +66,11 @@ function DndColumnSelect(props: DndColumnSelectProps) {
   const onDrop = useCallback(
     (item: DatasourcePanelDndItem) => {
       const column = item.value as ColumnMeta;
+      
+      if (name === 'groupby' && !column.groupby) {
+        return;
+      }
+      
       if (!optionSelector.multi && !isEmpty(optionSelector.values)) {
         optionSelector.replace(0, column.column_name);
       } else {
@@ -73,17 +78,25 @@ function DndColumnSelect(props: DndColumnSelectProps) {
       }
       onChange(optionSelector.getValues());
     },
-    [onChange, optionSelector],
+    [onChange, optionSelector, name],
   );
 
   const canDrop = useCallback(
     (item: DatasourcePanelDndItem) => {
-      const columnName = (item.value as ColumnMeta).column_name;
-      return (
-        columnName in optionSelector.options && !optionSelector.has(columnName)
-      );
+      const column = item.value as ColumnMeta;
+      const columnName = column.column_name;
+      
+      if (!(columnName in optionSelector.options && !optionSelector.has(columnName))) {
+        return false;
+      }
+      
+      if (name === 'groupby' && !column.groupby) {
+        return false;
+      }
+      
+      return true;
     },
-    [optionSelector],
+    [optionSelector, name],
   );
 
   const onClickClose = useCallback(
@@ -126,6 +139,7 @@ function DndColumnSelect(props: DndColumnSelectProps) {
             editedColumn={column}
             isTemporal={isTemporal}
             disabledTabs={disabledTabs}
+            filterGroupby={name === 'groupby'}
           >
             <OptionWrapper
               key={idx}
@@ -210,6 +224,7 @@ function DndColumnSelect(props: DndColumnSelectProps) {
         visible={newColumnPopoverVisible}
         isTemporal={isTemporal}
         disabledTabs={disabledTabs}
+        filterGroupby={name === 'groupby'}
       >
         <div />
       </ColumnSelectPopoverTrigger>

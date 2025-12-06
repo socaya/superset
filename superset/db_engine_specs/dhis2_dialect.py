@@ -23,15 +23,26 @@ from __future__ import annotations
 import json
 import logging
 import re
-from datetime import datetime, timedelta
-from typing import Any, Optional
-from urllib.parse import urlencode, urlparse
-
+from datetime import datetime
+from typing import Any
 import requests
 from sqlalchemy.engine import default
-from sqlalchemy import pool, types
+from sqlalchemy import types
 
 logger = logging.getLogger(__name__)
+
+
+def sanitize_dhis2_column_name(name: str) -> str:
+    """
+    Sanitize DHIS2 column names for Superset compatibility.
+    Replaces all special characters with underscores to prevent layout distortions.
+    Must match the sanitization in _normalize_analytics_pivoted to ensure
+    column names in metadata match column names in returned DataFrames.
+    """
+    name = re.sub(r'[^\w]', '_', name)
+    name = re.sub(r'_+', '_', name)
+    name = name.strip('_')
+    return name
 
 
 class DHIS2MappingDSL:
@@ -378,8 +389,8 @@ class DHIS2ResponseNormalizer:
         ou_idx = col_map.get("ou")
         value_idx = col_map.get("value")
 
-        # Column names for long format
-        col_names = ["Period", "OrgUnit", "DataElement", "Value"]
+        # Column names for long format - ALL columns MUST be SANITIZED
+        col_names = [sanitize_dhis2_column_name(col) for col in ["Period", "OrgUnit", "DataElement", "Value"]]
 
         # Build rows in long format
         long_rows = []
@@ -446,6 +457,11 @@ class DHIS2ResponseNormalizer:
         print(f"[DHIS2] normalize_analytics: pivot={pivot}, using WIDE/PIVOTED format")
         logger.info(f"normalize_analytics called with pivot={pivot}, returning WIDE format")
 
+        # Ensure columns for analytics/dataValueSets endpoints are always wide format
+        # Each dx (data element) is a separate column, not a single 'dataElement' column
+        # Update normalization logic to pivot data and map values to columns
+        # Fix undefined values by mapping backend columns to frontend fields
+
         # Find column indices - handle missing dimensions
         col_map = {}
         for idx, h in enumerate(headers):
@@ -461,15 +477,16 @@ class DHIS2ResponseNormalizer:
 
         if not has_full_dimensions:
             # Simplified format - just return as-is with readable column names
+            # ALL columns MUST be SANITIZED
             col_names = []
             for h in headers:
                 name = h.get("name", h.get("column", "value"))
                 if name == "dx":
-                    col_names.append("Data")
+                    col_names.append(sanitize_dhis2_column_name("Data"))
                 elif name == "value":
-                    col_names.append("Value")
+                    col_names.append(sanitize_dhis2_column_name("Value"))
                 else:
-                    col_names.append(name)
+                    col_names.append(sanitize_dhis2_column_name(name))
 
             # Convert rows, mapping dx UIDs to names
             converted_rows = []
@@ -523,20 +540,20 @@ class DHIS2ResponseNormalizer:
                 pivot_data[key][dx] = val
 
         # Build column names: Period, OrgUnit, DataElement_1, DataElement_2, ...
-        # Sanitize data element names to avoid SQL errors from special characters
-        def sanitize_column_name(name: str) -> str:
-            """Remove special characters that cause SQL issues"""
-            import re
-            # Remove parentheses and other special chars
-            name = re.sub(r'[()]+', '', name)
-            # Replace multiple spaces with single space
-            name = re.sub(r'\s+', ' ', name)
-            # Trim whitespace
-            name = name.strip()
-            return name
-
+        # IMPORTANT: ALL columns MUST be SANITIZED to match column metadata from get_columns()!
+        # This ensures consistency between:
+        # 1. Dataset metadata (stored in DB) - uses sanitize_dhis2_column_name()
+        # 2. Chart formData (user selections) - references sanitized names
+        # 3. Query results (this function) - must return sanitized names
         data_element_list = sorted(data_elements)
-        col_names = ["Period", "OrgUnit"] + [sanitize_column_name(get_name(de)) for de in data_element_list]
+        col_names = [sanitize_dhis2_column_name("Period"), sanitize_dhis2_column_name("OrgUnit")] + [sanitize_dhis2_column_name(get_name(de)) for de in data_element_list]
+
+        print(f"[DHIS2] PIVOT CONSTRUCTION:")
+        print(f"[DHIS2]   data_elements (UIDs): {sorted(data_elements)}")
+        print(f"[DHIS2]   data_element_list (sorted UIDs): {data_element_list}")
+        print(f"[DHIS2]   col_names (SANITIZED): {col_names}")
+        logger.info(f"[DHIS2] Column construction - data_elements: {sorted(data_elements)}")
+        logger.info(f"[DHIS2] Column names constructed (SANITIZED): {col_names}")
 
         # Build rows
         pivoted_rows = []
@@ -550,12 +567,22 @@ class DHIS2ResponseNormalizer:
 
             row = [pe_name, ou_name]
             for de in data_element_list:
-                row.append(pivot_data[(pe, ou)].get(de, None))
+                value = pivot_data[(pe, ou)].get(de, None)
+                row.append(value)
+            
             pivoted_rows.append(tuple(row))
+            
+            if len(pivoted_rows) == 1:
+                logger.info(f"[DHIS2] FIRST ROW CONSTRUCTION:")
+                logger.info(f"[DHIS2]   Period (index 0): {row[0]}")
+                logger.info(f"[DHIS2]   OrgUnit (index 1): {row[1]}")
+                for i, de in enumerate(data_element_list):
+                    logger.info(f"[DHIS2]   {get_name(de)} (index {i+2}): {row[i+2]}")
 
         # Log first few rows for debugging
         if pivoted_rows and logger.isEnabledFor(logging.INFO):
             logger.info(f"First pivoted row - Period: '{pivoted_rows[0][0]}', OrgUnit: '{pivoted_rows[0][1]}'")
+            logger.info(f"[DHIS2] Total pivoted rows: {len(pivoted_rows)}, columns: {len(col_names)}")
 
         return col_names, pivoted_rows
 
@@ -570,14 +597,15 @@ class DHIS2ResponseNormalizer:
         data_values = data.get("dataValues", [])
 
         if not data_values:
-            return ["dataElement", "period", "orgUnit", "value"], []
+            # ALL columns MUST be SANITIZED
+            return [sanitize_dhis2_column_name(col) for col in ["dataElement", "period", "orgUnit", "value"]], []
 
-        # Dynamically detect columns from first row
-        col_names = list(data_values[0].keys())
+        # Dynamically detect columns from first row - ALL MUST be SANITIZED
+        col_names = [sanitize_dhis2_column_name(col) for col in data_values[0].keys()]
 
         rows = []
         for dv in data_values:
-            rows.append(tuple(dv.get(col, None) for col in col_names))
+            rows.append(tuple(dv.get(col, None) for col in data_values[0].keys()))
 
         return col_names, rows
 
@@ -593,9 +621,10 @@ class DHIS2ResponseNormalizer:
         events = data.get("events", [])
 
         if not events:
-            return ["event", "program", "orgUnit", "eventDate"], []
+            # ALL columns MUST be SANITIZED
+            return [sanitize_dhis2_column_name(col) for col in ["event", "program", "orgUnit", "eventDate"]], []
 
-        # Extract base columns + dataValues
+        # Extract base columns + dataValues - ALL MUST be SANITIZED
         base_cols = ["event", "program", "orgUnit", "eventDate", "status"]
 
         # Collect all unique dataElement IDs from all events
@@ -604,7 +633,8 @@ class DHIS2ResponseNormalizer:
             for dv in event.get("dataValues", []):
                 data_element_ids.add(dv.get("dataElement"))
 
-        col_names = base_cols + sorted(data_element_ids)
+        # ALL columns MUST be SANITIZED
+        col_names = [sanitize_dhis2_column_name(col) for col in base_cols] + [sanitize_dhis2_column_name(de_id) for de_id in sorted(data_element_ids)]
 
         rows = []
         for event in events:
@@ -642,9 +672,10 @@ class DHIS2ResponseNormalizer:
         teis = data.get("trackedEntityInstances", [])
 
         if not teis:
-            return ["trackedEntityInstance", "orgUnit", "trackedEntityType"], []
+            # ALL columns MUST be SANITIZED
+            return [sanitize_dhis2_column_name(col) for col in ["trackedEntityInstance", "orgUnit", "trackedEntityType"]], []
 
-        # Extract base columns + attributes
+        # Extract base columns + attributes - ALL MUST be SANITIZED
         base_cols = ["trackedEntityInstance", "orgUnit", "trackedEntityType"]
 
         # Collect all unique attribute IDs
@@ -653,7 +684,8 @@ class DHIS2ResponseNormalizer:
             for attr in tei.get("attributes", []):
                 attribute_ids.add(attr.get("attribute"))
 
-        col_names = base_cols + sorted(attribute_ids)
+        # ALL columns MUST be SANITIZED
+        col_names = [sanitize_dhis2_column_name(col) for col in base_cols] + [sanitize_dhis2_column_name(attr_id) for attr_id in sorted(attribute_ids)]
 
         rows = []
         for tei in teis:
@@ -688,20 +720,20 @@ class DHIS2ResponseNormalizer:
         # Try plural form first
         items = data.get(endpoint, [])
 
-        # Common metadata columns
+        # Common metadata columns - ALL MUST be SANITIZED
         if not items:
-            return ["id", "name", "displayName"], []
+            return [sanitize_dhis2_column_name(col) for col in ["id", "name", "displayName"]], []
 
-        # Detect columns from first item
+        # Detect columns from first item - ALL MUST be SANITIZED
         if isinstance(items[0], dict):
-            col_names = list(items[0].keys())
+            col_names = [sanitize_dhis2_column_name(col) for col in items[0].keys()]
         else:
-            col_names = ["value"]
+            col_names = [sanitize_dhis2_column_name("value")]
 
         rows = []
         for item in items:
             if isinstance(item, dict):
-                rows.append(tuple(item.get(col, None) for col in col_names))
+                rows.append(tuple(item.get(col, None) for col in items[0].keys()))
             else:
                 rows.append((item,))
 
@@ -721,17 +753,18 @@ class DHIS2ResponseNormalizer:
             if key in data and isinstance(data[key], list) and data[key]:
                 items = data[key]
 
+                # ALL columns MUST be SANITIZED
                 if isinstance(items[0], dict):
-                    col_names = list(items[0].keys())
-                    rows = [tuple(item.get(col, None) for col in col_names) for item in items]
+                    col_names = [sanitize_dhis2_column_name(col) for col in items[0].keys()]
+                    rows = [tuple(item.get(col, None) for col in items[0].keys()) for item in items]
                 else:
-                    col_names = ["value"]
+                    col_names = [sanitize_dhis2_column_name("value")]
                     rows = [(item,) for item in items]
 
                 return col_names, rows
 
-        # Last resort: return raw JSON as single column
-        return ["data"], [(json.dumps(data),)]
+        # Last resort: return raw JSON as single column - SANITIZED
+        return [sanitize_dhis2_column_name("data")], [(json.dumps(data),)]
 
     @classmethod
     def normalize(cls, endpoint: str, data: dict, pivot: bool = True) -> tuple[list[str], list[tuple]]:
@@ -862,14 +895,15 @@ class DHIS2Dialect(default.DefaultDialect):
         except Exception as e:
             logger.debug(f"Could not load custom columns: {e}")
 
-        # Default columns for common DHIS2 endpoints
-        # Note: analytics endpoint now returns TIDY/LONG format (pe, ou, dx, value) for Superset compatibility
+        # Default columns for common DHIS2 endpoints - ALL columns MUST be SANITIZED
+        # Note: analytics endpoint uses WIDE format (pe, ou, dx1, dx2, ...) for horizontal data view
+        # This will be expanded with actual data elements when available
         default_columns = {
-            "analytics": ["Period", "OrgUnit", "DataElement", "Value"],  # Tidy/long format - works with all Superset features
-            "dataValueSets": ["dataElement", "period", "orgUnit", "value", "storedBy", "created"],
-            "trackedEntityInstances": ["trackedEntityInstance", "orgUnit", "trackedEntityType", "attributes"],
-            "events": ["event", "program", "orgUnit", "eventDate", "dataValues"],
-            "enrollments": ["enrollment", "trackedEntityInstance", "program", "orgUnit", "enrollmentDate"],
+            "analytics": [sanitize_dhis2_column_name(col) for col in ["Period", "OrgUnit"]],  # Base dimensions - data elements added dynamically
+            "dataValueSets": [sanitize_dhis2_column_name(col) for col in ["dataElement", "period", "orgUnit", "value", "storedBy", "created"]],
+            "trackedEntityInstances": [sanitize_dhis2_column_name(col) for col in ["trackedEntityInstance", "orgUnit", "trackedEntityType", "attributes"]],
+            "events": [sanitize_dhis2_column_name(col) for col in ["event", "program", "orgUnit", "eventDate", "dataValues"]],
+            "enrollments": [sanitize_dhis2_column_name(col) for col in ["enrollment", "trackedEntityInstance", "program", "orgUnit", "enrollmentDate"]],
         }
 
         # Use source_table (not table_name) for lookup
@@ -884,7 +918,9 @@ class DHIS2Dialect(default.DefaultDialect):
                 }
 
                 # DIMENSIONS (categorical/groupable columns)
-                if col in ["Period", "OrgUnit", "DataElement", "period", "orgUnit", "dataElement"]:
+                # Compare with sanitized versions of known dimension columns
+                dimension_cols = [sanitize_dhis2_column_name(c) for c in ["Period", "OrgUnit", "DataElement", "period", "orgUnit", "dataElement"]]
+                if col in dimension_cols:
                     col_def.update({
                         "type": types.String(),  # Always String to prevent numeric conversion
                         "groupby": True,  # Can be used for grouping
@@ -892,13 +928,15 @@ class DHIS2Dialect(default.DefaultDialect):
                         "verbose_name": col,  # Display name
                         "is_numeric": False,  # Explicitly NOT numeric - prevents aggregation
                         "python_date_format": None,  # Not a date
+                        "is_dttm": False,  # Not a required datetime column
                     })
                 # MEASURES (numeric columns that can be aggregated)
-                elif col in ["Value", "value"]:
+                elif col in [sanitize_dhis2_column_name(c) for c in ["Value", "value"]]:
                     col_def.update({
                         "type": types.Float(),  # Numeric type for aggregation
                         "is_numeric": True,  # Can be aggregated (SUM, AVG, etc.)
                         "filterable": True,  # Can be filtered
+                        "is_dttm": False,  # Not a datetime column
                         "verbose_name": col,
                     })
                 else:
@@ -911,6 +949,19 @@ class DHIS2Dialect(default.DefaultDialect):
 
                 columns.append(col_def)
                 logger.debug(f"Column '{col}': type={col_def['type']}, groupby={col_def.get('groupby')}, is_numeric={col_def.get('is_numeric')}")
+            
+            # Cache column mapping for query translation (sanitized -> display name)
+            try:
+                from flask import g as flask_g
+                if not hasattr(flask_g, 'dhis2_column_map'):
+                    flask_g.dhis2_column_map = {}
+                flask_g.dhis2_column_map[source_table] = {
+                    col_def['name']: col_def.get('verbose_name', col_def['name']) for col_def in columns
+                }
+                logger.info(f"[DHIS2] Cached {len(columns)} column mappings for {source_table}")
+            except Exception as e:
+                logger.warning(f"[DHIS2] Could not cache column mappings: {e}")
+            
             return columns
 
         # For analytics, try to fetch ALL available indicators and data elements from DHIS2
@@ -923,25 +974,27 @@ class DHIS2Dialect(default.DefaultDialect):
                 base_url = f"https://{url.host}{url.database or '/api'}"
                 auth = (url.username, url.password) if url.username else None
 
-                logger.info(f"[DHIS2] Fetching ALL data elements and indicators from {base_url}")
+                logger.info(f"[DHIS2] Fetching data elements and indicators from {base_url} (limited to first 500 each for performance)")
 
-                # Base dimension columns
+                # Base dimension columns - ALL columns MUST be SANITIZED
                 columns = [
                     {
-                        "name": "Period",
+                        "name": sanitize_dhis2_column_name("Period"),
                         "type": types.String(),
                         "nullable": True,
-                        "groupby": True,
+                        "groupby": False,
                         "filterable": True,
                         "is_numeric": False,
+                        "is_dttm": False,
                     },
                     {
-                        "name": "OrgUnit",
+                        "name": sanitize_dhis2_column_name("OrgUnit"),
                         "type": types.String(),
                         "nullable": True,
                         "groupby": True,
                         "filterable": True,
                         "is_numeric": False,
+                        "is_dttm": False,
                     },
                 ]
 
@@ -957,15 +1010,18 @@ class DHIS2Dialect(default.DefaultDialect):
                     try:
                         logger.info(f"[DHIS2] Fetching {meta_type} from {base_url}{endpoint}")
 
-                        # Fetch all items (no pagination limit)
+                        # Fetch items with pagination for better performance
+                        # Limit to first 500 items per endpoint to avoid slowness
                         response = requests.get(
                             f"{base_url}{endpoint}",
                             params={
                                 "fields": "id,name,displayName,shortName,code,valueType",
-                                "paging": "false",  # Get ALL items
+                                "paging": "true",
+                                "pageSize": 500,
+                                "page": 1,
                             },
                             auth=auth,
-                            timeout=60,  # Longer timeout for large metadata
+                            timeout=30,  # Timeout after 30 seconds
                         )
 
                         if response.status_code == 200:
@@ -979,6 +1035,13 @@ class DHIS2Dialect(default.DefaultDialect):
                                 item_name = item.get('displayName') or item.get('name', '')
                                 item_id = item.get('id', '')
                                 value_type = item.get('valueType', 'NUMBER')
+
+                                # IMPORTANT: Sanitize column names to match what the analytics endpoint returns!
+                                # This ensures consistent names across:
+                                # 1. Dataset metadata (stored in DB)
+                                # 2. Chart formData (user selections)
+                                # 3. Query results (from DHIS2 API)
+                                column_name = sanitize_dhis2_column_name(item_name)
 
                                 # Determine SQL type based on DHIS2 valueType
                                 if value_type in ['NUMBER', 'INTEGER', 'PERCENTAGE', 'UNIT_INTERVAL']:
@@ -994,15 +1057,18 @@ class DHIS2Dialect(default.DefaultDialect):
                                     sql_type = types.String()
                                     is_numeric = False
 
-                                # Add column for this data element
+                                # Add column for this data element with SANITIZED name
+                                # Store original name in description for reference
                                 columns.append({
-                                    "name": item_name,
+                                    "name": column_name,
                                     "type": sql_type,
                                     "nullable": True,
                                     "is_numeric": is_numeric,
                                     "filterable": True,
-                                    "description": f"{meta_type[:-1]} - {item_id}",
-                                    "dhis2_id": item_id,  # Store DHIS2 ID for reference
+                                    "description": f"{meta_type[:-1]} - {item_id} ({item_name})",
+                                    "dhis2_id": item_id,
+                                    "is_dttm": False,
+                                    "verbose_name": column_name,  # SANITIZED name for display and queries
                                 })
                                 total_items += 1
 
@@ -1013,9 +1079,23 @@ class DHIS2Dialect(default.DefaultDialect):
                         logger.error(f"[DHIS2] Error fetching {meta_type}: {e}")
 
                 logger.info(f"[DHIS2] Total columns discovered: {len(columns)} (2 dimensions + {total_items} data elements)")
+                logger.info(f"[DHIS2] Limited to first 500 items per endpoint for performance")
 
                 if total_items > 0:
                     logger.info(f"[DHIS2] Sample columns: {[c['name'] for c in columns[:10]]}")
+
+                # Cache column mapping for query translation (sanitized -> display name)
+                try:
+                    from flask import g as flask_g
+                    if not hasattr(flask_g, 'dhis2_column_map'):
+                        flask_g.dhis2_column_map = {}
+                    # Build mapping: {sanitized_name: display_name}
+                    flask_g.dhis2_column_map[source_table or table_name] = {
+                        col['name']: col.get('verbose_name', col['name']) for col in columns
+                    }
+                    logger.info(f"[DHIS2] Cached {len(columns)} column mappings for {source_table or table_name}")
+                except Exception as e:
+                    logger.warning(f"[DHIS2] Could not cache column mappings: {e}")
 
                 return columns
 
@@ -1056,7 +1136,7 @@ class DHIS2Dialect(default.DefaultDialect):
                         # Add columns for each dataElement
                         for dse in dataset.get("dataSetElements", []):
                             de = dse.get("dataElement", {})
-                            col_name = de.get("displayName", de.get("id", "")).replace(" ", "_").lower()
+                            col_name = de.get("displayName", de.get("id", ""))
                             columns.append({
                                 "name": col_name,
                                 "type": types.String(),
@@ -1202,6 +1282,120 @@ class DHIS2Cursor:
             return endpoint
         return "analytics"  # Default fallback
 
+    def _extract_select_columns(self, query: str) -> list[str]:
+        """
+        Extract column names from the SELECT clause of a SQL query.
+        Returns a list of column names in the order they appear.
+        """
+        # Match SELECT clause - handles SELECT col1, col2 FROM ...
+        select_match = re.search(r'SELECT\s+(.+?)\s+FROM', query, re.IGNORECASE | re.DOTALL)
+        if not select_match:
+            return []
+        
+        select_clause = select_match.group(1).strip()
+        
+        # Split by comma and clean up
+        columns = []
+        for col in select_clause.split(','):
+            col = col.strip()
+            # Handle aliases: "column AS alias" -> use "alias"
+            if ' AS ' in col.upper():
+                col = col.split()[-1]
+            # Handle function calls: "FUNC(column)" -> skip
+            if '(' in col:
+                continue
+            # Clean quotes if any
+            col = col.strip('"\'`')
+            if col and col != '*':
+                columns.append(col)
+        
+        return columns
+
+    def _map_columns_to_dhis2_dimensions(self, columns: list[str], query: str) -> list[str]:
+        """
+        Map Superset column names to DHIS2 dimension specifications.
+        Returns a list of dimension specs like ['ou:OrgUnit', 'pe:Period', 'dx:Value']
+        
+        IMPORTANT: In DHIS2 analytics:
+        - Dimensions: ou (organisation unit), pe (period), dx (data element), etc.
+        - Data values: the numeric values being aggregated (sum, count, etc.)
+        
+        We need to identify which columns are dimensions vs data values.
+        """
+        dimension_specs = []
+        
+        # DHIS2 dimension column patterns
+        # Maps column name patterns to DHIS2 dimension prefixes
+        dimension_patterns = {
+            # Organisation/Location dimensions
+            ('orgunit', 'ou'): ['orgunit', 'organisation_unit', 'ou', 'organisationunit'],
+            
+            # Time dimensions
+            ('period', 'pe'): ['period', 'pe', 'time', 'date', 'year', 'month', 'quarter'],
+            
+            # Data element dimensions
+            ('dataelement', 'dx'): ['dataelement', 'data_element', 'dx', 'element', 'indicator'],
+            
+            # Category/Category Option dimensions
+            ('category', 'ca'): ['category', 'ca'],
+            ('categoryoption', 'co'): ['categoryoption', 'category_option', 'co'],
+            
+            # Program Stage
+            ('programstage', 'ps'): ['programstage', 'program_stage', 'ps'],
+            
+            # Tracked Entity
+            ('trackedentity', 'te'): ['trackedentity', 'tracked_entity', 'te'],
+            
+            # Organisation Unit Group
+            ('organisationunitgroup', 'oug'): ['organisationunitgroup', 'organisation_unit_group', 'oug'],
+        }
+        
+        # Known metric/value column names that should NOT be dimensions
+        metric_patterns = [
+            'value', 'values', 'count', 'sum', 'avg', 'average', 'min', 'maximum', 'max', 
+            'stddev', 'variance', 'total', 'data', 'result',
+            # Aggregation functions
+            'ccount', 'countnnon', 'stddev', 'variance', 'sum_sq',
+        ]
+        
+        for col in columns:
+            col_sanitized = sanitize_dhis2_column_name(col.lower())
+            col_lower = col.lower()
+            original_col = col
+            
+            # Skip if it's a known metric/value column
+            is_metric = False
+            for metric_pat in metric_patterns:
+                if metric_pat in col_lower:
+                    is_metric = True
+                    break
+            
+            if is_metric:
+                logger.debug(f"[DHIS2] Skipping metric/value column: {col}")
+                continue
+            
+            # Try to match to a DHIS2 dimension
+            matched = False
+            for (pattern_key, dimension_prefix), patterns in dimension_patterns.items():
+                for pattern in patterns:
+                    pattern_sanitized = sanitize_dhis2_column_name(pattern.lower())
+                    if pattern_sanitized in col_sanitized or col_sanitized.endswith(pattern_sanitized):
+                        # Format the dimension spec
+                        # Use the original column name as the value
+                        dimension_specs.append(f"{dimension_prefix}:{original_col}")
+                        logger.debug(f"[DHIS2] Mapped column '{col}' to dimension '{dimension_prefix}'")
+                        matched = True
+                        break
+                if matched:
+                    break
+            
+            if not matched:
+                # If no pattern matched, still try to treat as dimension
+                # (fallback for unknown dimension types)
+                logger.debug(f"[DHIS2] Column '{col}' didn't match known patterns, will try as generic dimension")
+        
+        return dimension_specs
+
     def _extract_query_params(self, query: str) -> dict[str, str]:
         """
         Extract query parameters from SQL WHERE clause or comments OR cached params
@@ -1210,13 +1404,13 @@ class DHIS2Cursor:
         1. SQL comments (/* DHIS2: ... */ or -- DHIS2: ...) - Always live/current
         2. Flask g.dhis2_dataset_params (same-request access)
         3. Application cache (persists across requests) - Fallback only
-        4. WHERE clause
+        4. SELECT columns (NEW: extract user-selected dimensions from query)
+        5. WHERE clause
 
         This ensures preview/ad-hoc queries with SQL comments always use fresh parameters,
         while saved datasets can still use cached parameters.
         """
         from urllib.parse import unquote
-        from flask import g
 
         params = {}
         from_match = re.search(r'FROM\s+(\w+)', query, re.IGNORECASE)
@@ -1279,22 +1473,29 @@ class DHIS2Cursor:
             return params
 
         # SECOND: Check Flask g context for parameters (same-request access)
-        if hasattr(g, 'dhis2_dataset_params'):
-            if table_name in g.dhis2_dataset_params:
-                param_str = g.dhis2_dataset_params[table_name]
-                print(f"[DHIS2] Found params in Flask g for {table_name}: {param_str[:100]}")
-                logger.info(f"Using stored parameters from Flask g for table: {table_name}")
-                separator = '&' if '&' in param_str else ','
-                for param in param_str.split(separator):
-                    if '=' in param:
-                        key, value = param.split('=', 1)
-                        key, value = key.strip(), value.strip()
-                        if key == 'dimension':
-                            params[key] = f"{params[key]};{value}" if key in params else value
-                        else:
-                            params[key] = value
-                if params:
-                    return params
+        try:
+            from flask import g as flask_g
+            if hasattr(flask_g, 'dhis2_dataset_params'):
+                if table_name in flask_g.dhis2_dataset_params:
+                    param_str = flask_g.dhis2_dataset_params[table_name]
+                    print(f"[DHIS2] Found params in Flask g for {table_name}: {param_str[:100]}")
+                    logger.info(f"Using stored parameters from Flask g for table: {table_name}")
+                    separator = '&' if '&' in param_str else ','
+                    for param in param_str.split(separator):
+                        if '=' in param:
+                            key, value = param.split('=', 1)
+                            key = key.strip()
+                            value = value.strip()
+                            if key == 'dimension':
+                                params[key] = f"{params[key]};{value}" if key in params else value
+                            else:
+                                params[key] = value
+                    if params:
+                        return params
+        except ImportError:
+            pass
+        except Exception:
+            pass
 
         # THIRD: Check application cache (persists across requests) - Fallback only
         cache_param_str = None
@@ -1318,7 +1519,8 @@ class DHIS2Cursor:
             for param in cache_param_str.split(separator):
                 if '=' in param:
                     key, value = param.split('=', 1)
-                    key, value = key.strip(), value.strip()
+                    key = key.strip()
+                    value = value.strip()
                     if key == 'dimension':
                         params[key] = f"{params[key]};{value}" if key in params else value
                     else:
@@ -1326,7 +1528,37 @@ class DHIS2Cursor:
             if params:
                 return params
 
-        # FOURTH: Extract from WHERE clause (lowest priority)
+        # FOURTH: Extract from SELECT columns (respects user's dimension selection)
+        # This is CRITICAL for DHIS2: users select which dimensions they want to see (e.g., OrgUnit)
+        # We need to translate these selected columns into DHIS2 dimension parameters
+        try:
+            select_columns = self._extract_select_columns(query)
+            if select_columns:
+                print(f"[DHIS2] Extracted SELECT columns: {select_columns}")
+                logger.info(f"Extracted SELECT columns from query: {select_columns}")
+                
+                dimension_specs = self._map_columns_to_dhis2_dimensions(select_columns, query)
+                if dimension_specs:
+                    print(f"[DHIS2] Mapped to DHIS2 dimensions: {dimension_specs}")
+                    logger.info(f"Mapped to DHIS2 dimensions: {dimension_specs}")
+                    
+                    # Merge with existing dimensions
+                    for spec in dimension_specs:
+                        if 'dimension' in params:
+                            # Check if this dimension type already exists
+                            prefix = spec.split(':')[0]
+                            existing_specs = params['dimension'].split(';')
+                            # Remove old specs with same prefix if any
+                            filtered_specs = [s for s in existing_specs if not s.startswith(prefix + ':')]
+                            filtered_specs.append(spec)
+                            params['dimension'] = ';'.join(filtered_specs)
+                        else:
+                            params['dimension'] = spec
+        except Exception as e:
+            logger.warning(f"[DHIS2] Error extracting SELECT columns: {e}")
+            print(f"[DHIS2] Error extracting SELECT columns: {e}")
+
+        # FIFTH: Extract from WHERE clause (lowest priority)
         where_match = re.search(r'WHERE\s+(.+?)(?:ORDER BY|GROUP BY|LIMIT|$)', query, re.IGNORECASE | re.DOTALL)
         if where_match:
             conditions = where_match.group(1)
@@ -1496,21 +1728,19 @@ class DHIS2Cursor:
         print(f"[DHIS2] Response keys: {list(data.keys())}")
         print(f"[DHIS2] Response sample: {str(data)[:500]}")
 
-        # Use TIDY/LONG format for analytics data - works best with Superset
-        # Tidy format (Period, OrgUnit, DataElement, Value) enables:
-        # - Native filters on DataElement
-        # - Cross-filters
-        # - Metrics (SUM, AVG, etc.) on Value
-        # - Grouping by Period, OrgUnit, DataElement
-        # - Public dashboards
-        # - Embedded SDK
+        # Use WIDE/PIVOTED format for analytics data - dx dimensions as separate columns
+        # Wide format (Period, OrgUnit, DataElement_1, DataElement_2, ...) enables:
+        # - Each data element as its own column (horizontal data view)
+        # - Direct column selection in charts
+        # - Better for region-based analysis
+        # - Compatible with non-time-series charts
         #
-        # ALWAYS use tidy format for analytics endpoint
-        should_pivot = endpoint != "analytics"  # analytics = tidy format, others = keep current behavior
+        # ALWAYS use WIDE/PIVOTED format for analytics endpoint
+        should_pivot = True  # Always pivot analytics to get dx as separate columns
 
-        format_msg = "TIDY/LONG format (Period, OrgUnit, DataElement, Value)" if not should_pivot else "original format"
+        format_msg = "WIDE/PIVOTED format (Period, OrgUnit, DX1, DX2, ...)" if should_pivot else "LONG format"
         print(f"[DHIS2] Using {format_msg} for {endpoint}")
-        logger.info(f"Using {'tidy/long' if not should_pivot else 'original'} format for {endpoint}")
+        logger.info(f"Using {'wide/pivoted' if should_pivot else 'long'} format for {endpoint}")
 
         # Use the normalizer to parse response
         col_names, rows = DHIS2ResponseNormalizer.normalize(endpoint, data, pivot=should_pivot)
@@ -1542,12 +1772,53 @@ class DHIS2Cursor:
 
         print(f"[DHIS2] _set_description: columns={col_names}, types={[desc[1].__name__ for desc in self._description]}")
 
+    def _translate_query_column_names(self, query: str, table_name: str) -> str:
+        """
+        Translate unsanitized column names in GROUP BY and ORDER BY clauses to sanitized names.
+        
+        The chart builder sends queries with display names (unsanitized), but the database
+        has sanitized column names. This method translates them.
+        
+        Example:
+            IN:  GROUP BY "105-EP01a. Suspected fever", "Period"
+            OUT: GROUP BY "105_EP01a_Suspected_fever", "Period"
+        """
+        try:
+            # Try to get column metadata to build translation map
+            # This is best-effort - if we can't get metadata, we'll still try regex-based approach
+            from flask import g as flask_g
+            
+            # Check if we have cached column metadata
+            if hasattr(flask_g, 'dhis2_column_map') and table_name in flask_g.dhis2_column_map:
+                column_map = flask_g.dhis2_column_map[table_name]
+                # column_map is {sanitized: original} - we need reverse: {original: sanitized}
+                reverse_map = {v: k for k, v in column_map.items()}
+                
+                # Replace unsanitized names with sanitized ones in GROUP BY and ORDER BY
+                # Match quoted and unquoted column names
+                for original, sanitized in reverse_map.items():
+                    # Match quoted versions: "105-EP01a. Suspected fever"
+                    query = query.replace(f'"{original}"', f'"{sanitized}"')
+                    # Also handle without quotes
+                    query = query.replace(f"'{original}'", f"'{sanitized}'")
+            
+            return query
+        except Exception as e:
+            logger.warning(f"[DHIS2] Could not translate column names: {e}")
+            # Return original query if translation fails
+            return query
+
     def execute(self, query: str, parameters=None):
         """
         Execute SQL query by translating to DHIS2 API call with dynamic parameters
         """
         print(f"[DHIS2] Executing query: {query}")
         logger.info(f"Executing DHIS2 query: {query}")
+        
+        # Extract table name and translate column references
+        from_match = re.search(r'FROM\s+(\w+)', query, re.IGNORECASE)
+        table_name = from_match.group(1) if from_match else "analytics"
+        query = self._translate_query_column_names(query, table_name)
 
         # Parse query to get endpoint and parameters
         endpoint = self._parse_endpoint_from_query(query)
@@ -1581,44 +1852,76 @@ class DHIS2Cursor:
         - Chart code from accidentally aggregating dimension columns
         """
         print(f"[DHIS2] fetchall() called - returning {len(self._rows)} rows")
+        logger.info(f"[DHIS2] fetchall() - Row count: {len(self._rows)}")
 
         if not self._rows:
             return self._rows
 
         print(f"[DHIS2] fetchall() - First row type: {type(self._rows[0])}")
         print(f"[DHIS2] fetchall() - First row (original): {self._rows[0]}")
-        print(f"[DHIS2] fetchall() - Column description: {self._description}")
+        print(f"[DHIS2] fetchall() - Column count from description: {len(self._description)}")
 
         # Extract column names from cursor description
         column_names = [desc[0] for desc in self._description]
+        logger.info(f"[DHIS2] fetchall() column_names: {column_names}")
+        logger.info(f"[DHIS2] fetchall() column_names length: {len(column_names)}")
+
+        if self._rows:
+            row_0 = self._rows[0]
+            logger.info(f"[DHIS2] First row values count: {len(row_0) if hasattr(row_0, '__len__') else 1}")
+            logger.info(f"[DHIS2] First row values: {row_0}")
 
         # Process each row with strict type enforcement
         fixed_rows = []
-        for row in self._rows:
+        for row_idx, row in enumerate(self._rows):
             fixed_row = []
-            for col_name, value in zip(column_names, row):
+            for col_idx, (col_name, value) in enumerate(zip(column_names, row)):
                 # DIMENSION columns: ALWAYS string (never aggregate)
                 if col_name in ['Period', 'OrgUnit', 'DataElement', 'period', 'orgUnit', 'dataElement']:
                     # Force to string to prevent Pandas from treating "105-..." as numeric
-                    fixed_row.append(str(value) if value is not None else None)
+                    fixed_value = str(value) if value is not None else None
+                    fixed_row.append(fixed_value)
+                    if row_idx == 0 and col_idx < 3:
+                        logger.info(f"[DHIS2] Row 0 col {col_idx} ({col_name}): {value} -> {fixed_value} (STRING)")
 
                 # MEASURE columns: ALWAYS float (can aggregate)
                 elif col_name in ['Value', 'value']:
                     # Safe numeric conversion
                     try:
-                        fixed_row.append(float(value) if value is not None else None)
+                        fixed_value = float(value) if value is not None else None
+                        fixed_row.append(fixed_value)
+                        if row_idx == 0:
+                            logger.info(f"[DHIS2] Row 0 col {col_idx} ({col_name}): {value} -> {fixed_value} (FLOAT)")
                     except (ValueError, TypeError):
                         fixed_row.append(None)
+                        logger.warning(f"[DHIS2] Could not convert {col_name}={value} to float")
 
                 # Other columns: keep as-is
                 else:
-                    fixed_row.append(value)
+                    # Check if value looks like a dimension (non-numeric string)
+                    # This catches dimension columns that aren't in the known list
+                    if value is not None and isinstance(value, str):
+                        try:
+                            float(value)
+                            # It's a numeric string - could be a value column, keep as-is
+                            fixed_row.append(value)
+                        except ValueError:
+                            # It's a non-numeric string - treat as dimension (force to string)
+                            fixed_row.append(str(value))
+                            if row_idx == 0:
+                                logger.info(f"[DHIS2] Row 0 col {col_idx} ({col_name}): '{value[:30]}...' -> STRING (non-numeric detected)")
+                    else:
+                        fixed_row.append(value)
+
+                    if row_idx == 0 and col_idx < 5:
+                        logger.info(f"[DHIS2] Row 0 col {col_idx} ({col_name}): {value} (PROCESSED)")
 
             fixed_rows.append(tuple(fixed_row))
 
         if fixed_rows:
             print(f"[DHIS2] fetchall() - First row (fixed types): {fixed_rows[0]}")
             print(f"[DHIS2] fetchall() - Type enforcement: dimensions=STRING, measures=FLOAT")
+            logger.info(f"[DHIS2] fetchall() returning {len(fixed_rows)} rows with {len(column_names)} columns each")
 
         return fixed_rows
 

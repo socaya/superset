@@ -16,34 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useMemo, useState, useEffect, useRef, RefObject } from 'react';
-import {
-  css,
-  getTimeFormatter,
-  safeHtmlSpan,
-  styled,
-  t,
-  TimeFormats,
-  useTheme,
-} from '@superset-ui/core';
-import { GenericDataType } from '@apache-superset/core/api/core';
+import { useMemo, useEffect, useRef, RefObject } from 'react';
+import { css, styled, t, useTheme } from '@superset-ui/core';
 import { Column } from 'react-table';
 import { debounce } from 'lodash';
-import {
-  Constants,
-  Button,
-  Icons,
-  Input,
-  Popover,
-  Radio,
-} from '@superset-ui/core/components';
-import { CopyToClipboard } from 'src/components';
+import { Constants, Button, Icons, Input } from '@superset-ui/core/components';
+import { CopyToClipboard } from 'src/components/CopyToClipboard';
 import { prepareCopyToClipboardTabularData } from 'src/utils/common';
-import { getTimeColumns, setTimeColumns } from './utils';
-
-export const CellNull = styled('span')`
-  color: ${({ theme }) => theme.colorTextTertiary};
-`;
 
 export const CopyButton = styled(Button)`
   font-size: ${({ theme }) => theme.fontSizeSM}px;
@@ -99,7 +78,7 @@ export const FilterInput = ({
     if (inputRef.current && shouldFocus) {
       inputRef.current.focus();
     }
-  }, []);
+  }, [shouldFocus]);
 
   const theme = useTheme();
   const debouncedChangeHandler = debounce(
@@ -123,110 +102,24 @@ export const FilterInput = ({
   );
 };
 
-enum FormatPickerValue {
-  Formatted = 'formatted',
-  Original = 'original',
+// Utility to sanitize column names consistently
+// MUST match Python's sanitize_dhis2_column_name in dhis2_dialect.py
+function sanitizeColumnName(name: string): string {
+  let sanitized = name;
+  // Replace dots with underscores
+  sanitized = sanitized.replace(/\./g, '_');
+  // Replace multiple spaces with single underscore
+  sanitized = sanitized.replace(/\s+/g, '_');
+  // Remove parentheses
+  sanitized = sanitized.replace(/[()]/g, '');
+  // Replace dashes with underscores (DHIS2 specific)
+  sanitized = sanitized.replace(/-/g, '_');
+  // Collapse multiple underscores into one
+  sanitized = sanitized.replace(/_+/g, '_');
+  // Remove leading/trailing underscores
+  sanitized = sanitized.replace(/^_+|_+$/g, '');
+  return sanitized;
 }
-
-const FormatPicker = ({
-  onChange,
-  value,
-}: {
-  onChange: any;
-  value: FormatPickerValue;
-}) => (
-  <Radio.GroupWrapper
-    spaceConfig={{
-      direction: 'vertical',
-      align: 'start',
-      size: 15,
-      wrap: false,
-    }}
-    size="large"
-    value={value}
-    onChange={onChange}
-    options={[
-      { label: t('Formatted date'), value: FormatPickerValue.Formatted },
-      { label: t('Original value'), value: FormatPickerValue.Original },
-    ]}
-  />
-);
-
-const FormatPickerContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-
-  padding: ${({ theme }) => `${theme.sizeUnit * 4}px`};
-`;
-
-const FormatPickerLabel = styled.span`
-  font-size: ${({ theme }) => theme.fontSizeSM}px;
-  color: ${({ theme }) => theme.colorText};
-  margin-bottom: ${({ theme }) => theme.sizeUnit * 2}px;
-`;
-
-const DataTableTemporalHeaderCell = ({
-  columnName,
-  onTimeColumnChange,
-  datasourceId,
-  isOriginalTimeColumn,
-}: {
-  columnName: string;
-  onTimeColumnChange: (
-    columnName: string,
-    columnType: FormatPickerValue,
-  ) => void;
-  datasourceId?: string;
-  isOriginalTimeColumn: boolean;
-}) => {
-  const theme = useTheme();
-
-  const onChange = (e: any) => {
-    onTimeColumnChange(columnName, e.target.value);
-  };
-
-  const overlayContent = useMemo(
-    () =>
-      datasourceId ? ( // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-        <FormatPickerContainer
-          onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}
-        >
-          {/* hack to disable click propagation from popover content to table header, which triggers sorting column */}
-          <FormatPickerLabel>{t('Column Formatting')}</FormatPickerLabel>
-          <FormatPicker
-            onChange={onChange}
-            value={
-              isOriginalTimeColumn
-                ? FormatPickerValue.Original
-                : FormatPickerValue.Formatted
-            }
-          />
-        </FormatPickerContainer>
-      ) : null,
-    [datasourceId, isOriginalTimeColumn],
-  );
-
-  return datasourceId ? (
-    <span>
-      <Popover
-        trigger="click"
-        content={overlayContent}
-        placement="bottomLeft"
-        arrow={{ pointAtCenter: true }}
-      >
-        <Icons.SettingOutlined
-          iconSize="m"
-          iconColor={theme.colorIcon}
-          css={{ marginRight: `${theme.sizeUnit}px` }}
-          onClick={(e: React.MouseEvent<HTMLElement>) => e.stopPropagation()}
-        />
-      </Popover>
-      {columnName}
-    </span>
-  ) : (
-    <span>{columnName}</span>
-  );
-};
 
 export const useFilteredTableData = (
   filterText: string,
@@ -236,15 +129,17 @@ export const useFilteredTableData = (
     () =>
       data?.map((row: Record<string, any>) =>
         Object.values(row).map(value =>
-          value ? value.toString().toLowerCase() : t('N/A'),
+          value !== null && value !== undefined
+            ? value.toString().toLowerCase()
+            : t('N/A'),
         ),
       ) ?? [],
     [data],
   );
 
   return useMemo(() => {
-    if (!data?.length) {
-      return [];
+    if (!data?.length || !filterText) {
+      return data || [];
     }
     return data.filter((_, index: number) =>
       rowsAsStrings[index].some(value =>
@@ -254,115 +149,107 @@ export const useFilteredTableData = (
   }, [data, filterText, rowsAsStrings]);
 };
 
-const timeFormatter = getTimeFormatter(TimeFormats.DATABASE_DATETIME);
-
 export const useTableColumns = (
   colnames?: string[],
-  coltypes?: GenericDataType[],
+  coltypes?: any[],
   data?: Record<string, any>[],
   datasourceId?: string,
   isVisible?: boolean,
   moreConfigs?: { [key: string]: Partial<Column> },
-  allowHTML?: boolean,
-) => {
-  const [originalFormattedTimeColumns, setOriginalFormattedTimeColumns] =
-    useState<string[]>(getTimeColumns(datasourceId));
-
-  const onTimeColumnChange = (
-    columnName: string,
-    columnType: FormatPickerValue,
-  ) => {
-    if (!datasourceId) {
-      return;
+) =>
+  useMemo(() => {
+    if (!colnames || !data?.length) {
+      return [];
     }
-    if (
-      columnType === FormatPickerValue.Original &&
-      !originalFormattedTimeColumns.includes(columnName)
-    ) {
-      const cols = getTimeColumns(datasourceId);
-      cols.push(columnName);
-      setTimeColumns(datasourceId, cols);
-      setOriginalFormattedTimeColumns(cols);
-    } else if (
-      columnType === FormatPickerValue.Formatted &&
-      originalFormattedTimeColumns.includes(columnName)
-    ) {
-      const cols = getTimeColumns(datasourceId);
-      cols.splice(cols.indexOf(columnName), 1);
-      setTimeColumns(datasourceId, cols);
-      setOriginalFormattedTimeColumns(cols);
-    }
-  };
 
-  useEffect(() => {
-    if (isVisible) {
-      setOriginalFormattedTimeColumns(getTimeColumns(datasourceId));
-    }
-  }, [datasourceId, isVisible]);
+    // Build a map of sanitized keys to original keys for faster lookups
+    const keyMap = new Map<string, string>();
+    colnames.forEach(originalKey => {
+      const sanitized = sanitizeColumnName(originalKey);
+      keyMap.set(sanitized, originalKey);
+    });
 
-  return useMemo(
-    () =>
-      colnames && data?.length
-        ? colnames
-            .filter((column: string) => Object.keys(data[0]).includes(column))
-            .map((key, index) => {
-              const colType = coltypes?.[index];
-              const firstValue = data[0][key];
-              const originalFormattedTimeColumnIndex =
-                colType === GenericDataType.Temporal
-                  ? originalFormattedTimeColumns.indexOf(key)
-                  : -1;
-              const isOriginalTimeColumn =
-                originalFormattedTimeColumns.includes(key);
-              return {
-                // react-table requires a non-empty id, therefore we introduce a fallback value in case the key is empty
-                id: key || index,
-                accessor: (row: Record<string, any>) => row[key],
-                Header:
-                  colType === GenericDataType.Temporal &&
-                  typeof firstValue !== 'string' ? (
-                    <DataTableTemporalHeaderCell
-                      columnName={key}
-                      datasourceId={datasourceId}
-                      onTimeColumnChange={onTimeColumnChange}
-                      isOriginalTimeColumn={isOriginalTimeColumn}
-                    />
-                  ) : (
-                    key
-                  ),
-                Cell: ({ value }) => {
-                  if (value === true) {
-                    return Constants.BOOL_TRUE_DISPLAY;
-                  }
-                  if (value === false) {
-                    return Constants.BOOL_FALSE_DISPLAY;
-                  }
-                  if (value === null) {
-                    return <CellNull>{Constants.NULL_DISPLAY}</CellNull>;
-                  }
-                  if (
-                    colType === GenericDataType.Temporal &&
-                    originalFormattedTimeColumnIndex === -1 &&
-                    typeof value === 'number'
-                  ) {
-                    return timeFormatter(value);
-                  }
-                  if (typeof value === 'string' && allowHTML) {
-                    return safeHtmlSpan(value);
-                  }
-                  return String(value);
-                },
-                ...moreConfigs?.[key],
-              } as Column;
-            })
-        : [],
-    [
-      colnames,
-      data,
-      coltypes,
-      datasourceId,
-      moreConfigs,
-      originalFormattedTimeColumns,
-    ],
-  );
-};
+    return colnames.map((key, index) => {
+      const sanitizedKey = sanitizeColumnName(key);
+      return {
+        id: sanitizedKey || index,
+        // Header is required for react-table to display column headers
+        Header: key,
+        accessor: (row: Record<string, any> | any[]) => {
+          if (Array.isArray(row)) {
+            const colIndex = colnames?.findIndex(
+              cn => sanitizeColumnName(cn) === sanitizedKey,
+            );
+            return colIndex !== undefined && colIndex > -1
+              ? row[colIndex]
+              : undefined;
+          }
+          // Try original key first (most reliable for DHIS2)
+          if (row[key] !== undefined) return row[key];
+          // Try sanitized key if data was already sanitized
+          if (row[sanitizedKey] !== undefined) return row[sanitizedKey];
+          // Try to find by comparing sanitized versions of all keys
+          const foundKey = Object.keys(row).find(
+            k => sanitizeColumnName(k) === sanitizedKey,
+          );
+          if (foundKey) return row[foundKey];
+          return undefined;
+        },
+        Cell: ({ value, row }: { value: unknown; row: any }) => {
+          const theme = useTheme();
+          let displayValue = value;
+
+          if (displayValue === undefined && row && row.original) {
+            // Try to find value in row.original using same strategy as accessor
+            if (row.original[key] !== undefined)
+              displayValue = row.original[key];
+            else if (row.original[sanitizedKey] !== undefined)
+              displayValue = row.original[sanitizedKey];
+            else {
+              const foundKey = Object.keys(row.original).find(
+                k => sanitizeColumnName(k) === sanitizedKey,
+              );
+              if (foundKey) displayValue = row.original[foundKey];
+            }
+          }
+
+          if (displayValue === true) {
+            return Constants.BOOL_TRUE_DISPLAY;
+          }
+          if (displayValue === false) {
+            return Constants.BOOL_FALSE_DISPLAY;
+          }
+          if (displayValue === null || displayValue === undefined) {
+            return (
+              <span style={{ color: theme.colorTextTertiary }}>
+                {Constants.NULL_DISPLAY}
+              </span>
+            );
+          }
+          if (typeof displayValue === 'object') {
+            if (displayValue instanceof Response) {
+              return `Response: ${displayValue.status} ${displayValue.url || ''}`;
+            }
+            try {
+              return (
+                <pre
+                  style={{
+                    maxWidth: 300,
+                    whiteSpace: 'pre-wrap',
+                    margin: 0,
+                    padding: 0,
+                  }}
+                >
+                  {JSON.stringify(displayValue, null, 2)}
+                </pre>
+              );
+            } catch (e) {
+              return '[object Object]';
+            }
+          }
+          return String(displayValue);
+        },
+        ...moreConfigs?.[sanitizedKey],
+      };
+    });
+  }, [colnames, data, moreConfigs]);

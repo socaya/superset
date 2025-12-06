@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, Optional, TYPE_CHECKING
-from urllib.parse import urlencode
 
 import requests
 from apispec import APISpec
@@ -33,8 +32,6 @@ from marshmallow import fields, Schema, validate
 from superset.databases.schemas import EncryptedString
 from superset.db_engine_specs.base import BaseEngineSpec
 from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
-from sqlalchemy import pool
-from sqlalchemy.engine import default
 from sqlalchemy.dialects import registry
 
 logger = logging.getLogger(__name__)
@@ -48,35 +45,74 @@ if TYPE_CHECKING:
 
 
 class DHIS2ParametersSchema(Schema):
-    """Schema for DHIS2 connection parameters - fully dynamic configuration"""
+    """Schema for DHIS2 connection parameters"""
 
-    # Connection settings
-    server = fields.Str(
-        required=True,
-        metadata={"description": __("DHIS2 server hostname (e.g., dhis2.hispuganda.org)")}
-    )
-    api_path = fields.Str(
-        missing="/api",
-        metadata={"description": __("API base path (e.g., /api or /hmis/api)")}
+    # Custom authentication component - renders all auth-related fields
+    # This triggers the rendering of our DHIS2AuthenticationFields component
+    # which includes: host, authentication_type, username, password, access_token
+    dhis2_authentication = fields.Str(
+        required=False,
+        allow_none=True,
+        load_default=None,
+        metadata={
+            "description": __("DHIS2 Authentication"),
+            "type": "custom"
+        }
     )
 
-    # Authentication
-    auth_method = fields.Str(
+    # Hidden fields - stored in backend but not rendered (custom component handles UI)
+    # These are needed for the backend to receive the values
+    # Note: These are NOT required at the schema level because the custom component handles validation
+    host = fields.Str(
+        required=False,
+        allow_none=True,
+        load_default=None,
+        metadata={
+            "description": __("DHIS2 server URL"),
+            "placeholder": "https://play.dhis2.org/40.2.2",
+            "x-hidden": True  # Don't render separately
+        }
+    )
+
+    authentication_type = fields.Str(
+        required=False,
+        allow_none=True,
         validate=validate.OneOf(["basic", "pat"]),
-        missing="basic",
-        metadata={"description": __("Authentication method: basic (username/password) or pat (Personal Access Token)")}
+        load_default="basic",
+        metadata={
+            "description": __("Authentication method"),
+            "x-hidden": True  # Don't render separately
+        }
     )
+
     username = fields.Str(
         required=False,
-        metadata={"description": __("DHIS2 username (required for basic auth)")}
+        allow_none=True,
+        load_default=None,
+        metadata={
+            "description": __("DHIS2 username"),
+            "x-hidden": True  # Don't render separately
+        }
     )
+
     password = EncryptedString(
         required=False,
-        metadata={"description": __("DHIS2 password (required for basic auth)")}
+        allow_none=True,
+        load_default=None,
+        metadata={
+            "description": __("DHIS2 password"),
+            "x-hidden": True  # Don't render separately
+        }
     )
+
     access_token = EncryptedString(
         required=False,
-        metadata={"description": __("Personal Access Token (required for PAT auth)")}
+        allow_none=True,
+        load_default=None,
+        metadata={
+            "description": __("Personal Access Token"),
+            "x-hidden": True  # Don't render separately
+        }
     )
 
     # Dynamic default parameters - applies to ALL endpoints
@@ -145,7 +181,20 @@ class DHIS2EngineSpec(BaseEngineSpec):
     allows_sql_comments = True  # Allow comments for parameter injection
     allows_alias_in_select = False
     allows_alias_in_orderby = False
+    allows_hidden_orderby_agg = True  # Allow ordering by aggregated columns in categorical charts
     disable_sql_parsing = True  # DHIS2 doesn't use real SQL - skip parsing validation
+
+    # Dataset configuration - DHIS2 data is multi-dimensional, not strictly time-based
+    # Allow datasets without datetime columns for categorical analysis
+    requires_time_column = False  # Period is optional, can be used as filter or dimension
+    time_groupby_inline = False  # Don't require time grouping
+    supports_dynamic_schema = True  # Enable dataset preview and exploration
+
+    # Disable temporal processing - DHIS2 handles time dimensions internally
+    time_grain_expressions = {}  # Empty dict = no automatic time grain conversion
+
+    # Enable dynamic parameter-based UI (form fields instead of SQLAlchemy URI)
+    supports_dynamic_catalog = True  # Show form-based UI for connections
 
     # Display settings
     default_driver = "dhis2"
@@ -170,6 +219,192 @@ class DHIS2EngineSpec(BaseEngineSpec):
         """
         from superset.db_engine_specs.dhis2_dialect import DHIS2DBAPI
         return DHIS2DBAPI()
+
+    @classmethod
+    def parameters_json_schema(cls) -> Any:
+        """
+        Return configuration parameters as OpenAPI schema for frontend form rendering.
+        This enables the dynamic form-based UI instead of SQLAlchemy URI text input.
+        """
+        if not cls.parameters_schema:
+            return None
+
+        spec = APISpec(
+            title="Database Parameters",
+            version="1.0.0",
+            openapi_version="3.0.0",
+            plugins=[MarshmallowPlugin()],
+        )
+
+        ma_plugin = MarshmallowPlugin()
+        ma_plugin.init_spec(spec)
+
+        # Add encrypted field properties helper if available
+        try:
+            from superset.databases.schemas import encrypted_field_properties
+            ma_plugin.converter.add_attribute_function(encrypted_field_properties)
+        except ImportError:
+            pass
+
+        spec.components.schema(cls.__name__, schema=cls.parameters_schema)
+        return spec.to_dict()["components"]["schemas"][cls.__name__]
+
+    @classmethod
+    def build_sqlalchemy_uri(
+        cls,
+        parameters: dict[str, Any],
+        encrypted_extra: dict[str, Any] | None = None,
+    ) -> str:
+        """
+        Build SQLAlchemy URI from parameters
+
+        This is called during:
+        - Test connection
+        - Connection creation/update
+        - Parameter validation
+
+        Args:
+            parameters: Dict with host, authentication_type, username, password, access_token
+            encrypted_extra: Encrypted parameters (not used for DHIS2)
+
+        Returns:
+            SQLAlchemy URI string in format:
+            - Basic auth: dhis2://username:password@hostname/path/to/api
+            - PAT: dhis2://:access_token@hostname/path/to/api
+        """
+        from urllib.parse import quote_plus, urlparse
+
+        logger.info(f"[DHIS2] build_sqlalchemy_uri called with parameters: {list(parameters.keys())}")
+
+        # Extract parameters
+        host = parameters.get("host", "")
+        auth_type = parameters.get("authentication_type", "basic")
+        username = parameters.get("username", "")
+        password = parameters.get("password", "")
+        access_token = parameters.get("access_token", "")
+
+        logger.info(f"[DHIS2] host={host}, auth_type={auth_type}, has_username={bool(username)}, has_password={bool(password)}, has_token={bool(access_token)}")
+
+        if not host:
+            logger.error("[DHIS2] No host provided in parameters")
+            raise ValueError("DHIS2 server URL is required")
+
+        # Parse the URL to extract hostname and path
+        try:
+            # Ensure URL has a scheme
+            if not host.startswith(("http://", "https://")):
+                host = f"https://{host}"
+
+            parsed = urlparse(host)
+            hostname = parsed.hostname
+            path = parsed.path or ""
+
+            if not hostname:
+                logger.error(f"[DHIS2] Invalid hostname parsed from: {host}")
+                raise ValueError("Invalid DHIS2 server URL")
+
+            # Ensure path ends with /api
+            if not path.endswith("/api"):
+                path = path.rstrip("/") + "/api"
+
+            # Build credentials part
+            credentials = ""
+            if auth_type == "basic":
+                if not username:
+                    logger.error("[DHIS2] Username is required for Basic Authentication")
+                    raise ValueError("Username is required for Basic Authentication")
+                if password:
+                    credentials = f"{quote_plus(username)}:{quote_plus(password)}"
+                else:
+                    credentials = quote_plus(username)
+            elif auth_type == "pat":
+                if not access_token:
+                    logger.error("[DHIS2] Access token is required for PAT authentication")
+                    raise ValueError("Access token is required for PAT authentication")
+                credentials = f":{quote_plus(access_token)}"
+
+            # Build URI
+            credentials_part = f"{credentials}@" if credentials else ""
+            uri = f"dhis2://{credentials_part}{hostname}{path}"
+
+            logger.info(f"[DHIS2] Built URI: dhis2://{credentials_part[:10]}...@{hostname}{path}")
+            return uri
+
+        except Exception as e:
+            logger.error(f"[DHIS2] Failed to build URI: {str(e)}", exc_info=True)
+            raise ValueError(f"Failed to build DHIS2 connection URI: {str(e)}") from e
+
+    @classmethod
+    def get_parameters_from_uri(
+        cls,
+        uri: str,
+        encrypted_extra: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Extract parameters from a DHIS2 SQLAlchemy URI
+
+        This is called when editing an existing DHIS2 connection to populate
+        the form fields from the stored URI.
+
+        Args:
+            uri: SQLAlchemy URI (dhis2://username:password@hostname/path/to/api)
+            encrypted_extra: Encrypted parameters (may contain password/token)
+
+        Returns:
+            Dict with host, authentication_type, username, password, access_token
+        """
+        from urllib.parse import unquote_plus, urlparse
+
+        logger.info(f"[DHIS2] get_parameters_from_uri called")
+
+        try:
+            parsed = urlparse(uri)
+
+            # Extract hostname and path
+            hostname = parsed.hostname
+            path = parsed.path or "/api"
+
+            # Remove /api suffix from path for display
+            if path.endswith("/api"):
+                path = path[:-4]
+
+            # Build host URL
+            host = f"https://{hostname}{path}" if hostname else ""
+
+            # Extract credentials
+            username = unquote_plus(parsed.username) if parsed.username else ""
+            password = unquote_plus(parsed.password) if parsed.password else ""
+
+            # Determine auth type
+            # PAT format: dhis2://:token@hostname
+            # Basic format: dhis2://username:password@hostname
+            auth_type = "pat" if not username and password else "basic"
+
+            parameters = {
+                "host": host,
+                "authentication_type": auth_type,
+            }
+
+            if auth_type == "basic":
+                parameters["username"] = username
+                parameters["password"] = password
+            else:
+                # For PAT, the password field contains the token
+                parameters["access_token"] = password
+
+            logger.info(f"[DHIS2] Extracted parameters: host={host}, auth_type={auth_type}")
+            return parameters
+
+        except Exception as e:
+            logger.error(f"[DHIS2] Failed to extract parameters from URI: {str(e)}", exc_info=True)
+            # Return empty parameters if extraction fails
+            return {
+                "host": "",
+                "authentication_type": "basic",
+                "username": "",
+                "password": "",
+                "access_token": "",
+            }
 
     @classmethod
     def fetch_data(cls, cursor: Any, limit: int | None = None) -> list[tuple[Any, ...]]:
@@ -210,9 +445,11 @@ class DHIS2EngineSpec(BaseEngineSpec):
 
         Problem: PyArrow infers types from data values, causing:
         - "105- Total..." DataElement strings to be treated as numeric
+        - "MOH - Uganda" OrgUnit strings causing "Could not convert string to numeric" errors
         - Pandas nanmean() trying to aggregate dimension columns
 
-        Solution: After PyArrow creates the DataFrame, explicitly cast dimension columns to string dtype.
+        Solution: After PyArrow creates the DataFrame, explicitly cast ALL dimension columns
+        to object (string) dtype. This prevents ANY string column from being aggregated.
 
         This is THE FIX that prevents "Could not convert string to numeric" errors.
         """
@@ -232,15 +469,45 @@ class DHIS2EngineSpec(BaseEngineSpec):
         logger.info(f"[DHIS2] convert_table_to_df: Columns: {df.columns.tolist()}")
         logger.info(f"[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {df.dtypes.to_dict()}")
 
-        # FORCE correct dtypes for DHIS2 tidy format columns
-        # These are DIMENSIONS (categorical data) and must be STRING type to prevent aggregation
-        dimension_columns = ['Period', 'OrgUnit', 'DataElement', 'period', 'orgUnit', 'dataElement']
+        # FORCE correct dtypes for DHIS2 columns
+        # DIMENSION columns (categorical data) - MUST be object/string type to prevent aggregation errors
+        # These should NEVER be treated as numeric, even if they contain numbers
+        dimension_columns = [
+            'Period', 'OrgUnit', 'DataElement',  # Standard DHIS2 dimensions
+            'period', 'orgUnit', 'dataElement',  # Lowercase variants
+            'pe', 'ou', 'dx',  # DHIS2 abbreviations
+        ]
 
         for col in df.columns:
-            if col in dimension_columns:
-                # Force to string dtype - this prevents Pandas from treating "105-..." as numeric
-                df[col] = df[col].astype(str)
-                logger.info(f"[DHIS2] convert_table_to_df: Forced column '{col}' to string dtype")
+            col_lower = col.lower() if isinstance(col, str) else str(col).lower()
+
+            # Check if this is a known dimension column
+            is_dimension = col in dimension_columns or col_lower in [d.lower() for d in dimension_columns]
+
+            # Also check if column contains string values that look like dimension data
+            # (organization names, period names, etc.)
+            if not is_dimension and not df.empty:
+                try:
+                    # Sample first non-null value
+                    sample_val = df[col].dropna().iloc[0] if len(df[col].dropna()) > 0 else None
+                    if sample_val is not None:
+                        # If it's a string and not a pure number, treat as dimension
+                        if isinstance(sample_val, str):
+                            # Check if it's NOT a pure numeric string
+                            try:
+                                float(sample_val)
+                                # It's numeric string - might be a value column
+                            except ValueError:
+                                # It's a non-numeric string - definitely a dimension
+                                is_dimension = True
+                                logger.info(f"[DHIS2] Detected '{col}' as dimension (contains non-numeric string: '{sample_val[:50]}...')")
+                except Exception:
+                    pass  # Keep original type if detection fails
+
+            if is_dimension:
+                # Force to object dtype - this prevents aggregation errors
+                df[col] = df[col].astype('object')
+                logger.info(f"[DHIS2] convert_table_to_df: Forced column '{col}' to object dtype (dimension)")
 
         logger.info(f"[DHIS2] convert_table_to_df: Dtypes AFTER fix: {df.dtypes.to_dict()}")
         if not df.empty:
@@ -256,6 +523,106 @@ class DHIS2EngineSpec(BaseEngineSpec):
             requests.exceptions.Timeout: Exception,
             requests.exceptions.HTTPError: Exception,
         }
+
+    @classmethod
+    def test_connection(
+        cls,
+        parameters: Dict[str, Any],
+        encrypted_extra: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """
+        Test DHIS2 connection before saving
+
+        This method is called when user clicks "Test Connection" button
+
+        Args:
+            parameters: Connection parameters from the UI
+            encrypted_extra: Encrypted parameters
+
+        Raises:
+            Exception: If connection fails with descriptive error message
+        """
+        from urllib.parse import urlparse
+
+        # Extract connection parameters
+        host_url = parameters.get("host", "").strip()
+        if not host_url:
+            raise ValueError("DHIS2 URL is required")
+
+        # Ensure URL has scheme
+        if not host_url.startswith(("http://", "https://")):
+            host_url = f"https://{host_url}"
+
+        parsed_url = urlparse(host_url)
+        hostname = parsed_url.hostname
+        path = parsed_url.path or ""
+
+        # Build API URL
+        if not path.endswith("/api"):
+            if path and not path.endswith("/"):
+                path = f"{path}/api"
+            elif path.endswith("/"):
+                path = f"{path}api"
+            else:
+                path = "/api"
+
+        base_url = f"https://{hostname}{path}"
+
+        # Get authentication
+        auth_type = parameters.get("authentication_type", "basic")
+
+        if auth_type == "pat":
+            # PAT authentication
+            token = parameters.get("access_token", "")
+            if not token:
+                raise ValueError("Personal Access Token is required for PAT authentication")
+            auth = None
+            headers = {"Authorization": f"ApiToken {token}"}
+        else:
+            # Basic authentication
+            username = parameters.get("username", "")
+            password = parameters.get("password", "")
+            if not username or not password:
+                raise ValueError("Username and password are required for Basic authentication")
+            auth = (username, password)
+            headers = {}
+
+        # Test connection by calling /api/me endpoint
+        try:
+            test_url = f"{base_url}/me"
+            logger.info(f"Testing DHIS2 connection to: {test_url}")
+
+            response = requests.get(
+                test_url,
+                auth=auth,
+                headers=headers,
+                timeout=10,
+            )
+
+            # Check response
+            if response.status_code == 401:
+                raise ValueError("Authentication failed. Please check your credentials.")
+            elif response.status_code == 404:
+                raise ValueError(f"DHIS2 API not found at {base_url}. Please check the URL.")
+            elif response.status_code >= 400:
+                raise ValueError(f"DHIS2 API returned error {response.status_code}: {response.text[:200]}")
+
+            response.raise_for_status()
+
+            # Parse response to verify it's valid DHIS2
+            data = response.json()
+            if "userCredentials" not in data and "username" not in data:
+                raise ValueError("Connected, but response doesn't look like DHIS2 API. Please check the URL.")
+
+            # Success!
+            logger.info(f"DHIS2 connection test successful: {data.get('displayName', 'User authenticated')}")
+
+        except requests.exceptions.ConnectionError as e:
+            raise ValueError(f"Cannot connect to {base_url}. Please check the URL and network connection.") from e
+        except requests.exceptions.Timeout:
+            raise ValueError(f"Connection to {base_url} timed out. The server may be slow or unreachable.")
+        except requests.exceptions.RequestException as e:
+            raise ValueError(f"Connection test failed: {str(e)}") from e
 
     @classmethod
     def parse_uri(cls, uri: str) -> Dict[str, Any]:
@@ -293,84 +660,6 @@ class DHIS2EngineSpec(BaseEngineSpec):
             "path": path,
         }
 
-    @classmethod
-    def build_sqlalchemy_uri(
-        cls,
-        parameters: Dict[str, Any],
-        encrypted_extra: Optional[Dict[str, str]] = None,
-    ) -> str:
-        """
-        Build DHIS2 connection URI from parameters - supports multiple auth methods
-
-        Parameters from UI:
-        - server: e.g., "tests.dhis2.hispuganda.org"
-        - api_path: e.g., "/hmis/api"
-        - auth_method: "basic" or "pat"
-        - username: DHIS2 username (for basic auth)
-        - password: DHIS2 password (for basic auth)
-        - access_token: Personal Access Token (for PAT auth)
-        """
-        server = parameters.get("server", "")
-        api_path = parameters.get("api_path", "/api").strip()
-        auth_method = parameters.get("auth_method", "basic")
-
-        # Clean up api_path
-        if not api_path.startswith("/"):
-            api_path = f"/{api_path}"
-
-        # Build credentials based on auth method
-        if auth_method == "pat":
-            # For PAT: use token as password, empty username
-            credentials = f":{parameters.get('access_token', '')}"
-        else:
-            # For basic auth: username:password
-            username = parameters.get("username", "")
-            password = parameters.get("password", "")
-            credentials = f"{username}:{password}"
-
-        return f"dhis2://{credentials}@{server}{api_path}"
-
-    @classmethod
-    def get_parameters_from_uri(
-        cls, uri: str, encrypted_extra: Optional[Dict[str, str]] = None
-    ) -> Dict[str, Any]:
-        """
-        Extract connection parameters from URI for display in UI
-        Supports both basic auth and PAT methods
-        """
-        parsed = cls.parse_uri(uri)
-
-        # Determine auth method based on username presence
-        username = parsed.get("username", "")
-        password = parsed.get("password", "")
-
-        if not username and password:
-            # Empty username with password = PAT auth
-            auth_method = "pat"
-            access_token = password
-            username = ""
-            password = ""
-        else:
-            auth_method = "basic"
-            access_token = ""
-
-        params = {
-            "server": parsed.get("host", ""),
-            "api_path": parsed.get("path", "/api"),
-            "auth_method": auth_method,
-            "username": username,
-            "password": password,
-            "access_token": access_token,
-        }
-
-        # Add dynamic parameters from encrypted_extra if present
-        if encrypted_extra:
-            params["default_params"] = encrypted_extra.get("default_params", {})
-            params["endpoint_params"] = encrypted_extra.get("endpoint_params", {})
-            params["timeout"] = encrypted_extra.get("timeout", 60)
-            params["page_size"] = encrypted_extra.get("page_size", 50)
-
-        return params
 
     @classmethod
     def validate_parameters(
@@ -548,3 +837,62 @@ class DHIS2EngineSpec(BaseEngineSpec):
         Return the SQL as-is without parsing.
         """
         return [sql]
+
+    @classmethod
+    def select_star(  # pylint: disable=too-many-arguments
+        cls,
+        database: "Database",
+        table: "Table",
+        engine: "Engine",
+        limit: int = 100,
+        show_cols: bool = False,
+        indent: bool = True,
+        latest_partition: bool = True,
+        cols: list | None = None,
+    ) -> str:
+        """
+        Generate a SELECT query for DHIS2 data preview.
+
+        For DHIS2, we generate a SQL-like query that the DHIS2 dialect can interpret
+        and convert to an API call. The format is:
+
+        SELECT * FROM table_name LIMIT 100
+
+        The DHIS2 cursor will handle this and fetch data from the API.
+
+        Args:
+            database: Database instance
+            table: Table instance (table.table is the endpoint name like 'analytics')
+            engine: SQLAlchemy engine
+            limit: Number of rows to return (default 100)
+            show_cols: Whether to show specific columns
+            indent: Whether to indent the query
+            latest_partition: Not used for DHIS2
+            cols: Specific columns to select
+
+        Returns:
+            SQL query string that DHIS2 dialect can interpret
+        """
+        table_name = table.table if hasattr(table, 'table') else str(table)
+
+        # Generate a simple SELECT query that the DHIS2 cursor can parse
+        # The cursor extracts the table name from FROM clause and makes API call
+        if cols and show_cols:
+            col_names = [col.get("column_name", col.get("name", "")) for col in cols if isinstance(col, dict)]
+            if col_names:
+                columns_str = ", ".join(col_names)
+                sql = f"SELECT {columns_str} FROM {table_name}"
+            else:
+                sql = f"SELECT * FROM {table_name}"
+        else:
+            sql = f"SELECT * FROM {table_name}"
+
+        if limit:
+            sql += f" LIMIT {limit}"
+
+        if indent:
+            # Simple indentation
+            sql = sql.replace("SELECT", "SELECT\n  ").replace("FROM", "\nFROM").replace("LIMIT", "\nLIMIT")
+
+        return sql
+

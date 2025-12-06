@@ -17,7 +17,7 @@
  * under the License.
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ensureIsArray, styled, t } from '@superset-ui/core';
+import { ensureIsArray, styled, t, GenericDataType } from '@superset-ui/core';
 import {
   TableView,
   TableSize,
@@ -25,7 +25,6 @@ import {
   Loading,
   EmptyWrapperType,
 } from '@superset-ui/core/components';
-import { GenericDataType } from '@apache-superset/core/api/core';
 import {
   useFilteredTableData,
   useTableColumns,
@@ -90,20 +89,67 @@ export const SamplesPane = ({
           setIsLoading(false);
         });
     }
-  }, [datasource, isRequest, queryForce]);
+  }, [datasource, isRequest, queryForce, setForceQuery]);
+
+  const transformedData = useMemo(() => {
+    if (!data || !colnames) {
+      return [];
+    }
+
+    return data.map(row => {
+      const rowObject: Record<string, any> = {};
+
+      // Handle different data structures
+      if (Array.isArray(row)) {
+        // Row is an array - map by index
+        colnames.forEach((col, i) => {
+          rowObject[col] = row[i];
+        });
+      } else if (row && typeof row === 'object') {
+        // Row is already an object - copy values using column names
+        colnames.forEach(col => {
+          // Try exact column name first
+          if (col in row) {
+            rowObject[col] = row[col];
+          } else {
+            // Try to find column by sanitized name comparison
+            const foundKey = Object.keys(row).find(k => {
+              const sanitizedK = k
+                .replace(/[.\-\s()]+/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '');
+              const sanitizedCol = col
+                .replace(/[.\-\s()]+/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '');
+              return sanitizedK.toLowerCase() === sanitizedCol.toLowerCase();
+            });
+            rowObject[col] = foundKey ? row[foundKey] : undefined;
+          }
+        });
+      } else {
+        // Unknown format - try to use as-is
+        colnames.forEach(col => {
+          rowObject[col] = undefined;
+        });
+      }
+
+
+      return rowObject;
+    });
+  }, [data, colnames]);
 
   // this is to preserve the order of the columns, even if there are integer values,
   // while also only grabbing the first column's keys
   const columns = useTableColumns(
     colnames,
     coltypes,
-    data,
+    transformedData,
     datasourceId,
     isVisible,
     {}, // moreConfig
-    true, // allowHTML
   );
-  const filteredData = useFilteredTableData(filterText, data);
+  const filteredData = useFilteredTableData(filterText, transformedData);
 
   const handleInputChange = useCallback(
     (input: string) => setFilterText(input),

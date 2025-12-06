@@ -37,7 +37,7 @@ export type AdhocMetricPopoverTriggerProps = {
   onMetricEdit(newMetric: Metric, oldMetric: Metric): void;
   columns: { column_name: string; type: string }[];
   savedMetricsOptions: savedMetricType[];
-  savedMetric: savedMetricType;
+  savedMetric?: savedMetricType;
   datasource: Datasource & ISaveableDatasource;
   children: ReactNode;
   isControlledComponent?: boolean;
@@ -107,7 +107,7 @@ class AdhocMetricPopoverTrigger extends PureComponent<
   }
 
   onLabelChange(e: any) {
-    const { verbose_name, metric_name } = this.props.savedMetric;
+    const { verbose_name, metric_name } = this.props.savedMetric || {};
     const defaultMetricLabel = this.props.adhocMetric?.getDefaultLabel();
     const label = e.target.value;
     this.setState(state => ({
@@ -186,7 +186,7 @@ class AdhocMetricPopoverTrigger extends PureComponent<
       datasource,
       isControlledComponent,
     } = this.props;
-    const { verbose_name, metric_name } = savedMetric;
+    const { verbose_name, metric_name } = savedMetric || {};
     const { hasCustomLabel, label } = adhocMetric;
     const adhocMetricLabel = hasCustomLabel
       ? label
