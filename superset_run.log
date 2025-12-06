@@ -1,0 +1,20 @@
+Loaded your LOCAL configuration at [/Users/stephocay/projects/hispuganda/superset/superset_config.py]
+2025-12-03 14:33:22,940:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
+2025-12-03 14:33:22,940:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
+2025-12-03 14:33:23,048:INFO:superset.app:Syncing configuration to database...
+2025-12-03 14:33:23,051:INFO:superset.app:Configuration sync to database completed successfully
+ * Serving Flask app 'superset'
+ * Debug mode: on
+2025-12-03 14:33:23,338:INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8088
+2025-12-03 14:33:23,338:INFO:werkzeug:[33mPress CTRL+C to quit[0m
+2025-12-03 14:33:23,345:INFO:werkzeug: * Restarting with watchdog (fsevents)
+Loaded your LOCAL configuration at [/Users/stephocay/projects/hispuganda/superset/superset_config.py]
+2025-12-03 14:33:24,352:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
+2025-12-03 14:33:24,352:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
+2025-12-03 14:33:24,431:INFO:superset.app:Syncing configuration to database...
+2025-12-03 14:33:24,434:INFO:superset.app:Configuration sync to database completed successfully
+2025-12-03 14:33:24,661:WARNING:werkzeug: * Debugger is active!
+2025-12-03 14:33:24,667:INFO:werkzeug: * Debugger PIN: 114-810-287
+/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

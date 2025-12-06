@@ -136,10 +136,19 @@ export function sortAndFilterSeries(
   extraMetricLabels: any[],
   sortSeriesType?: SortSeriesType,
   sortSeriesAscending?: boolean,
+  colnames?: string[],
 ): string[] {
-  const seriesNames = Object.keys(rows[0])
-    .filter(key => key !== xAxis)
-    .filter(key => !extraMetricLabels.includes(key));
+  let seriesNames: string[];
+  
+  if (colnames && colnames.length > 0) {
+    seriesNames = colnames
+      .filter(key => key !== xAxis)
+      .filter(key => !extraMetricLabels.includes(key));
+  } else {
+    seriesNames = Object.keys(rows[0])
+      .filter(key => key !== xAxis)
+      .filter(key => !extraMetricLabels.includes(key));
+  }
 
   let aggregator: (name: string) => { name: string; value: any };
 
@@ -273,6 +282,7 @@ export function extractSeries(
     xAxisSortSeries?: SortSeriesType;
     xAxisSortSeriesAscending?: boolean;
     xAxisType?: AxisType;
+    colnames?: string[];
   } = {},
 ): [SeriesOption[], number[], number | undefined] {
   const {
@@ -288,6 +298,7 @@ export function extractSeries(
     xAxisSortSeries,
     xAxisSortSeriesAscending,
     xAxisType,
+    colnames,
   } = opts;
   if (data.length === 0) return [[], [], undefined];
   const rows: DataRecord[] = data.map(datum => ({
@@ -303,6 +314,7 @@ export function extractSeries(
     extraMetricLabels,
     sortSeriesType,
     sortSeriesAscending,
+    colnames,
   );
   const sortedRows =
     isDefined(xAxisSortSeries) && isDefined(xAxisSortSeriesAscending)

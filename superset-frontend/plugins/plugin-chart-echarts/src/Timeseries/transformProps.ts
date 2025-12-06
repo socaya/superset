@@ -255,6 +255,7 @@ export default function transformProps(
       xAxisSortSeries: isMultiSeries ? xAxisSort : undefined,
       xAxisSortSeriesAscending: isMultiSeries ? xAxisSortAsc : undefined,
       xAxisType,
+      colnames: queryData.colnames,
     },
   );
   const showValueIndexes = extractShowValueIndexes(rawSeries, {

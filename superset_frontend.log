@@ -1,0 +1,197 @@
+
+> superset@0.0.0-dev dev
+> webpack --mode=development --color --watch
+
+✅ Type checking enabled (disable with DISABLE_TYPE_CHECK=true npm run dev)
+[Superset Plugin] Use symlink source for @apache-superset/core @ packages/superset-core
+[Superset Plugin] Use symlink source for @superset-ui/chart-controls @ ./packages/superset-ui-chart-controls
+[Superset Plugin] Use symlink source for @superset-ui/core @ ./packages/superset-ui-core
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-calendar @ ./plugins/legacy-plugin-chart-calendar
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-chord @ ./plugins/legacy-plugin-chart-chord
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-country-map @ ./plugins/legacy-plugin-chart-country-map
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-horizon @ ./plugins/legacy-plugin-chart-horizon
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-map-box @ ./plugins/legacy-plugin-chart-map-box
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-paired-t-test @ ./plugins/legacy-plugin-chart-paired-t-test
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-parallel-coordinates @ ./plugins/legacy-plugin-chart-parallel-coordinates
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-partition @ ./plugins/legacy-plugin-chart-partition
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-rose @ ./plugins/legacy-plugin-chart-rose
+[Superset Plugin] Use symlink source for @superset-ui/legacy-plugin-chart-world-map @ ./plugins/legacy-plugin-chart-world-map
+[Superset Plugin] Use symlink source for @superset-ui/legacy-preset-chart-deckgl @ ./plugins/legacy-preset-chart-deckgl
+[Superset Plugin] Use symlink source for @superset-ui/legacy-preset-chart-nvd3 @ ./plugins/legacy-preset-chart-nvd3
+[Superset Plugin] Use symlink source for @superset-ui/plugin-chart-ag-grid-table @ ./plugins/plugin-chart-ag-grid-table
+[Superset Plugin] Use symlink source for @superset-ui/plugin-chart-cartodiagram @ ./plugins/plugin-chart-cartodiagram
+[Superset Plugin] Use symlink source for @superset-ui/plugin-chart-echarts @ ./plugins/plugin-chart-echarts
+[Superset Plugin] Use symlink source for @superset-ui/plugin-chart-handlebars @ ./plugins/plugin-chart-handlebars
+[Superset Plugin] Use symlink source for @superset-ui/plugin-chart-pivot-table @ ./plugins/plugin-chart-pivot-table
+[Superset Plugin] Use symlink source for @superset-ui/plugin-chart-table @ ./plugins/plugin-chart-table
+[Superset Plugin] Use symlink source for @superset-ui/plugin-chart-word-cloud @ ./plugins/plugin-chart-word-cloud
+[Superset Plugin] Use symlink source for @superset-ui/switchboard @ ./packages/superset-ui-switchboard
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+<s> [webpack.Progress] 3% setup watch run
+<s> [webpack.Progress] 3% setup watch run webpack-cli
+<s> [webpack.Progress] 3% setup watch run ForkTsCheckerWebpackPlugin
+<s> [webpack.Progress] 3% setup watch run WebpackManifestPlugin
+<s> [webpack.Progress] 3% setup watch run
+<s> [webpack.Progress] 4% setup normal module factory
+<s> [webpack.Progress] 4% setup normal module factory
+<s> [webpack.Progress] 5% setup context module factory
+<s> [webpack.Progress] 5% setup context module factory
+<s> [webpack.Progress] 6% setup before compile
+<s> [webpack.Progress] 6% setup before compile ProgressPlugin
+<s> [webpack.Progress] 6% setup before compile
+<s> [webpack.Progress] 7% setup compile
+<s> [webpack.Progress] 7% setup compile ExternalsPlugin
+<s> [webpack.Progress] 7% setup compile ExternalsPlugin
+<s> [webpack.Progress] 7% setup compile
+<s> [webpack.Progress] 8% setup compilation
+<s> [webpack.Progress] 8% setup compilation CopyPlugin
+<s> [webpack.Progress] 8% setup compilation HtmlWebpackPlugin
+<s> [webpack.Progress] 8% setup compilation HtmlWebpackPlugin
+<s> [webpack.Progress] 8% setup compilation ArrayPushCallbackChunkFormatPlugin
+<s> [webpack.Progress] 8% setup compilation JsonpChunkLoadingPlugin
+<s> [webpack.Progress] 8% setup compilation StartupChunkDependenciesPlugin
+<s> [webpack.Progress] 8% setup compilation ImportScriptsChunkLoadingPlugin
+<s> [webpack.Progress] 8% setup compilation AssignLibraryPlugin
+<s> [webpack.Progress] 8% setup compilation WorkerPlugin
+<s> [webpack.Progress] 8% setup compilation SplitChunksPlugin
+<s> [webpack.Progress] 8% setup compilation ResolverCachePlugin
+<s> [webpack.Progress] 8% setup compilation ConsumeSharedPlugin
+<s> [webpack.Progress] 8% setup compilation HoistContainerReferences
+<s> [webpack.Progress] 8% setup compilation WebpackManifestPlugin
+<s> [webpack.Progress] 8% setup compilation
+<s> [webpack.Progress] 9% setup compilation
+<s> [webpack.Progress] 9% setup compilation ProvidePlugin
+<s> [webpack.Progress] 9% setup compilation DefinePlugin
+<s> [webpack.Progress] 9% setup compilation ProgressPlugin
+<s> [webpack.Progress] 9% setup compilation ForkTsCheckerWebpackPlugin
+<s> [webpack.Progress] 9% setup compilation ExternalsPlugin
+<s> [webpack.Progress] 9% setup compilation ExternalsPlugin
+<s> [webpack.Progress] 9% setup compilation ChunkPrefetchPreloadPlugin
+<s> [webpack.Progress] 9% setup compilation ModuleInfoHeaderPlugin
+<s> [webpack.Progress] 9% setup compilation EvalSourceMapDevToolPlugin
+<s> [webpack.Progress] 9% setup compilation JavascriptModulesPlugin
+<s> [webpack.Progress] 9% setup compilation JsonModulesPlugin
+<s> [webpack.Progress] 9% setup compilation AssetModulesPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation EntryPlugin
+<s> [webpack.Progress] 9% setup compilation RuntimePlugin
+<s> [webpack.Progress] 9% setup compilation InferAsyncModulesPlugin
+<s> [webpack.Progress] 9% setup compilation DataUriPlugin
+<s> [webpack.Progress] 9% setup compilation FileUriPlugin
+<s> [webpack.Progress] 9% setup compilation CompatibilityPlugin
+<s> [webpack.Progress] 9% setup compilation HarmonyModulesPlugin
+<s> [webpack.Progress] 9% setup compilation AMDPlugin
+<s> [webpack.Progress] 9% setup compilation RequireJsStuffPlugin
+<s> [webpack.Progress] 9% setup compilation CommonJsPlugin
+<s> [webpack.Progress] 9% setup compilation LoaderPlugin
+<s> [webpack.Progress] 9% setup compilation LoaderPlugin
+<s> [webpack.Progress] 9% setup compilation NodeStuffPlugin
+<s> [webpack.Progress] 9% setup compilation APIPlugin
+<s> [webpack.Progress] 9% setup compilation ExportsInfoApiPlugin
+<s> [webpack.Progress] 9% setup compilation WebpackIsIncludedPlugin
+<s> [webpack.Progress] 9% setup compilation ConstPlugin
+<s> [webpack.Progress] 9% setup compilation UseStrictPlugin
+<s> [webpack.Progress] 9% setup compilation RequireIncludePlugin
+<s> [webpack.Progress] 9% setup compilation RequireEnsurePlugin
+<s> [webpack.Progress] 9% setup compilation RequireContextPlugin
+<s> [webpack.Progress] 9% setup compilation ImportPlugin
+<s> [webpack.Progress] 9% setup compilation ImportMetaContextPlugin
+<s> [webpack.Progress] 9% setup compilation SystemPlugin
+<s> [webpack.Progress] 9% setup compilation ImportMetaPlugin
+<s> [webpack.Progress] 9% setup compilation URLPlugin
+<s> [webpack.Progress] 9% setup compilation DefaultStatsFactoryPlugin
+<s> [webpack.Progress] 9% setup compilation DefaultStatsPresetPlugin
+<s> [webpack.Progress] 9% setup compilation DefaultStatsPrinterPlugin
+<s> [webpack.Progress] 9% setup compilation JavascriptMetaInfoPlugin
+<s> [webpack.Progress] 9% setup compilation EnsureChunkConditionsPlugin
+<s> [webpack.Progress] 9% setup compilation RemoveEmptyChunksPlugin
+<s> [webpack.Progress] 9% setup compilation MergeDuplicateChunksPlugin
+<s> [webpack.Progress] 9% setup compilation SideEffectsFlagPlugin
+<s> [webpack.Progress] 9% setup compilation FlagDependencyExportsPlugin
+<s> [webpack.Progress] 9% setup compilation FlagDependencyUsagePlugin
+<s> [webpack.Progress] 9% setup compilation NamedModuleIdsPlugin
+<s> [webpack.Progress] 9% setup compilation NamedChunkIdsPlugin
+<s> [webpack.Progress] 9% setup compilation DefinePlugin
+<s> [webpack.Progress] 9% setup compilation TemplatedPathPlugin
+<s> [webpack.Progress] 9% setup compilation RecordIdsPlugin
+<s> [webpack.Progress] 9% setup compilation WarnCaseSensitiveModulesPlugin
+<s> [webpack.Progress] 9% setup compilation AddBuildDependenciesPlugin
+<s> [webpack.Progress] 9% setup compilation AddBuildDependenciesPlugin
+<s> [webpack.Progress] 9% setup compilation AddBuildDependenciesPlugin
+<s> [webpack.Progress] 9% setup compilation IgnoreWarningsPlugin
+<s> [webpack.Progress] 9% setup compilation ProvideSharedPlugin
+<s> [webpack.Progress] 9% setup compilation ProvideSharedPlugin
+<s> [webpack.Progress] 9% setup compilation WebpackManifestPlugin
+<s> [webpack.Progress] 9% setup compilation
+<s> [webpack.Progress] 10% building
+<s> [webpack.Progress] 10% building 0/1 entries 0/0 dependencies 0/0 modules
+<s> [webpack.Progress] 10% building 0/12 entries 1/12 dependencies 0/0 modules
+<s> [webpack.Progress] 10% building 1/12 entries 94/240 dependencies 9/48 modules
+<s> [webpack.Progress] 10% building 2/12 entries 388/595 dependencies 29/247 modules
+<s> [webpack.Progress] 10% building 3/12 entries 388/595 dependencies 29/247 modules
+<s> [webpack.Progress] 10% building 4/12 entries 388/595 dependencies 29/247 modules
+<s> [webpack.Progress] 10% building 5/12 entries 388/595 dependencies 29/247 modules
+<s> [webpack.Progress] 32% building 5/12 entries 22600/24110 dependencies 5591/7504 modules
+<s> [webpack.Progress] 44% building 6/12 entries 33239/33979 dependencies 8485/10465 modules
+<s> [webpack.Progress] 44% building 7/12 entries 33239/33979 dependencies 8485/10465 modules
+<s> [webpack.Progress] 46% building 8/12 entries 33239/33979 dependencies 8485/10465 modules
+<s> [webpack.Progress] 51% building 9/12 entries 33239/33979 dependencies 8485/10465 modules
+<s> [webpack.Progress] 51% building 9/12 entries 33500/33979 dependencies 8519/10523 modules
+<s> [webpack.Progress] 58% building 10/12 entries 40784/40896 dependencies 11826/12649 modules
+<s> [webpack.Progress] 63% building 11/12 entries 42396/42399 dependencies 13173/13208 modules
+<s> [webpack.Progress] 64% building 12/12 entries 42401/42401 dependencies 13210/13210 modules
+<s> [webpack.Progress] 65% building
+<s> [webpack.Progress] 69% building finish
+<s> [webpack.Progress] 69% building finish ProvideSharedPlugin
+<s> [webpack.Progress] 63% building 13/15 entries 42405/42407 dependencies 13211/13213 modules
+<s> [webpack.Progress] 63% building 14/15 entries 42406/42407 dependencies 13212/13213 modules
+<s> [webpack.Progress] 64% building 15/15 entries 42407/42407 dependencies 13213/13213 modules
+<s> [webpack.Progress] 69% building finish
+<s> [webpack.Progress] 70% sealing finish module graph
+<s> [webpack.Progress] 70% sealing finish module graph ResolverCachePlugin
+<s> [webpack.Progress] 70% sealing finish module graph InferAsyncModulesPlugin
+<s> [webpack.Progress] 70% sealing finish module graph FlagDependencyExportsPlugin
+<s> [webpack.Progress] 70% sealing finish module graph AssignLibraryPlugin
+<s> [webpack.Progress] 70% sealing finish module graph
+/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/webpack/lib/dependencies/HarmonyImportSpecifierDependency.js:226
+				(moduleGraph.getParentModule(this)).buildMeta
+				                                    ^
+
+TypeError: Cannot read properties of undefined (reading 'buildMeta')
+    at HarmonyImportSpecifierDependency._getEffectiveExportPresenceLevel (/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/webpack/lib/dependencies/HarmonyImportSpecifierDependency.js:226:41)
+    at HarmonyImportSpecifierDependency.getWarnings (/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/webpack/lib/dependencies/HarmonyImportSpecifierDependency.js:239:32)
+    at Compilation.reportDependencyErrorsAndWarnings (/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/webpack/lib/Compilation.js:3506:24)
+    at /Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/webpack/lib/Compilation.js:3071:28
+    at _next2 (eval at create (/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/tapable/lib/HookCodeFactory.js:31:10), <anonymous>:23:1)
+    at eval (eval at create (/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/tapable/lib/HookCodeFactory.js:31:10), <anonymous>:58:1)
+    at /Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/webpack/lib/FlagDependencyExportsPlugin.js:404:10
+    at /Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/neo-async/async.js:2830:7
+    at Object.each (/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/neo-async/async.js:2850:39)
+    at /Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/webpack/lib/FlagDependencyExportsPlugin.js:374:17
+
+Node.js v22.17.0
+Error: write EPIPE
+    at target._send (node:internal/child_process:877:20)
+    at target.send (node:internal/child_process:751:19)
+    at /Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/fork-ts-checker-webpack-plugin/lib/rpc/expose-rpc.js:27:31
+    at new Promise (<anonymous>)
+    at sendMessage (/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/fork-ts-checker-webpack-plugin/lib/rpc/expose-rpc.js:19:38)
+    at /Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/fork-ts-checker-webpack-plugin/lib/rpc/expose-rpc.js:60:27
+    at Generator.next (<anonymous>)
+    at fulfilled (/Users/stephocay/projects/hispuganda/superset/superset-frontend/node_modules/fork-ts-checker-webpack-plugin/lib/rpc/expose-rpc.js:5:58)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errno: -32,
+  code: 'EPIPE',
+  syscall: 'write'
+}

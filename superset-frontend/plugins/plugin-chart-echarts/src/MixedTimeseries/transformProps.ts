@@ -259,6 +259,7 @@ export default function transformProps(
     stack,
     totalStackedValues,
     xAxisType,
+    colnames: (queriesData[0] as TimeseriesChartDataResponseResult).colnames,
   });
   const rebasedDataB = rebaseForecastDatum(data2, verboseMap);
   const {
@@ -277,6 +278,7 @@ export default function transformProps(
     stack: Boolean(stackB),
     totalStackedValues: totalStackedValuesB,
     xAxisType,
+    colnames: (queriesData[1] as TimeseriesChartDataResponseResult).colnames,
   });
   const series: SeriesOption[] = [];
   const formatter = contributionMode
