@@ -1569,9 +1569,17 @@ const FiltersConfigForm = (
                     filterType={formFilter?.filterType}
                     availableFilters={availableFilters}
                     cascadeParentId={
-                      filterToEdit?.cascadeParentId
+                      form.getFieldValue([
+                        'filters',
+                        filterId,
+                        'cascadeParentId',
+                      ])
                     }
-                    cascadeLevel={filterToEdit?.cascadeLevel}
+                    cascadeLevel={form.getFieldValue([
+                      'filters',
+                      filterId,
+                      'cascadeLevel',
+                    ])}
                     onCascadeParentChange={parentId => {
                       setNativeFilterFieldValues(
                         form,
@@ -1595,6 +1603,18 @@ const FiltersConfigForm = (
                       formChanged();
                     }}
                   />
+                </FormItem>
+                <FormItem
+                  name={[
+                    'filters',
+                    filterId,
+                    'cascadeLevel',
+                  ]}
+                  initialValue={
+                    filterToEdit?.cascadeLevel || null
+                  }
+                >
+                  <div style={{ display: 'none' }} />
                 </FormItem>
               </StyledContainer>
             </StyledSettings>
