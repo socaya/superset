@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { useState } from 'react';
 import { styled, t } from '@superset-ui/core';
 import { Select, Input } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
@@ -142,13 +143,14 @@ const FilterDependencies = ({
   onCascadeLevelChange,
   onDependenciesChange,
 }: FilterDependenciesProps) => {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const compatibleFilters = availableFilters.filter(
     filter => filter.value !== filterId && filter.type === filterType,
   );
 
   const isCascadeMode =
     cascadeParentId && cascadeLevel && dependencies.length === 0;
-  const isDependenciesMode = dependencies.length > 0;
   const hasNoFilters = compatibleFilters.length === 0;
 
   const currentParent = compatibleFilters.find(
@@ -196,31 +198,24 @@ const FilterDependencies = ({
     <Container>
       {hasNoFilters ? (
         <StatusBox variant="info">
-          {t('Create other filters first to set up filter dependencies')}
+          {t('Create other filters first to set up cascading relationships')}
         </StatusBox>
       ) : (
         <>
           {isCascadeMode && (
             <StatusBox variant="success">
-              <strong>{t('Cascading Hierarchy Active')}</strong>
+              <strong>{t('Cascading Relationship Active')}</strong>
               <br />
               {t('This filter cascades from')} <strong>{currentParent?.label}</strong>{' '}
-              {t('at level')} <strong>{cascadeLevel}</strong>.{' '}
-              {t('Only values associated with the parent selection will be displayed.')}
-            </StatusBox>
-          )}
-
-          {isDependenciesMode && (
-            <StatusBox variant="success">
-              <strong>{t('Multi-Filter Dependency Active')}</strong>
-              <br />
-              {t('This filter depends on')} <strong>{dependencies.length}</strong>{' '}
-              {t('other filter(s)')}. {t('Values will be filtered based on those selections.')}
+              {t('at level')} <strong>{cascadeLevel}</strong>. {t('Only values associated with the parent selection will be displayed.')}
             </StatusBox>
           )}
 
           <Section>
-            <SectionTitle>{t('Hierarchical Cascade')}</SectionTitle>
+            <SectionTitle>{t('Parent Filter (1-to-1 Mapping)')}</SectionTitle>
+            <StatusBox variant="info">
+              {t('Select a parent filter to establish a hierarchical cascade relationship. This filter will show only values that exist in the parent filter\'s selection.')}
+            </StatusBox>
 
             <FieldGroup>
               <Label>{t('Parent Filter')}</Label>
@@ -238,8 +233,10 @@ const FilterDependencies = ({
                   const selectedValue = (option as { value: string }).value;
                   if (!selectedValue) {
                     handleClearCascade();
+                    onDependenciesChange([]);
                   } else {
                     onCascadeParentChange(selectedValue);
+                    onDependenciesChange([]);
                   }
                 }}
                 placeholder={t('Select a parent filter')}
@@ -258,79 +255,101 @@ const FilterDependencies = ({
                 />
               </FieldGroup>
             )}
-
-            {cascadeParentId && cascadeLevel && dependencies.length === 0 && (
-              <StatusBox variant="info">
-                {t('Cascade mode is active. Clear to switch to dependency mode.')}
-              </StatusBox>
-            )}
           </Section>
 
           <Section>
-            <SectionTitle>{t('Multi-Filter Dependencies')}</SectionTitle>
-
-            <div>
-              {dependencies.length > 0 && (
-                <>
-                  <Label style={{ marginBottom: '12px' }}>
-                    {t('Values dependent on')}
-                  </Label>
-                  {dependencies.map(depId => {
-                    let value = compatibleFilters.find(
-                      e => e.value === depId,
-                    );
-                    let options = compatibleFilters;
-                    if (!value) {
-                      value = {
-                        label: t('(deleted or invalid type)'),
-                        value: depId,
-                        type: filterType,
-                      };
-                      options = [value, ...options];
-                    }
-                    return (
-                      <RowPanel key={depId}>
-                        <Select
-                          ariaLabel={t('Dependency filter')}
-                          labelInValue
-                          options={options.filter(
-                            e => e.value === depId || !dependencies.includes(e.value),
-                          )}
-                          onChange={option =>
-                            handleChangeDependency(
-                              depId,
-                              (option as { value: string }).value,
-                            )
-                          }
-                          value={value}
-                        />
-                        <DeleteIcon
-                          iconSize="xl"
-                          onClick={() => handleDeleteDependency(depId)}
-                        />
-                      </RowPanel>
-                    );
-                  })}
-                </>
-              )}
-
-              {compatibleFilters.length > dependencies.length && (
-                <AddFilter
-                  role="button"
-                  onClick={handleAddDependency}
-                  style={{ marginTop: dependencies.length > 0 ? '12px' : 0 }}
-                >
-                  <Icons.PlusOutlined iconSize="xs" />
-                  {t('Add filter dependency')}
-                </AddFilter>
-              )}
-
-              {dependencies.length > 0 && cascadeParentId && cascadeLevel && (
-                <StatusBox variant="warning">
-                  {t('Note: Both cascade and dependencies are active. Only dependencies will be applied.')}
-                </StatusBox>
-              )}
+            <div
+              role="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                gap: '8px',
+                padding: '8px 0',
+              }}
+            >
+              <Icons.CaretDownOutlined
+                style={{
+                  transform: showAdvanced ? 'rotate(0deg)' : 'rotate(-90deg)',
+                  transition: 'transform 0.2s',
+                }}
+              />
+              <span style={{ fontWeight: 600, fontSize: '12px' }}>
+                {t('Advanced: Multi-Filter Dependencies')}
+              </span>
             </div>
+
+            {showAdvanced && (
+              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
+                <StatusBox variant="info" style={{ marginBottom: '12px' }}>
+                  {t('Optionally set up additional filter dependencies. This filter will be constrained by multiple parent filters simultaneously.')}
+                </StatusBox>
+
+                <div>
+                  {dependencies.length > 0 && (
+                    <>
+                      <Label style={{ marginBottom: '12px' }}>
+                        {t('Values dependent on')}
+                      </Label>
+                      {dependencies.map(depId => {
+                        let value = compatibleFilters.find(
+                          e => e.value === depId,
+                        );
+                        let options = compatibleFilters;
+                        if (!value) {
+                          value = {
+                            label: t('(deleted or invalid type)'),
+                            value: depId,
+                            type: filterType,
+                          };
+                          options = [value, ...options];
+                        }
+                        return (
+                          <RowPanel key={depId}>
+                            <Select
+                              ariaLabel={t('Dependency filter')}
+                              labelInValue
+                              options={options.filter(
+                                e => e.value === depId || !dependencies.includes(e.value),
+                              )}
+                              onChange={option =>
+                                handleChangeDependency(
+                                  depId,
+                                  (option as { value: string }).value,
+                                )
+                              }
+                              value={value}
+                            />
+                            <DeleteIcon
+                              iconSize="xl"
+                              onClick={() => handleDeleteDependency(depId)}
+                            />
+                          </RowPanel>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {compatibleFilters.length > dependencies.length && (
+                    <AddFilter
+                      role="button"
+                      onClick={handleAddDependency}
+                      style={{ marginTop: dependencies.length > 0 ? '12px' : 0 }}
+                    >
+                      <Icons.PlusOutlined iconSize="xs" />
+                      {t('Add filter dependency')}
+                    </AddFilter>
+                  )}
+
+                  {dependencies.length > 0 && cascadeParentId && cascadeLevel && (
+                    <StatusBox variant="warning" style={{ marginTop: '12px' }}>
+                      {t('Note: Both cascade and dependencies are active. Only dependencies will be applied.')}
+                    </StatusBox>
+                  )}
+                </div>
+              </div>
+            )}
           </Section>
         </>
       )}
