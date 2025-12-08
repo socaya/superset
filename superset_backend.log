@@ -1,27 +1,24 @@
 Loaded your LOCAL configuration at [/Users/stephocay/projects/hispuganda/superset/superset_config.py]
-2025-12-08 10:56:06,031:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
-2025-12-08 10:56:06,031:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
-2025-12-08 10:56:06,136:INFO:superset.app:Syncing configuration to database...
-2025-12-08 10:56:06,140:INFO:superset.app:Configuration sync to database completed successfully
+2025-12-08 11:04:22,600:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
+2025-12-08 11:04:22,600:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
+2025-12-08 11:04:22,704:INFO:superset.app:Syncing configuration to database...
+2025-12-08 11:04:22,707:INFO:superset.app:Configuration sync to database completed successfully
  * Serving Flask app 'superset'
  * Debug mode: on
-2025-12-08 10:56:06,410:INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+2025-12-08 11:04:22,990:INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on http://127.0.0.1:8088
-2025-12-08 10:56:06,410:INFO:werkzeug:[33mPress CTRL+C to quit[0m
-2025-12-08 10:56:06,469:INFO:werkzeug: * Restarting with watchdog (fsevents)
+2025-12-08 11:04:22,990:INFO:werkzeug:[33mPress CTRL+C to quit[0m
+2025-12-08 11:04:23,055:INFO:werkzeug: * Restarting with watchdog (fsevents)
 Loaded your LOCAL configuration at [/Users/stephocay/projects/hispuganda/superset/superset_config.py]
-2025-12-08 10:56:07,419:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
-2025-12-08 10:56:07,419:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
-2025-12-08 10:56:07,495:INFO:superset.app:Syncing configuration to database...
-2025-12-08 10:56:07,498:INFO:superset.app:Configuration sync to database completed successfully
-2025-12-08 10:56:07,731:WARNING:werkzeug: * Debugger is active!
-2025-12-08 10:56:07,737:INFO:werkzeug: * Debugger PIN: 114-810-287
-2025-12-08 10:56:07,809:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:07] "GET /health HTTP/1.1" 200 -
-2025-12-08 10:56:13,082:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:13] "[32mGET / HTTP/1.1[0m" 302 -
-2025-12-08 10:56:13,582:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:13] "GET /superset/welcome/ HTTP/1.1" 200 -
-2025-12-08 10:56:13,626:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:13] "GET /static/assets/theme.b4f92bcc.entry.js HTTP/1.1" 200 -
-2025-12-08 10:56:13,682:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:13] "GET /static/assets/spa.0aed9873.entry.js HTTP/1.1" 200 -
-2025-12-08 10:56:13,715:WARNING:superset.views.error_handling:HTTPException
+2025-12-08 11:04:24,210:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
+2025-12-08 11:04:24,211:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
+2025-12-08 11:04:24,300:INFO:superset.app:Syncing configuration to database...
+2025-12-08 11:04:24,303:INFO:superset.app:Configuration sync to database completed successfully
+2025-12-08 11:04:24,564:WARNING:werkzeug: * Debugger is active!
+2025-12-08 11:04:24,571:INFO:werkzeug: * Debugger PIN: 114-810-287
+2025-12-08 11:04:24,650:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:24] "GET /health HTTP/1.1" 200 -
+2025-12-08 11:04:29,671:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:29] "GET /api/v1/me/ HTTP/1.1" 200 -
+2025-12-08 11:04:29,717:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -37,21 +34,10 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 10:56:13,717:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:13] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 10:56:14,241:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/saved_query/?q=(filters:!((col:created_by,opr:rel_o_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 10:56:14,246:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/log/recent_activity/?q=(distinct:!f,page_size:24) HTTP/1.1" 200 -
-2025-12-08 10:56:14,365:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/database/?q=(filters:!((col:allow_file_upload,opr:upload_is_enabled,value:!t))) HTTP/1.1" 200 -
-2025-12-08 10:56:14,369:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/dashboard/?q=(filters:!((col:owners,opr:rel_m_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 10:56:14,397:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/chart/?q=(filters:!((col:owners,opr:rel_m_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 10:56:14,403:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/dashboard/?q=(filters:!(),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 10:56:14,407:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/chart/?q=(filters:!(),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 10:56:14,408:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:neq,value:examples))) HTTP/1.1" 200 -
-2025-12-08 10:56:14,470:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
-2025-12-08 10:56:14,475:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/chart/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
-2025-12-08 10:56:14,476:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/dashboard/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
-2025-12-08 10:56:14,478:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:14] "GET /api/v1/chart/favorite_status/?q=!(2,1) HTTP/1.1" 200 -
-2025-12-08 10:56:15,072:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:15] "POST /superset/log/?explode=events HTTP/1.1" 200 -
-2025-12-08 10:56:15,144:WARNING:superset.views.error_handling:HTTPException
+2025-12-08 11:04:29,722:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:29] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:04:30,678:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:30] "POST /superset/log/?explode=events&dashboard_id=1 HTTP/1.1" 200 -
+2025-12-08 11:04:31,858:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:31] "GET /superset/dashboard/1/?native_filters_key=CJZC3PTG67w HTTP/1.1" 200 -
+2025-12-08 11:04:31,979:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -67,50 +53,17 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 10:56:15,146:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:15] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 10:56:17,177:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 10:56:17,179:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:17] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 10:56:19,986:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:19] "GET /api/v1/dashboard/?q=(order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:25,select_columns:!(id,dashboard_title,published,url,slug,changed_by,changed_by.id,changed_by.first_name,changed_by.last_name,changed_on_delta_humanized,owners,owners.id,owners.first_name,owners.last_name,tags.id,tags.name,tags.type,status,certified_by,certification_details,changed_on)) HTTP/1.1" 200 -
-2025-12-08 10:56:19,990:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:19] "GET /api/v1/dashboard/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
-2025-12-08 10:56:20,053:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:20] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
-2025-12-08 10:56:20,895:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:20] "POST /superset/log/?explode=events HTTP/1.1" 200 -
-2025-12-08 10:56:21,187:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 10:56:21,189:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:21] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 10:56:21,527:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:21] "GET /static/assets/DashboardContainer.43622d2a.chunk.js HTTP/1.1" 200 -
-2025-12-08 10:56:21,536:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:21] "GET /api/v1/dashboard/1 HTTP/1.1" 200 -
-2025-12-08 10:56:21,545:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:21] "GET /api/v1/dashboard/1/charts HTTP/1.1" 200 -
-2025-12-08 10:56:21,546:INFO:superset.db_engine_specs.dhis2:[DHIS2] get_parameters_from_uri called
-2025-12-08 10:56:21,546:ERROR:superset.db_engine_specs.dhis2:[DHIS2] Failed to extract parameters from URI: 'URL' object has no attribute 'decode'
+2025-12-08 11:04:31,979:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:31] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:04:32,139:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/database/?q=(filters:!((col:allow_file_upload,opr:upload_is_enabled,value:!t))) HTTP/1.1" 200 -
+2025-12-08 11:04:32,155:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/1/charts HTTP/1.1" 200 -
+2025-12-08 11:04:32,171:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/1 HTTP/1.1" 200 -
+2025-12-08 11:04:32,181:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/1/filter_state/CJZC3PTG67w HTTP/1.1" 200 -
+2025-12-08 11:04:32,294:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
+2025-12-08 11:04:32,328:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dataset/1/drill_info/?q=(dashboard_id:1) HTTP/1.1" 200 -
+2025-12-08 11:04:32,341:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "POST /api/v1/chart/data?form_data={"slice_id":2}&dashboard_id=1 HTTP/1.1" 200 -
+2025-12-08 11:04:32,360:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:neq,value:examples))) HTTP/1.1" 200 -
+2025-12-08 11:04:32,365:INFO:superset.db_engine_specs.dhis2:[DHIS2] get_parameters_from_uri called
+2025-12-08 11:04:32,365:ERROR:superset.db_engine_specs.dhis2:[DHIS2] Failed to extract parameters from URI: 'URL' object has no attribute 'decode'
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/superset/db_engine_specs/dhis2.py", line 361, in get_parameters_from_uri
     parsed = urlparse(uri)
@@ -128,434 +81,11 @@ Traceback (most recent call last):
     return tuple(x.decode(encoding, errors) if x else '' for x in args)
                  ^^^^^^^^
 AttributeError: 'URL' object has no attribute 'decode'
-2025-12-08 10:56:21,555:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:21] "GET /api/v1/dashboard/1/datasets HTTP/1.1" 200 -
-2025-12-08 10:56:21,701:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:21] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
-2025-12-08 10:56:21,745:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:21] "GET /api/v1/dataset/1/drill_info/?q=(dashboard_id:1) HTTP/1.1" 200 -
-2025-12-08 10:56:21,750:ERROR:superset.models.helpers:[METRICS-TRACE] Processing 4 metrics
-2025-12-08 10:56:21,750:ERROR:superset.models.helpers:[METRICS-TRACE] Metric 0: adhoc - SUM(105_EP01b_Malaria_Total)
-2025-12-08 10:56:21,750:ERROR:superset.models.helpers:[METRICS-TRACE]   ✓ Added: SUM(105_EP01b_Malaria_Total)
-2025-12-08 10:56:21,750:ERROR:superset.models.helpers:[METRICS-TRACE] Metric 1: adhoc - SUM(105_EP01a_Suspected_fever)
-2025-12-08 10:56:21,750:ERROR:superset.models.helpers:[METRICS-TRACE]   ✓ Added: SUM(105_EP01a_Suspected_fever)
-2025-12-08 10:56:21,750:ERROR:superset.models.helpers:[METRICS-TRACE] Metric 2: adhoc - SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)
-2025-12-08 10:56:21,751:ERROR:superset.models.helpers:[METRICS-TRACE]   ✓ Added: SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)
-2025-12-08 10:56:21,751:ERROR:superset.models.helpers:[METRICS-TRACE] Metric 3: adhoc - SUM(105_EP01d_Malaria_cases_treated)
-2025-12-08 10:56:21,751:ERROR:superset.models.helpers:[METRICS-TRACE]   ✓ Added: SUM(105_EP01d_Malaria_cases_treated)
-2025-12-08 10:56:21,751:ERROR:superset.models.helpers:[METRICS-TRACE] Total metrics added: 4
-2025-12-08 10:56:21,752:ERROR:superset.models.helpers:[METRICS-TRACE] Before dedup: 1 select_exprs + 4 metrics_exprs
-2025-12-08 10:56:21,752:ERROR:superset.models.helpers:[METRICS-TRACE] After dedup: 5 total select_exprs
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE] SQL Query Building:
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]   columns: [{'timeGrain': None, 'columnType': 'BASE_AXIS', 'sqlExpression': 'Period', 'label': 'Period', 'expressionType': 'SQL'}]
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]   metrics: [{'aggregate': 'SUM', 'column': {'advanced_data_type': None, 'certification_details': None, 'certified_by': None, 'column_name': '105_EP01b_Malaria_Total', 'description': None, 'expression': None, 'filterable': True, 'groupby': True, 'id': 3, 'is_certified': False, 'is_dttm': False, 'python_date_format': None, 'type': 'INT', 'type_generic': 0, 'uuid': '959bffaa-826b-4d13-8b7b-6d9c4ea25e50', 'verbose_name': None, 'warning_markdown': None}, 'datasourceWarning': False, 'expressionType': 'SIMPLE', 'hasCustomLabel': False, 'label': 'SUM(105_EP01b_Malaria_Total)', 'optionName': 'metric_znmagih9lh_z0o3nswr22s', 'sqlExpression': None}, {'aggregate': 'SUM', 'column': {'advanced_data_type': None, 'certification_details': None, 'certified_by': None, 'column_name': '105_EP01a_Suspected_fever', 'description': None, 'expression': None, 'filterable': True, 'groupby': True, 'id': 4, 'is_certified': False, 'is_dttm': False, 'python_date_format': None, 'type': 'INT', 'type_generic': 0, 'uuid': '530216fe-7198-4b8e-b688-a479bcf67426', 'verbose_name': None, 'warning_markdown': None}, 'datasourceWarning': False, 'expressionType': 'SIMPLE', 'hasCustomLabel': False, 'label': 'SUM(105_EP01a_Suspected_fever)', 'optionName': 'metric_i2yj88mm5ns_m44ybd4y0kf', 'sqlExpression': None}, {'aggregate': 'SUM', 'column': {'advanced_data_type': None, 'certification_details': None, 'certified_by': None, 'column_name': '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive', 'description': None, 'expression': None, 'filterable': True, 'groupby': True, 'id': 6, 'is_certified': False, 'is_dttm': False, 'python_date_format': None, 'type': 'INT', 'type_generic': 0, 'uuid': '928946a1-6cea-4202-b8d6-0683414af79e', 'verbose_name': None, 'warning_markdown': None}, 'datasourceWarning': False, 'expressionType': 'SIMPLE', 'hasCustomLabel': False, 'label': 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'optionName': 'metric_3uikxtyu9ub_glmo09kn46e', 'sqlExpression': None}, {'aggregate': 'SUM', 'column': {'advanced_data_type': None, 'certification_details': None, 'certified_by': None, 'column_name': '105_EP01d_Malaria_cases_treated', 'description': None, 'expression': None, 'filterable': True, 'groupby': True, 'id': 5, 'is_certified': False, 'is_dttm': False, 'python_date_format': None, 'type': 'INT', 'type_generic': 0, 'uuid': 'ffc52aba-a038-4c22-b6c8-169f3e2b8b97', 'verbose_name': None, 'warning_markdown': None}, 'datasourceWarning': False, 'expressionType': 'SIMPLE', 'hasCustomLabel': False, 'label': 'SUM(105_EP01d_Malaria_cases_treated)', 'optionName': 'metric_220hw0duag7_2181rn37iln', 'sqlExpression': None}]
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]   groupby: []
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]   labels_expected: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]   select_exprs count: 5
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]     [0] key=Period, name=Period, type=<class 'sqlalchemy.sql.elements.ColumnClause'>
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]     [1] key=SUM(105_EP01b_Malaria_Total), name=sum, type=<class 'sqlalchemy.sql.functions.sum'>
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]     [2] key=SUM(105_EP01a_Suspected_fever), name=sum, type=<class 'sqlalchemy.sql.functions.sum'>
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]     [3] key=SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive), name=sum, type=<class 'sqlalchemy.sql.functions.sum'>
-2025-12-08 10:56:21,752:INFO:superset.models.helpers:[COLUMN_TRACE]     [4] key=SUM(105_EP01d_Malaria_cases_treated), name=sum, type=<class 'sqlalchemy.sql.functions.sum'>
-2025-12-08 10:56:21,752:INFO:superset.connectors.sqla.models:[DHIS2] get_from_clause for virtual dataset 1: analytics_LAST_YEAR_20251206
-2025-12-08 10:56:21,752:INFO:superset.connectors.sqla.models:[DHIS2] Full SQL stored: SELECT * FROM analytics
-/* DHIS2: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayProperty=NAME&skipMeta=false */
-2025-12-08 10:56:21,752:INFO:superset.connectors.sqla.models:[DHIS2] Loaded params from extra field: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayPropert
-2025-12-08 10:56:21,753:INFO:superset.connectors.sqla.models:[DHIS2] Cached params with key: dhis2_params_1_analytics
-2025-12-08 10:56:21,753:INFO:superset.connectors.sqla.models:[DHIS2] Stored params in Flask g for DHIS2 table: analytics
-2025-12-08 10:56:21,755:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Query execution in connectors/sqla/models.py:
-2025-12-08 10:56:21,755:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   SQL (first 500 chars): SELECT "Period", sum("105_EP01b_Malaria_Total") AS sum_1, sum("105_EP01a_Suspected_fever") AS sum_2, sum("105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive") AS sum_3, sum("105_EP01d_Malaria_cases_treated") AS sum_4 
-FROM (SELECT * FROM analytics
-/* DHIS2: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayProperty=NAME&skipMeta=false */
-) AS virtual_table GROUP BY "Period" ORDER BY sum("105_EP01b_Malaria_
-2025-12-08 10:56:21,755:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   labels_expected: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:21,756:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 10:56:21,757:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
-  "Period",
-  SUM("105_EP01b_Malaria_Total") AS sum_1,
-  SUM("105_EP01a_Suspected_fever") AS sum_2,
-  SUM("105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive") AS sum_3,
-  SUM("105_EP01d_Malaria_cases_treated") AS sum_4
-FROM (
-  SELECT
-    *
-  FROM analytics
-) AS virtual_table
-GROUP BY
-  "Period"
-ORDER BY
-  SUM("105_EP01b_Malaria_Total") DESC
-LIMIT 10000
-2025-12-08 10:56:21,757:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
-2025-12-08 10:56:21,757:INFO:superset.db_engine_specs.dhis2_dialect:Using stored parameters from Flask g for table: analytics
-2025-12-08 10:56:21,757:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT', 'displayProperty': 'NAME', 'skipMeta': 'false'}
-2025-12-08 10:56:21,757:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT'}
-2025-12-08 10:56:21,757:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request: https://tests.dhis2.hispuganda.org/hmis/api/analytics?skipMeta=false&displayProperty=NAME&table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv&dimension=pe:LAST_YEAR;2025;2024;2023;2022;2021;2020&dimension=ou:USER_ORGUNIT
-2025-12-08 10:56:22,223:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:22] "[35m[1mPOST /api/v1/dashboard/1/filter_state?tab_id=22 HTTP/1.1[0m" 201 -
-2025-12-08 10:56:22,570:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:22] "POST /superset/log/?explode=events HTTP/1.1" 200 -
-2025-12-08 10:56:22,612:INFO:superset.db_engine_specs.dhis2_dialect:Using wide/pivoted format for analytics
-2025-12-08 10:56:22,612:INFO:superset.db_engine_specs.dhis2_dialect:normalize_analytics called with pivot=True, returning WIDE format
-2025-12-08 10:56:22,612:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Column construction - data_elements: ['D9A0afrTYPw', 'JhvC7ZR9hUe', 'QHnwKs2OUZv', 'wUDxFVBapIc']
-2025-12-08 10:56:22,612:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Column names constructed (SANITIZED): ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:22,612:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] FIRST ROW CONSTRUCTION:
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   Period (index 0): 2020
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   OrgUnit (index 1): MOH - Uganda
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01b. Malaria Total (index 2): 14479324
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01a. Suspected fever (index 3): 22994823
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01d. Malaria cases treated (index 4): 15266488
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01c. Malaria Confirmed (B/s and RDT Positive) (index 5): 13326277
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:First pivoted row - Period: '2020', OrgUnit: 'MOH - Uganda'
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Total pivoted rows: 4, columns: 6
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:Normalized 4 rows with 6 columns for endpoint analytics
-2025-12-08 10:56:22,613:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API returned 4 rows
-2025-12-08 10:56:22,620:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 4
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() column_names: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() column_names length: 6
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] First row values count: 6
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] First row values: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 0 (Period): 2020 -> 2020 (STRING)
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 1 (OrgUnit): MOH - Uganda -> MOH - Uganda (STRING)
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 2 (105_EP01b_Malaria_Total): 14479324 (PROCESSED)
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 3 (105_EP01a_Suspected_fever): 22994823 (PROCESSED)
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 4 (105_EP01d_Malaria_cases_treated): 15266488 (PROCESSED)
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() returning 4 rows with 6 columns each
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Got 4 rows from cursor
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: First row: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:22,621:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Types from cursor: ['String', 'String', 'String', 'String', 'String', 'String']
-2025-12-08 10:56:22,628:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 4 rows, 6 columns
-2025-12-08 10:56:22,629:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:22,629:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'Period': dtype('O'), 'OrgUnit': dtype('O'), '105_EP01b_Malaria_Total': dtype('int64'), '105_EP01a_Suspected_fever': dtype('int64'), '105_EP01d_Malaria_cases_treated': dtype('int64'), '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': dtype('int64')}
-2025-12-08 10:56:22,632:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Forced column 'Period' to object dtype (dimension)
-2025-12-08 10:56:22,633:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Forced column 'OrgUnit' to object dtype (dimension)
-2025-12-08 10:56:22,633:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'Period': dtype('O'), 'OrgUnit': dtype('O'), '105_EP01b_Malaria_Total': dtype('int64'), '105_EP01a_Suspected_fever': dtype('int64'), '105_EP01d_Malaria_cases_treated': dtype('int64'), '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': dtype('int64')}
-2025-12-08 10:56:22,633:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: First row: {'Period': '2020', 'OrgUnit': 'MOH - Uganda', '105_EP01b_Malaria_Total': 14479324, '105_EP01a_Suspected_fever': 22994823, '105_EP01d_Malaria_cases_treated': 15266488, '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': 13326277}
-2025-12-08 10:56:22,639:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] BEFORE assign_column_label:
-2025-12-08 10:56:22,639:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   shape: (4, 6)
-2025-12-08 10:56:22,639:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:22,639:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   expected: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:22,639:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   match: False
-2025-12-08 10:56:22,640:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   first_row: {'Period': '2020', 'OrgUnit': 'MOH - Uganda', '105_EP01b_Malaria_Total': 14479324, '105_EP01a_Suspected_fever': 22994823, '105_EP01d_Malaria_cases_treated': 15266488, '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': 13326277}
-2025-12-08 10:56:22,640:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Column truncation needed: df has 6 columns, expected 5
-2025-12-08 10:56:22,640:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   DataFrame actual columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:22,640:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   Expected columns: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:22,640:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] ✓ Selecting columns BY NAME (matched all expected columns)
-2025-12-08 10:56:22,640:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   Column mapping: {'Period': 'Period', 'SUM(105_EP01b_Malaria_Total)': '105_EP01b_Malaria_Total', 'SUM(105_EP01a_Suspected_fever)': '105_EP01a_Suspected_fever', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)': '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive', 'SUM(105_EP01d_Malaria_cases_treated)': '105_EP01d_Malaria_cases_treated'}
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] Column Selection ✓ SUCCESS - method=BY_NAME, datasource=analytics_LAST_YEAR_20251206
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   tried_by_name=True, success=True, fallback=False
-2025-12-08 10:56:22,641:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Assigning column labels: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] AFTER assign_column_label:
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   shape: (4, 5)
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   expected: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   match: True
-2025-12-08 10:56:22,641:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   first_row: {'Period': '2020', 'SUM(105_EP01b_Malaria_Total)': 14479324, 'SUM(105_EP01a_Suspected_fever)': 22994823, 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)': 13326277, 'SUM(105_EP01d_Malaria_cases_treated)': 15266488}
-2025-12-08 10:56:22,643:ERROR:superset.utils.pandas_postprocessing.utils:[POSTPROCESSING-DEBUG] DataFrame columns: ['Period', 'SUM(105_EP01b_Malaria_Total)', 'SUM(105_EP01a_Suspected_fever)', 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', 'SUM(105_EP01d_Malaria_cases_treated)']
-2025-12-08 10:56:22,643:ERROR:superset.utils.pandas_postprocessing.utils:[POSTPROCESSING-DEBUG] Aggregates: {'SUM(105_EP01b_Malaria_Total)': {'operator': 'mean'}, 'SUM(105_EP01a_Suspected_fever)': {'operator': 'mean'}, 'SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)': {'operator': 'mean'}, 'SUM(105_EP01d_Malaria_cases_treated)': {'operator': 'mean'}}
-2025-12-08 10:56:22,643:ERROR:superset.utils.pandas_postprocessing.utils:[POSTPROCESSING-DEBUG] Processing aggregate: name='SUM(105_EP01b_Malaria_Total)', column='SUM(105_EP01b_Malaria_Total)'
-2025-12-08 10:56:22,643:ERROR:superset.utils.pandas_postprocessing.utils:[POSTPROCESSING-DEBUG] Processing aggregate: name='SUM(105_EP01a_Suspected_fever)', column='SUM(105_EP01a_Suspected_fever)'
-2025-12-08 10:56:22,643:ERROR:superset.utils.pandas_postprocessing.utils:[POSTPROCESSING-DEBUG] Processing aggregate: name='SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)', column='SUM(105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive)'
-2025-12-08 10:56:22,643:ERROR:superset.utils.pandas_postprocessing.utils:[POSTPROCESSING-DEBUG] Processing aggregate: name='SUM(105_EP01d_Malaria_cases_treated)', column='SUM(105_EP01d_Malaria_cases_treated)'
-2025-12-08 10:56:22,659:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:22] "POST /api/v1/chart/data?form_data={"slice_id":2}&dashboard_id=1 HTTP/1.1" 200 -
-2025-12-08 10:56:22,724:ERROR:superset.models.helpers:[METRICS-TRACE] Processing 0 metrics
-2025-12-08 10:56:22,725:ERROR:superset.models.helpers:[METRICS-TRACE] Total metrics added: 0
-2025-12-08 10:56:22,725:ERROR:superset.models.helpers:[METRICS-TRACE] Before dedup: 1 select_exprs + 0 metrics_exprs
-2025-12-08 10:56:22,725:ERROR:superset.models.helpers:[METRICS-TRACE] After dedup: 1 total select_exprs
-2025-12-08 10:56:22,725:INFO:superset.models.helpers:[COLUMN_TRACE] SQL Query Building:
-2025-12-08 10:56:22,726:INFO:superset.models.helpers:[COLUMN_TRACE]   columns: ['OrgUnit']
-2025-12-08 10:56:22,726:INFO:superset.models.helpers:[COLUMN_TRACE]   metrics: []
-2025-12-08 10:56:22,726:INFO:superset.models.helpers:[COLUMN_TRACE]   groupby: []
-2025-12-08 10:56:22,726:INFO:superset.models.helpers:[COLUMN_TRACE]   labels_expected: ['OrgUnit']
-2025-12-08 10:56:22,726:INFO:superset.models.helpers:[COLUMN_TRACE]   select_exprs count: 1
-2025-12-08 10:56:22,726:INFO:superset.models.helpers:[COLUMN_TRACE]     [0] key=OrgUnit, name=OrgUnit, type=<class 'sqlalchemy.sql.elements.ColumnClause'>
-2025-12-08 10:56:22,726:INFO:superset.connectors.sqla.models:[DHIS2] get_from_clause for virtual dataset 1: analytics_LAST_YEAR_20251206
-2025-12-08 10:56:22,726:INFO:superset.connectors.sqla.models:[DHIS2] Full SQL stored: SELECT * FROM analytics
-/* DHIS2: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayProperty=NAME&skipMeta=false */
-2025-12-08 10:56:22,726:INFO:superset.connectors.sqla.models:[DHIS2] Loaded params from extra field: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayPropert
-2025-12-08 10:56:22,727:ERROR:superset.models.helpers:[METRICS-TRACE] Processing 0 metrics
-2025-12-08 10:56:22,727:ERROR:superset.models.helpers:[METRICS-TRACE] Total metrics added: 0
-2025-12-08 10:56:22,727:ERROR:superset.models.helpers:[METRICS-TRACE] Before dedup: 1 select_exprs + 0 metrics_exprs
-2025-12-08 10:56:22,727:ERROR:superset.models.helpers:[METRICS-TRACE] After dedup: 1 total select_exprs
-2025-12-08 10:56:22,727:INFO:superset.connectors.sqla.models:[DHIS2] Cached params with key: dhis2_params_1_analytics
-2025-12-08 10:56:22,727:INFO:superset.models.helpers:[COLUMN_TRACE] SQL Query Building:
-2025-12-08 10:56:22,727:INFO:superset.connectors.sqla.models:[DHIS2] Stored params in Flask g for DHIS2 table: analytics
-2025-12-08 10:56:22,727:INFO:superset.models.helpers:[COLUMN_TRACE]   columns: ['Period']
-2025-12-08 10:56:22,728:INFO:superset.models.helpers:[COLUMN_TRACE]   metrics: []
-2025-12-08 10:56:22,729:INFO:superset.models.helpers:[COLUMN_TRACE]   groupby: []
-2025-12-08 10:56:22,729:INFO:superset.models.helpers:[COLUMN_TRACE]   labels_expected: ['Period']
-2025-12-08 10:56:22,729:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Query execution in connectors/sqla/models.py:
-2025-12-08 10:56:22,729:INFO:superset.models.helpers:[COLUMN_TRACE]   select_exprs count: 1
-2025-12-08 10:56:22,729:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   SQL (first 500 chars): SELECT "OrgUnit" 
-FROM (SELECT * FROM analytics
-/* DHIS2: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayProperty=NAME&skipMeta=false */
-) AS virtual_table GROUP BY "OrgUnit" ORDER BY "OrgUnit" ASC
- LIMIT 1000
-2025-12-08 10:56:22,729:INFO:superset.models.helpers:[COLUMN_TRACE]     [0] key=Period, name=Period, type=<class 'sqlalchemy.sql.elements.ColumnClause'>
-2025-12-08 10:56:22,729:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   labels_expected: ['OrgUnit']
-2025-12-08 10:56:22,729:INFO:superset.connectors.sqla.models:[DHIS2] get_from_clause for virtual dataset 1: analytics_LAST_YEAR_20251206
-2025-12-08 10:56:22,732:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 10:56:22,732:INFO:superset.connectors.sqla.models:[DHIS2] Full SQL stored: SELECT * FROM analytics
-/* DHIS2: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayProperty=NAME&skipMeta=false */
-2025-12-08 10:56:22,733:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
-  "OrgUnit"
-FROM (
-  SELECT
-    *
-  FROM analytics
-) AS virtual_table
-GROUP BY
-  "OrgUnit"
-ORDER BY
-  "OrgUnit" ASC
-LIMIT 1000
-2025-12-08 10:56:22,733:INFO:superset.connectors.sqla.models:[DHIS2] Loaded params from extra field: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayPropert
-2025-12-08 10:56:22,733:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
-2025-12-08 10:56:22,733:INFO:superset.db_engine_specs.dhis2_dialect:Using stored parameters from Flask g for table: analytics
-2025-12-08 10:56:22,735:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT', 'displayProperty': 'NAME', 'skipMeta': 'false'}
-2025-12-08 10:56:22,735:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT'}
-2025-12-08 10:56:22,735:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request: https://tests.dhis2.hispuganda.org/hmis/api/analytics?skipMeta=false&displayProperty=NAME&table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv&dimension=pe:LAST_YEAR;2025;2024;2023;2022;2021;2020&dimension=ou:USER_ORGUNIT
-2025-12-08 10:56:22,736:INFO:superset.connectors.sqla.models:[DHIS2] Cached params with key: dhis2_params_1_analytics
-2025-12-08 10:56:22,736:INFO:superset.connectors.sqla.models:[DHIS2] Stored params in Flask g for DHIS2 table: analytics
-2025-12-08 10:56:22,739:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Query execution in connectors/sqla/models.py:
-2025-12-08 10:56:22,739:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   SQL (first 500 chars): SELECT "Period" 
-FROM (SELECT * FROM analytics
-/* DHIS2: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT&displayProperty=NAME&skipMeta=false */
-) AS virtual_table GROUP BY "Period" ORDER BY "Period" ASC
- LIMIT 1000
-2025-12-08 10:56:22,739:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   labels_expected: ['Period']
-2025-12-08 10:56:22,740:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 10:56:22,741:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
-  "Period"
-FROM (
-  SELECT
-    *
-  FROM analytics
-) AS virtual_table
-GROUP BY
-  "Period"
-ORDER BY
-  "Period" ASC
-LIMIT 1000
-2025-12-08 10:56:22,741:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
-2025-12-08 10:56:22,741:INFO:superset.db_engine_specs.dhis2_dialect:Using stored parameters from Flask g for table: analytics
-2025-12-08 10:56:22,741:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT', 'displayProperty': 'NAME', 'skipMeta': 'false'}
-2025-12-08 10:56:22,741:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT'}
-2025-12-08 10:56:22,741:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request: https://tests.dhis2.hispuganda.org/hmis/api/analytics?skipMeta=false&displayProperty=NAME&table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv&dimension=pe:LAST_YEAR;2025;2024;2023;2022;2021;2020&dimension=ou:USER_ORGUNIT
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:Using wide/pivoted format for analytics
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:normalize_analytics called with pivot=True, returning WIDE format
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Column construction - data_elements: ['D9A0afrTYPw', 'JhvC7ZR9hUe', 'QHnwKs2OUZv', 'wUDxFVBapIc']
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Column names constructed (SANITIZED): ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] FIRST ROW CONSTRUCTION:
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   Period (index 0): 2020
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   OrgUnit (index 1): MOH - Uganda
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01b. Malaria Total (index 2): 14479324
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01a. Suspected fever (index 3): 22994823
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01d. Malaria cases treated (index 4): 15266488
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01c. Malaria Confirmed (B/s and RDT Positive) (index 5): 13326277
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:First pivoted row - Period: '2020', OrgUnit: 'MOH - Uganda'
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Total pivoted rows: 4, columns: 6
-2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:Normalized 4 rows with 6 columns for endpoint analytics
-[DHIS2] Executing query: SELECT
-  "Period",
-  SUM("105_EP01b_Malaria_Total") AS sum_1,
-  SUM("105_EP01a_Suspected_fever") AS sum_2,
-  SUM("105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive") AS sum_3,
-  SUM("105_EP01d_Malaria_cases_treated") AS sum_4
-FROM (
-  SELECT
-    *
-  FROM analytics
-) AS virtual_table
-GROUP BY
-  "Period"
-ORDER BY
-  SUM("105_EP01b_Malaria_Total") DESC
-LIMIT 10000
-[DHIS2] Parsed endpoint: analytics
-[DHIS2] Found params in Flask g for analytics: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;
-[DHIS2] Query params: {'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT', 'displayProperty': 'NAME', 'skipMeta': 'false'}
-[DHIS2] Merged params: {'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT'}
-[DHIS2] API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?skipMeta=false&displayProperty=NAME&table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv&dimension=pe:LAST_YEAR;2025;2024;2023;2022;2021;2020&dimension=ou:USER_ORGUNIT
-[DHIS2] Raw API response keys: ['headers', 'metaData', 'rowContext', 'rows', 'height', 'width', 'headerWidth']
-[DHIS2] Raw DHIS2 rows count: 16
-[DHIS2] First raw row: ['QHnwKs2OUZv', '2020', 'akV6429SUqu', '15266488']
-[DHIS2] Parsing response for endpoint: analytics
-[DHIS2] Response keys: ['headers', 'metaData', 'rowContext', 'rows', 'height', 'width', 'headerWidth']
-[DHIS2] Response sample: {'headers': [{'name': 'dx', 'column': 'Data', 'valueType': 'TEXT', 'type': 'java.lang.String', 'hidden': False, 'meta': True}, {'name': 'pe', 'column': 'Period', 'valueType': 'TEXT', 'type': 'java.lang.String', 'hidden': False, 'meta': True}, {'name': 'ou', 'column': 'Organisation unit', 'valueType': 'TEXT', 'type': 'java.lang.String', 'hidden': False, 'meta': True}, {'name': 'value', 'column': 'Value', 'valueType': 'NUMBER', 'type': 'java.lang.Double', 'hidden': False, 'meta': False}], 'metaDat
-[DHIS2] Using WIDE/PIVOTED format (Period, OrgUnit, DX1, DX2, ...) for analytics
-[DHIS2] normalize_analytics: pivot=True, using WIDE/PIVOTED format
-[DHIS2] PIVOT CONSTRUCTION:
-[DHIS2]   data_elements (UIDs): ['D9A0afrTYPw', 'JhvC7ZR9hUe', 'QHnwKs2OUZv', 'wUDxFVBapIc']
-[DHIS2]   data_element_list (sorted UIDs): ['D9A0afrTYPw', 'JhvC7ZR9hUe', 'QHnwKs2OUZv', 'wUDxFVBapIc']
-[DHIS2]   col_names (SANITIZED): ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-[DHIS2] Normalized columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-[DHIS2] Normalized row count: 4
-[DHIS2] First row: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-[DHIS2] _set_description: columns=['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive'], types=['String', 'String', 'String', 'String', 'String', 'String']
-[DHIS2] Transformed rows count: 4
-[DHIS2] First transformed row: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-[DHIS2] Fetched 4 rows
-[DHIS2] fetchall() called - returning 4 rows
-[DHIS2] fetchall() - First row type: <class 'tuple'>
-[DHIS2] fetchall() - First row (original): ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-[DHIS2] fetchall() - Column count from description: 6
-[DHIS2] fetchall() - First row (fixed types): ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-[DHIS2] fetchall() - Type enforcement: dimensions=STRING, measures=FLOAT
-[DHIS2] Executing query: SELECT
-  "OrgUnit"
-FROM (
-  SELECT
-    *
-  FROM analytics
-) AS virtual_table
-GROUP BY
-  "OrgUnit"
-ORDER BY
-  "OrgUnit" ASC
-LIMIT 1000
-[DHIS2] Parsed endpoint: analytics
-[DHIS2] Found params in Flask g for analytics: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;
-[DHIS2] Query params: {'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT', 'displayProperty': 'NAME', 'skipMeta': 'false'}
-[DHIS2] Merged params: {'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT'}
-[DHIS2] API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?skipMeta=false&displayProperty=NAME&table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv&dimension=pe:LAST_YEAR;2025;2024;2023;2022;2021;2020&dimension=ou:USER_ORGUNIT
-[DHIS2] Executing query: SELECT
-  "Period"
-FROM (
-  SELECT
-    *
-  FROM analytics
-) AS virtual_table
-GROUP BY
-  "Period"
-ORDER BY
-  "Period" ASC
-LIMIT 1000
-[DHIS2] Parsed endpoint: analytics
-[DHIS2] Found params in Flask g for analytics: table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;
-[DHIS2] Query params: {'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT', 'displayProperty': 'NAME', 'skipMeta': 'false'}
-[DHIS2] Merged params: {'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dimension': 'dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;pe:LAST_YEAR;2025;2024;2023;2022;2021;2020;ou:USER_ORGUNIT'}
-[DHIS2] API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?skipMeta=false&displayProperty=NAME&table=analytics&dimension=dx:JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv&dimension=pe:LAST_YEAR;2025;2024;2023;2022;2021;2020&dimension=ou:USER_ORGUNIT
-[DHIS2] Raw API response keys: ['headers', 'metaData', 'rowContext', 'rows', 'height', 'width', 'headerWidth']
-[DHIS2] Raw DHIS2 rows count: 16
-[DHIS2] First raw row: ['QHnwKs2OUZv', '2020', 'akV6429SUqu', '15266488']
-[DHIS2] Parsing response for endpoint: analytics
-[DHIS2] Response keys: ['headers', 'metaData', 'rowContext', 'rows', 'height', 'width', 'headerWidth']
-[DHIS2] Response sample: {'headers': [{'name': 'dx', 'column': 'Data', 'valueType': 'TEXT', 'type': 'java.lang.String', 'hidden': False, 'meta': True}, {'name': 'pe', 'column': 'Period', 'valueType': 'TEXT', 'type': 'java.lang.String', 'hidden': False, 'meta': True}, {'name': 'ou', 'column': 'Organisation unit', 'valueType': 'TEXT', 'type': 'java.lang.String', 'hidden': False, 'meta': True}, {'name': 'value', 'column': 'Value', 'valueType': 'NUMBER', 'type': 'java.lang.Double', 'hidden': False, 'meta': False}], 'metaDat
-[DHIS2] Using WIDE/PIVOTED format (Period, OrgUnit, DX1, DX2, ...) for analytics
-[DHIS2] normalize_analytics: pivot=True, using WIDE/PIVOTED format
-[DHIS2] PIVOT CONSTRUCTION:
-[DHIS2]   data_elements (UIDs): ['D9A0afrTYPw', 'JhvC7ZR9hUe', 'QHnwKs2OUZv', 'wUDxFVBapIc']
-[DHIS2]   data_element_list (sorted UIDs): ['D9A0afrTYPw', 'JhvC7ZR9hUe', 'QHnwKs2OUZv', 'wUDxFVBapIc']
-[DHIS2]   col_names (SANITIZED): ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-[DHIS2] Normalized columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-[DHIS2] Normalized row count: 4
-[DHIS2] First row: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-[DHIS2] _set_description: columns=['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive'], types=['String', 'String', 'String', 'String', 'String', 'String']
-[DHIS2] Transformed rows count: 4
-[DHIS2] First transformed row: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)2025-12-08 10:56:23,563:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API returned 4 rows
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:Using wide/pivoted format for analytics
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:normalize_analytics called with pivot=True, returning WIDE format
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Column construction - data_elements: ['D9A0afrTYPw', 'JhvC7ZR9hUe', 'QHnwKs2OUZv', 'wUDxFVBapIc']
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Column names constructed (SANITIZED): ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] FIRST ROW CONSTRUCTION:
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   Period (index 0): 2020
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   OrgUnit (index 1): MOH - Uganda
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01b. Malaria Total (index 2): 14479324
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01a. Suspected fever (index 3): 22994823
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01d. Malaria cases treated (index 4): 15266488
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2]   105-EP01c. Malaria Confirmed (B/s and RDT Positive) (index 5): 13326277
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:First pivoted row - Period: '2020', OrgUnit: 'MOH - Uganda'
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Total pivoted rows: 4, columns: 6
-2025-12-08 10:56:23,568:INFO:superset.db_engine_specs.dhis2_dialect:Normalized 4 rows with 6 columns for endpoint analytics
-2025-12-08 10:56:23,569:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API returned 4 rows
-2025-12-08 10:56:23,570:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 4
-2025-12-08 10:56:23,570:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() column_names: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() column_names length: 6
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] First row values count: 6
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] First row values: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 0 (Period): 2020 -> 2020 (STRING)
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 1 (OrgUnit): MOH - Uganda -> MOH - Uganda (STRING)
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 2 (105_EP01b_Malaria_Total): 14479324 (PROCESSED)
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 3 (105_EP01a_Suspected_fever): 22994823 (PROCESSED)
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 4 (105_EP01d_Malaria_cases_treated): 15266488 (PROCESSED)
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() returning 4 rows with 6 columns each
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Got 4 rows from cursor
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: First row: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,571:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Types from cursor: ['String', 'String', 'String', 'String', 'String', 'String']
-2025-12-08 10:56:23,572:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 4 rows, 6 columns
-2025-12-08 10:56:23,572:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,572:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'Period': dtype('O'), 'OrgUnit': dtype('O'), '105_EP01b_Malaria_Total': dtype('int64'), '105_EP01a_Suspected_fever': dtype('int64'), '105_EP01d_Malaria_cases_treated': dtype('int64'), '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': dtype('int64')}
-2025-12-08 10:56:23,572:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Forced column 'Period' to object dtype (dimension)
-2025-12-08 10:56:23,572:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Forced column 'OrgUnit' to object dtype (dimension)
-2025-12-08 10:56:23,573:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'Period': dtype('O'), 'OrgUnit': dtype('O'), '105_EP01b_Malaria_Total': dtype('int64'), '105_EP01a_Suspected_fever': dtype('int64'), '105_EP01d_Malaria_cases_treated': dtype('int64'), '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': dtype('int64')}
-2025-12-08 10:56:23,573:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: First row: {'Period': '2020', 'OrgUnit': 'MOH - Uganda', '105_EP01b_Malaria_Total': 14479324, '105_EP01a_Suspected_fever': 22994823, '105_EP01d_Malaria_cases_treated': 15266488, '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': 13326277}
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 4
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() column_names: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() column_names length: 6
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] First row values count: 6
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] First row values: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 0 (Period): 2020 -> 2020 (STRING)
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 1 (OrgUnit): MOH - Uganda -> MOH - Uganda (STRING)
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 2 (105_EP01b_Malaria_Total): 14479324 (PROCESSED)
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 3 (105_EP01a_Suspected_fever): 22994823 (PROCESSED)
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Row 0 col 4 (105_EP01d_Malaria_cases_treated): 15266488 (PROCESSED)
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() returning 4 rows with 6 columns each
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Got 4 rows from cursor
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: First row: ('2020', 'MOH - Uganda', 14479324, 22994823, 15266488, 13326277)
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,575:INFO:superset.db_engine_specs.dhis2:[DHIS2] fetch_data: Types from cursor: ['String', 'String', 'String', 'String', 'String', 'String']
-2025-12-08 10:56:23,576:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] BEFORE assign_column_label:
-2025-12-08 10:56:23,576:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 4 rows, 6 columns
-2025-12-08 10:56:23,576:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   shape: (4, 6)
-2025-12-08 10:56:23,576:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,576:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,576:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'Period': dtype('O'), 'OrgUnit': dtype('O'), '105_EP01b_Malaria_Total': dtype('int64'), '105_EP01a_Suspected_fever': dtype('int64'), '105_EP01d_Malaria_cases_treated': dtype('int64'), '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': dtype('int64')}
-2025-12-08 10:56:23,576:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   expected: ['Period']
-2025-12-08 10:56:23,576:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Forced column 'Period' to object dtype (dimension)
-2025-12-08 10:56:23,576:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   match: False
-2025-12-08 10:56:23,576:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Forced column 'OrgUnit' to object dtype (dimension)
-2025-12-08 10:56:23,576:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   first_row: {'Period': '2020', 'OrgUnit': 'MOH - Uganda', '105_EP01b_Malaria_Total': 14479324, '105_EP01a_Suspected_fever': 22994823, '105_EP01d_Malaria_cases_treated': 15266488, '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': 13326277}
-2025-12-08 10:56:23,577:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Column truncation needed: df has 6 columns, expected 1
-2025-12-08 10:56:23,577:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'Period': dtype('O'), 'OrgUnit': dtype('O'), '105_EP01b_Malaria_Total': dtype('int64'), '105_EP01a_Suspected_fever': dtype('int64'), '105_EP01d_Malaria_cases_treated': dtype('int64'), '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': dtype('int64')}
-2025-12-08 10:56:23,577:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   DataFrame actual columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,577:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: First row: {'Period': '2020', 'OrgUnit': 'MOH - Uganda', '105_EP01b_Malaria_Total': 14479324, '105_EP01a_Suspected_fever': 22994823, '105_EP01d_Malaria_cases_treated': 15266488, '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': 13326277}
-2025-12-08 10:56:23,577:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   Expected columns: ['Period']
-2025-12-08 10:56:23,577:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] ✓ Selecting columns BY NAME (matched all expected columns)
-2025-12-08 10:56:23,577:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   Column mapping: {'Period': 'Period'}
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] Column Selection ✓ SUCCESS - method=BY_NAME, datasource=analytics_LAST_YEAR_20251206
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['Period']
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   tried_by_name=True, success=True, fallback=False
-2025-12-08 10:56:23,577:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Assigning column labels: ['Period']
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] AFTER assign_column_label:
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   shape: (4, 1)
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['Period']
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   expected: ['Period']
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   match: True
-2025-12-08 10:56:23,577:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   first_row: {'Period': '2020'}
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] BEFORE assign_column_label:
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   shape: (4, 6)
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   expected: ['OrgUnit']
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   match: False
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   first_row: {'Period': '2020', 'OrgUnit': 'MOH - Uganda', '105_EP01b_Malaria_Total': 14479324, '105_EP01a_Suspected_fever': 22994823, '105_EP01d_Malaria_cases_treated': 15266488, '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive': 13326277}
-2025-12-08 10:56:23,579:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Column truncation needed: df has 6 columns, expected 1
-2025-12-08 10:56:23,579:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   DataFrame actual columns: ['Period', 'OrgUnit', '105_EP01b_Malaria_Total', '105_EP01a_Suspected_fever', '105_EP01d_Malaria_cases_treated', '105_EP01c_Malaria_Confirmed_B_s_and_RDT_Positive']
-2025-12-08 10:56:23,579:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   Expected columns: ['OrgUnit']
-2025-12-08 10:56:23,579:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] ✓ Selecting columns BY NAME (matched all expected columns)
-2025-12-08 10:56:23,579:INFO:superset.connectors.sqla.models:[COLUMN_TRACE]   Column mapping: {'OrgUnit': 'OrgUnit'}
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] Column Selection ✓ SUCCESS - method=BY_NAME, datasource=analytics_LAST_YEAR_20251206
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['OrgUnit']
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   tried_by_name=True, success=True, fallback=False
-2025-12-08 10:56:23,579:INFO:superset.connectors.sqla.models:[COLUMN_TRACE] Assigning column labels: ['OrgUnit']
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE] AFTER assign_column_label:
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   shape: (4, 1)
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   columns: ['OrgUnit']
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   expected: ['OrgUnit']
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   match: True
-2025-12-08 10:56:23,579:INFO:superset.utils.column_trace_logger:[COLUMN_TRACE]   first_row: {'OrgUnit': 'MOH - Uganda'}
-2025-12-08 10:56:23,587:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:23] "POST /api/v1/chart/data HTTP/1.1" 200 -
-2025-12-08 10:56:23,590:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:23] "POST /api/v1/chart/data HTTP/1.1" 200 -
-2025-12-08 10:56:23,671:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:23] "POST /superset/log/?explode=events&dashboard_id=1 HTTP/1.1" 200 -
-2025-12-08 10:56:29,251:WARNING:superset.views.error_handling:HTTPException
+2025-12-08 11:04:32,371:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/1/datasets HTTP/1.1" 200 -
+2025-12-08 11:04:32,393:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "POST /api/v1/chart/data HTTP/1.1" 200 -
+2025-12-08 11:04:32,397:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "POST /api/v1/chart/data HTTP/1.1" 200 -
+2025-12-08 11:04:32,810:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "[35m[1mPOST /api/v1/dashboard/1/filter_state?tab_id=22 HTTP/1.1[0m" 201 -
+2025-12-08 11:04:33,153:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -571,13 +101,9 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 10:56:29,256:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:29] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 10:56:38,536:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:38] "GET /api/v1/me/ HTTP/1.1" 200 -
-2025-12-08 10:56:39,542:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:39] "POST /superset/log/?explode=events&dashboard_id=1 HTTP/1.1" 200 -
-2025-12-08 10:56:41,463:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:41] "GET /api/v1/dataset/1?q=(columns:!(columns.column_name,columns.expression,columns.filterable,columns.is_dttm,columns.type,columns.verbose_name,database.id,database.database_name,datasource_type,filter_select_enabled,id,is_sqllab_view,main_dttm_col,metrics.metric_name,metrics.verbose_name,schema,sql,table_name)) HTTP/1.1" 200 -
-2025-12-08 10:56:41,464:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:41] "GET /api/v1/dataset/1?q=(columns:!(columns.column_name,columns.is_dttm,columns.type_generic,columns.filterable)) HTTP/1.1" 200 -
-2025-12-08 10:56:45,024:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:45] "GET /static/assets/69a8d1d484967aba2389.woff2 HTTP/1.1" 200 -
-2025-12-08 10:56:45,356:WARNING:superset.views.error_handling:HTTPException
+2025-12-08 11:04:33,155:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:33] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:04:33,356:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:33] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-08 11:04:35,269:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -593,8 +119,8 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 10:56:45,358:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:56:45] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 10:57:17,637:WARNING:superset.views.error_handling:HTTPException
+2025-12-08 11:04:35,271:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:35] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:04:39,384:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -610,10 +136,8 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 10:57:17,641:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:57:17] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 10:57:42,501:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:57:42] "GET /api/v1/me/ HTTP/1.1" 200 -
-2025-12-08 10:57:43,510:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:57:43] "POST /superset/log/?explode=events&dashboard_id=1 HTTP/1.1" 200 -
-2025-12-08 10:58:21,719:WARNING:superset.views.error_handling:HTTPException
+2025-12-08 11:04:39,386:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:39] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:04:47,462:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -629,10 +153,10 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 10:58:21,723:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 10:58:21] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:00:27,722:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:00:27] "GET /api/v1/me/ HTTP/1.1" 200 -
-2025-12-08 11:00:28,717:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:00:28] "POST /superset/log/?explode=events&dashboard_id=1 HTTP/1.1" 200 -
-2025-12-08 11:00:29,805:WARNING:superset.views.error_handling:HTTPException
+2025-12-08 11:04:47,464:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:47] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:04:52,338:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:52] "GET /api/v1/dataset/1?q=(columns:!(columns.column_name,columns.expression,columns.filterable,columns.is_dttm,columns.type,columns.verbose_name,database.id,database.database_name,datasource_type,filter_select_enabled,id,is_sqllab_view,main_dttm_col,metrics.metric_name,metrics.verbose_name,schema,sql,table_name)) HTTP/1.1" 200 -
+2025-12-08 11:04:52,338:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:52] "GET /api/v1/dataset/1?q=(columns:!(columns.column_name,columns.is_dttm,columns.type_generic,columns.filterable)) HTTP/1.1" 200 -
+2025-12-08 11:05:03,622:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -648,4 +172,236 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:00:29,807:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:00:29] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:05:03,624:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:03] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:05:35,888:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-08 11:05:35,890:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:35] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:05:39,829:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:39] "GET /api/v1/dataset/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
+2025-12-08 11:05:39,829:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:39] "GET /api/v1/dataset/?q=(order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:25) HTTP/1.1" 200 -
+2025-12-08 11:05:40,725:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:40] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-08 11:05:41,683:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:41] "GET /static/assets/DatasetCreation.041d9ac9.chunk.js HTTP/1.1" 200 -
+2025-12-08 11:05:41,798:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:41] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:ct,value:'')),order_column:database_name,order_direction:asc,page:0,page_size:100) HTTP/1.1" 200 -
+2025-12-08 11:05:42,687:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:42] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-08 11:05:48,223:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:48,225:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:48] "GET /api/v1/database/2/schemas/?q=(force:!f) HTTP/1.1" 200 -
+2025-12-08 11:05:48,271:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:48,277:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:48,280:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:48,285:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:48,288:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:48] "GET /api/v1/dataset/?q=(filters:!((col:database,opr:rel_o_m,value:2),(col:schema,opr:eq,value:dhis2),(col:sql,opr:dataset_is_null_or_empty,value:!t)),page:0) HTTP/1.1" 200 -
+2025-12-08 11:05:48,290:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:48] "GET /api/v1/database/2/tables/?q=(force:!f,schema_name:dhis2) HTTP/1.1" 200 -
+2025-12-08 11:05:53,774:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/dhis2_metadata/?type=periods&periodType=YEARLY HTTP/1.1" 200 -
+2025-12-08 11:05:53,778:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,778:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,779:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Cached 2 column mappings for analytics
+2025-12-08 11:05:53,780:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,780:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,781:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/dhis2_metadata/?type=periods&periodType=MONTHLY HTTP/1.1" 200 -
+2025-12-08 11:05:53,781:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,781:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,782:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,782:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,783:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,783:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:05:53,784:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/dhis2_metadata/?type=periods&periodType=RELATIVE HTTP/1.1" 200 -
+2025-12-08 11:05:53,786:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/dhis2_metadata/?type=periods&periodType=QUARTERLY HTTP/1.1" 200 -
+2025-12-08 11:05:53,787:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/table_metadata/?name=analytics&schema=dhis2 HTTP/1.1" 200 -
+2025-12-08 11:05:59,942:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/dataElements
+2025-12-08 11:05:59,942:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:05:59,953:INFO:superset.databases.api:[DHIS2 Metadata] Found 5668 dataElements
+2025-12-08 11:05:59,953:INFO:superset.databases.api:[DHIS2 Metadata] First item: 004-DN07. Age of deceased (yrs)
+2025-12-08 11:05:59,955:INFO:superset.databases.api:[DHIS2 Metadata] Returning 5000 items to frontend (total: 5668)
+2025-12-08 11:05:59,989:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:59] "GET /api/v1/database/2/dhis2_metadata/?type=dataElements&table=analytics HTTP/1.1" 200 -
+2025-12-08 11:06:01,920:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/indicators
+2025-12-08 11:06:01,921:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:06:01,924:INFO:superset.databases.api:[DHIS2 Metadata] Found 1867 indicators
+2025-12-08 11:06:01,924:INFO:superset.databases.api:[DHIS2 Metadata] First item: % Obstetric and Gynecological admission due abortions
+2025-12-08 11:06:01,924:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1867 items to frontend (total: 1867)
+2025-12-08 11:06:01,936:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:01] "GET /api/v1/database/2/dhis2_metadata/?type=indicators HTTP/1.1" 200 -
+2025-12-08 11:06:02,471:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/dataElements
+2025-12-08 11:06:02,471:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:06:02,476:INFO:superset.databases.api:[DHIS2 Metadata] Found 5668 dataElements
+2025-12-08 11:06:02,476:INFO:superset.databases.api:[DHIS2 Metadata] First item: 004-DN07. Age of deceased (yrs)
+2025-12-08 11:06:02,477:INFO:superset.databases.api:[DHIS2 Metadata] Returning 5000 items to frontend (total: 5668)
+2025-12-08 11:06:02,503:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:02] "GET /api/v1/database/2/dhis2_metadata/?type=dataElements&table=analytics HTTP/1.1" 200 -
+2025-12-08 11:06:02,740:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/organisationUnits
+2025-12-08 11:06:02,740:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:06:02,740:INFO:superset.databases.api:[DHIS2 Metadata] Found 1 organisationUnits
+2025-12-08 11:06:02,741:INFO:superset.databases.api:[DHIS2 Metadata] First item: MOH - Uganda
+2025-12-08 11:06:02,741:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1 items to frontend (total: 1)
+2025-12-08 11:06:02,746:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:02] "GET /api/v1/database/2/dhis2_metadata/?type=organisationUnits&level=1 HTTP/1.1" 200 -
+2025-12-08 11:06:04,031:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/indicators
+2025-12-08 11:06:04,031:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:06:04,033:INFO:superset.databases.api:[DHIS2 Metadata] Found 1867 indicators
+2025-12-08 11:06:04,033:INFO:superset.databases.api:[DHIS2 Metadata] First item: % Obstetric and Gynecological admission due abortions
+2025-12-08 11:06:04,033:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1867 items to frontend (total: 1867)
+2025-12-08 11:06:04,046:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:04] "GET /api/v1/database/2/dhis2_metadata/?type=indicators HTTP/1.1" 200 -
+2025-12-08 11:06:04,856:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/organisationUnits
+2025-12-08 11:06:04,857:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:06:04,857:INFO:superset.databases.api:[DHIS2 Metadata] Found 1 organisationUnits
+2025-12-08 11:06:04,857:INFO:superset.databases.api:[DHIS2 Metadata] First item: MOH - Uganda
+2025-12-08 11:06:04,857:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1 items to frontend (total: 1)
+2025-12-08 11:06:04,861:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:04] "GET /api/v1/database/2/dhis2_metadata/?type=organisationUnits&level=1 HTTP/1.1" 200 -
+2025-12-08 11:06:39,899:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-08 11:06:39,902:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:39] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:08:47,914:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-08 11:08:47,917:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:08:47] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:08:56,621:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/dataElements
+2025-12-08 11:08:56,622:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:08:56,635:INFO:superset.databases.api:[DHIS2 Metadata] Found 7132 dataElements
+2025-12-08 11:08:56,636:INFO:superset.databases.api:[DHIS2 Metadata] First item: 004-DN02. Names of deceased
+2025-12-08 11:08:56,636:INFO:superset.databases.api:[DHIS2 Metadata] Returning 5000 items to frontend (total: 7132)
+2025-12-08 11:08:56,663:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:08:56] "GET /api/v1/database/2/dhis2_metadata/?type=dataElements HTTP/1.1" 200 -
+2025-12-08 11:08:58,316:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/indicators
+2025-12-08 11:08:58,316:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:08:58,319:INFO:superset.databases.api:[DHIS2 Metadata] Found 1867 indicators
+2025-12-08 11:08:58,319:INFO:superset.databases.api:[DHIS2 Metadata] First item: % Obstetric and Gynecological admission due abortions
+2025-12-08 11:08:58,319:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1867 items to frontend (total: 1867)
+2025-12-08 11:08:58,331:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:08:58] "GET /api/v1/database/2/dhis2_metadata/?type=indicators HTTP/1.1" 200 -
+2025-12-08 11:08:59,135:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/organisationUnits
+2025-12-08 11:08:59,136:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
+2025-12-08 11:08:59,136:INFO:superset.databases.api:[DHIS2 Metadata] Found 1 organisationUnits
+2025-12-08 11:08:59,136:INFO:superset.databases.api:[DHIS2 Metadata] First item: MOH - Uganda
+2025-12-08 11:08:59,136:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1 items to frontend (total: 1)
+2025-12-08 11:08:59,141:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:08:59] "GET /api/v1/database/2/dhis2_metadata/?type=organisationUnits&level=1 HTTP/1.1" 200 -
+/Users/stephocay/projects/hispuganda/superset/superset/daos/base.py:369: SAWarning: Dialect sqlite+pysqlite does *not* support Decimal objects natively, and SQLAlchemy must convert from floating point - rounding errors and other issues may occur. Please consider storing Decimal numbers as strings or integers on this platform for lossless storage.
+  return query.filter_by(**filter_by).one_or_none()
+2025-12-08 11:12:30,895:INFO:superset.commands.sql_lab.execute:Triggering query_id: 17
+2025-12-08 11:12:30,907:INFO:superset.sql_lab:Query 17: Set query to 'running'
+2025-12-08 11:12:30,911:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:12:30,913:INFO:superset.sql_lab:Query 17: Running block 1 out of 1
+2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: /* DHIS2: dataElement=UIweaJe9T0L%2CbOEDRfF9XxR%2CDJzqHhU53B9&period=LAST_YEAR%2C2025%2C2024%2C2023%2C2022&orgUnit=USER_ORGUNIT */
+SELECT
+  *
+FROM dataValueSets
+LIMIT 51
+2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: dataValueSets
+2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
+2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'dataElement': 'UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9', 'period': 'LAST_YEAR,2025,2024,2023,2022', 'orgUnit': 'USER_ORGUNIT'}
+2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-08', 'endDate': '2025-12-08', 'dataElement': 'UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9', 'period': 'LAST_YEAR,2025,2024,2023,2022', 'orgUnit': 'USER_ORGUNIT'}
+2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request: https://tests.dhis2.hispuganda.org/hmis/api/dataValueSets?startDate=2024-12-08&endDate=2025-12-08&dataElement=UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9&period=LAST_YEAR,2025,2024,2023,2022&orgUnit=USER_ORGUNIT
+2025-12-08 11:12:31,756:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for dataValueSets - At least one organisation unit or organisation unit group must be specified
+2025-12-08 11:12:31,757:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
+2025-12-08 11:12:31,772:INFO:superset.sql_lab:Query 17: Storing results in results backend, key: 85cc2181-5e62-41dc-8f0c-f6d1545320e4
+2025-12-08 11:12:31,776:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
+2025-12-08 11:12:31,777:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
+2025-12-08 11:12:31,777:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-08 11:12:31,777:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-08 11:12:31,781:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:12:31] "POST /api/v1/sqllab/execute/ HTTP/1.1" 200 -
+2025-12-08 11:12:54,764:INFO:superset.commands.sql_lab.execute:Triggering query_id: 18
+2025-12-08 11:12:54,767:INFO:superset.sql_lab:Query 18: Set query to 'running'
+2025-12-08 11:12:54,770:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-08 11:12:54,770:INFO:superset.sql_lab:Query 18: Running block 1 out of 1
+2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: /* DHIS2: dataElement=UIweaJe9T0L%2CbOEDRfF9XxR%2CDJzqHhU53B9&period=LAST_YEAR%2C2025%2C2024%2C2023%2C2022&orgUnit=USER_ORGUNIT */
+SELECT
+  *
+FROM dataValueSets
+LIMIT 51
+2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: dataValueSets
+2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
+2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'dataElement': 'UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9', 'period': 'LAST_YEAR,2025,2024,2023,2022', 'orgUnit': 'USER_ORGUNIT'}
+2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-08', 'endDate': '2025-12-08', 'dataElement': 'UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9', 'period': 'LAST_YEAR,2025,2024,2023,2022', 'orgUnit': 'USER_ORGUNIT'}
+2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request: https://tests.dhis2.hispuganda.org/hmis/api/dataValueSets?startDate=2024-12-08&endDate=2025-12-08&dataElement=UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9&period=LAST_YEAR,2025,2024,2023,2022&orgUnit=USER_ORGUNIT
+2025-12-08 11:12:55,544:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for dataValueSets - At least one organisation unit or organisation unit group must be specified
+2025-12-08 11:12:55,547:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
+2025-12-08 11:12:55,559:INFO:superset.sql_lab:Query 18: Storing results in results backend, key: ef3ac881-eab4-4390-868a-bdb99072a420
+2025-12-08 11:12:55,562:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
+2025-12-08 11:12:55,562:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
+2025-12-08 11:12:55,562:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-08 11:12:55,562:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-08 11:12:55,567:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:12:55] "POST /api/v1/sqllab/execute/ HTTP/1.1" 200 -
+2025-12-08 11:13:03,989:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-08 11:13:03,992:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:03] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:13:09,738:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/saved_query/?q=(filters:!((col:created_by,opr:rel_o_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-08 11:13:09,741:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/log/recent_activity/?q=(distinct:!f,page_size:24) HTTP/1.1" 200 -
+2025-12-08 11:13:09,749:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/dashboard/?q=(filters:!((col:owners,opr:rel_m_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-08 11:13:09,753:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/chart/?q=(filters:!((col:owners,opr:rel_m_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-08 11:13:09,795:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/dashboard/?q=(filters:!(),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-08 11:13:09,800:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/chart/?q=(filters:!(),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-08 11:13:09,884:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/chart/favorite_status/?q=!(2,1) HTTP/1.1" 200 -
+2025-12-08 11:13:09,886:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/dashboard/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
+2025-12-08 11:13:09,888:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
+2025-12-08 11:13:09,895:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/chart/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
+2025-12-08 11:13:10,606:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:10] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-08 11:13:29,473:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:29] "GET /api/v1/dashboard/?q=(order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:25,select_columns:!(id,dashboard_title,published,url,slug,changed_by,changed_by.id,changed_by.first_name,changed_by.last_name,changed_on_delta_humanized,owners,owners.id,owners.first_name,owners.last_name,tags.id,tags.name,tags.type,status,certified_by,certification_details,changed_on)) HTTP/1.1" 200 -
+2025-12-08 11:13:29,474:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:29] "GET /api/v1/dashboard/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
+2025-12-08 11:13:29,555:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:29] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
+2025-12-08 11:13:30,346:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:30] "POST /superset/log/?explode=events&dashboard_id=1 HTTP/1.1" 200 -
+2025-12-08 11:17:15,014:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:17:15] "GET /api/v1/me/ HTTP/1.1" 200 -
+2025-12-08 11:21:36,658:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-08 11:21:36,660:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:21:36] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-08 11:22:23,004:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:22:22] "GET /api/v1/me/ HTTP/1.1" 200 -

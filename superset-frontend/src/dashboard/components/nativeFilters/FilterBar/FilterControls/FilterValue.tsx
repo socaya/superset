@@ -58,6 +58,7 @@ import { FilterControlProps } from './types';
 import { getFormData } from '../../utils';
 import { useFilterDependencies } from './state';
 import { useFilterOutlined } from '../useFilterOutlined';
+import { useFilters } from '../state';
 
 const HEIGHT = 32;
 
@@ -98,10 +99,11 @@ const FilterValue: FC<FilterControlProps> = ({
   clearAllTrigger,
   onClearAllComplete,
 }) => {
-  const { id, targets, filterType, adhoc_filters, time_range } = filter;
+  const { id, targets, filterType, adhoc_filters, time_range, cascadeParentId } = filter;
   const metadata = getChartMetadataRegistry().get(filterType);
   const dependencies = useFilterDependencies(id, dataMaskSelected);
   const shouldRefresh = useShouldFilterRefresh();
+  const allFilters = useFilters();
   const [state, setState] = useState<ChartDataResponseResult[]>([]);
   const dashboardId = useSelector<RootState, number>(
     state => state.dashboardInfo.id,
@@ -141,10 +143,28 @@ const FilterValue: FC<FilterControlProps> = ({
     }
   }, [inView, inViewFirstTime, setInViewFirstTime]);
 
+  const getCascadeParentInfo = useCallback(() => {
+    if (!cascadeParentId) {
+      return { cascade_parent_column: undefined, cascade_parent_value: undefined };
+    }
+    const parentFilter = allFilters?.[cascadeParentId];
+    if (!parentFilter) {
+      return { cascade_parent_column: undefined, cascade_parent_value: undefined };
+    }
+    const parentTarget = parentFilter.targets?.[0];
+    const parentColumn = parentTarget?.column?.name;
+    const parentSelectedValue = dataMaskSelected?.[cascadeParentId]?.filterState?.value;
+    return {
+      cascade_parent_column: parentColumn,
+      cascade_parent_value: parentSelectedValue,
+    };
+  }, [cascadeParentId, allFilters, dataMaskSelected]);
+
   useEffect(() => {
     if (!inViewFirstTime) {
       return;
     }
+    const cascadeParentInfo = getCascadeParentInfo();
     const newFormData = getFormData({
       ...filter,
       datasetId,
@@ -153,6 +173,7 @@ const FilterValue: FC<FilterControlProps> = ({
       adhoc_filters,
       time_range,
       dashboardId,
+      ...cascadeParentInfo,
     });
     const filterOwnState = filter.dataMask?.ownState || {};
     if (filter?.cascadeParentIds?.length) {
@@ -255,6 +276,7 @@ const FilterValue: FC<FilterControlProps> = ({
     isRefreshing,
     shouldRefresh,
     dataMaskSelected,
+    getCascadeParentInfo,
   ]);
 
   useEffect(() => {

@@ -58,6 +58,8 @@ export const getFormData = ({
   type,
   dashboardId,
   id,
+  cascade_parent_column,
+  cascade_parent_value,
 }: Partial<Filter> & {
   dashboardId: number;
   datasetId?: number;
@@ -65,6 +67,8 @@ export const getFormData = ({
   groupby?: string;
   adhoc_filters?: AdhocFilter[];
   time_range?: string;
+  cascade_parent_column?: string;
+  cascade_parent_value?: string | number | (string | number)[];
 }): Partial<QueryFormData> => {
   const otherProps: {
     datasource?: string;
@@ -80,7 +84,7 @@ export const getFormData = ({
   if (sortMetric) {
     otherProps.sortMetric = sortMetric;
   }
-  return {
+  const formData: Partial<QueryFormData> = {
     ...controlValues,
     ...otherProps,
     adhoc_filters: adhoc_filters ?? [],
@@ -99,6 +103,13 @@ export const getFormData = ({
     dashboardId,
     native_filter_id: id,
   };
+
+  if (cascade_parent_column && cascade_parent_value !== undefined) {
+    formData.cascade_parent_column = cascade_parent_column;
+    formData.cascade_parent_value = cascade_parent_value;
+  }
+
+  return formData;
 };
 
 export function mergeExtraFormData(
