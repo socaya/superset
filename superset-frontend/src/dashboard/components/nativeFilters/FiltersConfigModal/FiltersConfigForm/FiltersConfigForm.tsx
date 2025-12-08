@@ -89,7 +89,6 @@ import {
 } from 'src/dashboard/components/nativeFilters/utils';
 import { DatasetSelectLabel } from 'src/features/datasets/DatasetSelectLabel';
 import {
-  ALLOW_DEPENDENCIES as TYPES_SUPPORT_DEPENDENCIES,
   getFiltersConfigModalTestId,
 } from '../FiltersConfigModal';
 import { FilterRemoval, NativeFiltersForm } from '../types';
@@ -98,7 +97,7 @@ import { ColumnSelect } from './ColumnSelect';
 import DatasetSelect from './DatasetSelect';
 import DefaultValue from './DefaultValue';
 import FilterScope from './FilterScope/FilterScope';
-import CascadeFilterConfig from './CascadeFilterConfig';
+import FilterDependencies from './FilterDependencies';
 import getControlItemsMap from './getControlItemsMap';
 import RemovedFilter from './RemovedFilter';
 import { useBackendFormUpdate, useDefaultValue } from './state';
@@ -109,7 +108,7 @@ import {
   useForceUpdate,
 } from './utils';
 import { FILTER_SUPPORTED_TYPES, INPUT_WIDTH } from './constants';
-import DependencyList from './DependencyList';
+
 
 const FORM_ITEM_WIDTH = 260;
 
@@ -197,9 +196,9 @@ const FilterTabs = {
     key: 'configuration',
     name: t('Settings'),
   },
-  cascade: {
-    key: 'cascade',
-    name: t('Cascade Settings'),
+  filterDependencies: {
+    key: 'filterDependencies',
+    name: t('Filter Dependencies'),
   },
   scoping: {
     key: 'scoping',
@@ -381,10 +380,6 @@ const FiltersConfigForm = (
     !hasDataset || (datasetId && (formFilter?.column || !hasColumn));
 
   const hasAdditionalFilters = FILTERS_WITH_ADHOC_FILTERS.includes(
-    formFilter?.filterType,
-  );
-
-  const canDependOnOtherFilters = TYPES_SUPPORT_DEPENDENCIES.includes(
     formFilter?.filterType,
   );
 
@@ -589,7 +584,6 @@ const FiltersConfigForm = (
   };
 
   const availableFilters = getAvailableFilters(filterId);
-  const hasAvailableFilters = availableFilters.length > 0;
   const hasTimeDependency = availableFilters
     .filter(filter => filter.type === 'filter_time')
     .some(filter => dependencies?.includes(filter.value));
@@ -921,42 +915,6 @@ const FiltersConfigForm = (
                             label: FilterPanels.configuration.name,
                             children: (
                               <>
-                                {canDependOnOtherFilters &&
-                                  hasAvailableFilters && (
-                                    <StyledRowFormItem
-                                      expanded={expanded}
-                                      name={[
-                                        'filters',
-                                        filterId,
-                                        'dependencies',
-                                      ]}
-                                      initialValue={dependencies}
-                                    >
-                                      <DependencyList
-                                        availableFilters={availableFilters}
-                                        dependencies={dependencies}
-                                        onDependenciesChange={dependencies => {
-                                          setNativeFilterFieldValues(
-                                            form,
-                                            filterId,
-                                            {
-                                              dependencies,
-                                            },
-                                          );
-                                          forceUpdate();
-                                          validateDependencies();
-                                          formChanged();
-                                        }}
-                                        getDependencySuggestion={() =>
-                                          getDependencySuggestion(filterId)
-                                        }
-                                      >
-                                        {hasTimeDependency
-                                          ? timeColumn
-                                          : undefined}
-                                      </DependencyList>
-                                    </StyledRowFormItem>
-                                  )}
                                 {hasDataset && hasAdditionalFilters && (
                                   <FormItem
                                     name={['filters', filterId, 'preFilter']}
@@ -1548,8 +1506,8 @@ const FiltersConfigForm = (
           ),
         },
         {
-          key: FilterTabs.cascade.key,
-          label: FilterTabs.cascade.name,
+          key: FilterTabs.filterDependencies.key,
+          label: FilterTabs.filterDependencies.name,
           forceRender: true,
           children: (
             <StyledSettings>
@@ -1564,7 +1522,7 @@ const FiltersConfigForm = (
                     filterToEdit?.cascadeParentId || null
                   }
                 >
-                  <CascadeFilterConfig
+                  <FilterDependencies
                     filterId={filterId}
                     filterType={formFilter?.filterType}
                     availableFilters={availableFilters}
@@ -1580,6 +1538,13 @@ const FiltersConfigForm = (
                       filterId,
                       'cascadeLevel',
                     ])}
+                    dependencies={
+                      form.getFieldValue([
+                        'filters',
+                        filterId,
+                        'dependencies',
+                      ]) || []
+                    }
                     onCascadeParentChange={parentId => {
                       setNativeFilterFieldValues(
                         form,
@@ -1602,6 +1567,18 @@ const FiltersConfigForm = (
                       forceUpdate();
                       formChanged();
                     }}
+                    onDependenciesChange={newDependencies => {
+                      setNativeFilterFieldValues(
+                        form,
+                        filterId,
+                        {
+                          dependencies: newDependencies,
+                        },
+                      );
+                      forceUpdate();
+                      validateDependencies();
+                      formChanged();
+                    }}
                   />
                 </FormItem>
                 <FormItem
@@ -1613,6 +1590,16 @@ const FiltersConfigForm = (
                   initialValue={
                     filterToEdit?.cascadeLevel || null
                   }
+                >
+                  <div style={{ display: 'none' }} />
+                </FormItem>
+                <FormItem
+                  name={[
+                    'filters',
+                    filterId,
+                    'dependencies',
+                  ]}
+                  initialValue={dependencies}
                 >
                   <div style={{ display: 'none' }} />
                 </FormItem>
