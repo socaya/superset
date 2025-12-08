@@ -123,7 +123,6 @@ const StyledSettings = styled.div`
 const StyledContainer = styled.div`
   ${({ theme }) => `
     display: flex;
-    flex-direction: row-reverse;
     justify-content: space-between;
     padding: 0px ${theme.sizeUnit * 4}px;
   `}
