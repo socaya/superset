@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { DataRecord, JsonObject } from '@superset-ui/core';
+import { DataRecord } from '@superset-ui/core';
 
 export interface CascadeLevel {
   column: string;
@@ -54,7 +54,7 @@ export function getFilteredOptions(
       new Set(
         data
           .map(row => row[currentColumn])
-          .filter(val => val !== null && val !== undefined),
+          .filter((val): val is string | number => val !== null && val !== undefined),
       ),
     );
   }
@@ -62,9 +62,9 @@ export function getFilteredOptions(
   const parentValues = Array.isArray(parentValue) ? parentValue : [parentValue];
 
   const filtered = data
-    .filter(row => parentValues.includes(row[parentColumn]))
+    .filter(row => parentValues.includes(String(row[parentColumn])))
     .map(row => row[currentColumn])
-    .filter(val => val !== null && val !== undefined);
+    .filter((val): val is string | number => val !== null && val !== undefined);
 
   return Array.from(new Set(filtered));
 }
@@ -83,7 +83,7 @@ export function getDistinctValues(
     new Set(
       data
         .map(row => row[column])
-        .filter(val => val !== null && val !== undefined),
+        .filter((val): val is string | number => val !== null && val !== undefined),
     ),
   );
 }
@@ -120,11 +120,13 @@ export function buildCascadeMapping(
         const parentVal = row[parentLevel.column];
         const currentVal = row[level.column];
 
-        if (parentVal !== null && currentVal !== null) {
-          if (!valueMap.has(parentVal)) {
-            valueMap.set(parentVal, new Set());
+        if (parentVal !== null && parentVal !== undefined && currentVal !== null && currentVal !== undefined) {
+          const parentKey = String(parentVal);
+          const childKey = String(currentVal);
+          if (!valueMap.has(parentKey)) {
+            valueMap.set(parentKey, new Set());
           }
-          valueMap.get(parentVal)!.add(currentVal);
+          valueMap.get(parentKey)!.add(childKey);
         }
       });
 
@@ -153,14 +155,18 @@ export function getCascadeOptions(
   if (!columnMap) return [];
 
   if (!parentColumn || parentValue === null || parentValue === undefined) {
-    return Array.from(new Set(Array.from(columnMap.values()).flat()));
+    const allSets = Array.from(columnMap.values());
+    const flattened = allSets.reduce((acc: (string | number)[], set) => {
+      return acc.concat(Array.from(set));
+    }, []);
+    return Array.from(new Set(flattened));
   }
 
   const parentValues = Array.isArray(parentValue) ? parentValue : [parentValue];
   const options = new Set<string | number>();
 
   parentValues.forEach(pVal => {
-    const childValues = columnMap.get(pVal);
+    const childValues = columnMap.get(String(pVal));
     if (childValues) {
       childValues.forEach(val => options.add(val));
     }
@@ -268,8 +274,8 @@ export function validateCascadeState(
 
         currentValues.forEach(cVal => {
           const isValid = parentValues.some(pVal => {
-            const childValues = columnMap.get(pVal);
-            return childValues?.has(cVal);
+            const childValues = columnMap.get(String(pVal));
+            return childValues?.has(String(cVal));
           });
 
           if (!isValid) {
@@ -283,4 +289,33 @@ export function validateCascadeState(
   });
 
   return errors;
+}
+
+/**
+ * Filters dataset based on parent filter selection for cascading
+ * Used in filter plugins to restrict available options
+ * @param data - Full dataset from backend
+ * @param parentColumnName - Column name of parent filter
+ * @param parentValue - Currently selected value(s) in parent filter
+ * @returns Filtered dataset containing only rows matching parent selection
+ */
+export function filterDataByCascadeParent(
+  data: DataRecord[],
+  parentColumnName: string | undefined,
+  parentValue: string | number | (string | number)[] | null | undefined,
+): DataRecord[] {
+  if (
+    !parentColumnName ||
+    parentValue === null ||
+    parentValue === undefined ||
+    data.length === 0
+  ) {
+    return data;
+  }
+
+  const parentValues = Array.isArray(parentValue) ? parentValue : [parentValue];
+  return data.filter(row => {
+    const rowVal = row[parentColumnName];
+    return rowVal !== null && rowVal !== undefined && parentValues.includes(String(rowVal));
+  });
 }

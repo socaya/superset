@@ -72,6 +72,18 @@ class DatasourceRestApi(BaseSupersetApi):
               type: string
             name: column_name
             description: The name of the column to get values for
+          - in: query
+            schema:
+              type: string
+            name: cascade_parent_column
+            description: The parent column for cascading filters
+            required: false
+          - in: query
+            schema:
+              type: string
+            name: cascade_parent_value
+            description: The selected value(s) from parent filter (comma-separated)
+            required: false
           responses:
             200:
               description: A List of distinct values for the column
@@ -116,13 +128,28 @@ class DatasourceRestApi(BaseSupersetApi):
         except SupersetSecurityException as ex:
             return self.response(403, message=ex.message)
 
+        from flask import request
         row_limit = apply_max_row_limit(app.config["FILTER_SELECT_ROW_LIMIT"])
         denormalize_column = not datasource.normalize_columns
+        
+        # Get cascade filter parameters from query string
+        cascade_parent_column = request.args.get("cascade_parent_column")
+        cascade_parent_value = request.args.get("cascade_parent_value")
+        
+        # Parse cascade parent value (can be comma-separated for multi-select)
+        if cascade_parent_value:
+            # Try to convert to list if multiple values
+            parent_values = cascade_parent_value.split(",") if "," in cascade_parent_value else cascade_parent_value
+        else:
+            parent_values = None
+        
         try:
             payload = datasource.values_for_column(
                 column_name=column_name,
                 limit=row_limit,
                 denormalize_column=denormalize_column,
+                cascade_parent_column=cascade_parent_column,
+                cascade_parent_value=parent_values,
             )
             return self.response(200, result=payload)
         except KeyError:

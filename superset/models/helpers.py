@@ -1678,6 +1678,8 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
         column_name: str,
         limit: int = 10000,
         denormalize_column: bool = False,
+        cascade_parent_column: Optional[str] = None,
+        cascade_parent_value: Optional[Union[str, int, list]] = None,
     ) -> list[Any]:
         # denormalize column name before querying for values
         # unless disabled in the dataset configuration
@@ -1712,6 +1714,20 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
         rls_filters = self.get_sqla_row_level_filters(template_processor=tp)
         if rls_filters:
             qry = qry.where(and_(*rls_filters))
+
+        # Apply cascade filter if parent column and value are provided
+        if cascade_parent_column and cascade_parent_value is not None:
+            try:
+                from superset.utils.cascading_filters import apply_cascade_filter_to_query
+                qry = apply_cascade_filter_to_query(
+                    qry,
+                    cascade_parent_id=None,  # Not used for database query
+                    cascade_parent_column=cascade_parent_column,
+                    parent_filter_value=cascade_parent_value,
+                )
+            except Exception as ex:
+                import logging
+                logging.warning(f"Failed to apply cascade filter: {str(ex)}")
 
         with self.database.get_sqla_engine() as engine:
             sql = str(qry.compile(engine, compile_kwargs={"literal_binds": True}))

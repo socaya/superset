@@ -56,6 +56,8 @@ export type DataMaskStateWithId = { [filterId: string]: DataMaskWithId };
 
 export type Filter = {
   cascadeParentIds: string[];
+  cascadeParentId?: string | null;
+  cascadeLevel?: string | null;
   defaultDataMask: DataMask;
   id: string; // randomly generated at filter creation
   name: string;

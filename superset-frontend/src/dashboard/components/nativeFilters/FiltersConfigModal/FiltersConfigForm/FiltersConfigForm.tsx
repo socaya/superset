@@ -98,6 +98,7 @@ import { ColumnSelect } from './ColumnSelect';
 import DatasetSelect from './DatasetSelect';
 import DefaultValue from './DefaultValue';
 import FilterScope from './FilterScope/FilterScope';
+import CascadeFilterConfig from './CascadeFilterConfig';
 import getControlItemsMap from './getControlItemsMap';
 import RemovedFilter from './RemovedFilter';
 import { useBackendFormUpdate, useDefaultValue } from './state';
@@ -196,6 +197,10 @@ const FilterTabs = {
   configuration: {
     key: 'configuration',
     name: t('Settings'),
+  },
+  cascade: {
+    key: 'cascade',
+    name: t('Cascade Settings'),
   },
   scoping: {
     key: 'scoping',
@@ -1541,6 +1546,59 @@ const FiltersConfigForm = (
                 />
               </StyledSettings>
             </>
+          ),
+        },
+        {
+          key: FilterTabs.cascade.key,
+          label: FilterTabs.cascade.name,
+          forceRender: true,
+          children: (
+            <StyledSettings>
+              <StyledContainer>
+                <FormItem
+                  name={[
+                    'filters',
+                    filterId,
+                    'cascadeParentId',
+                  ]}
+                  initialValue={
+                    filterToEdit?.cascadeParentId || null
+                  }
+                >
+                  <CascadeFilterConfig
+                    filterId={filterId}
+                    filterType={formFilter?.filterType}
+                    availableFilters={availableFilters}
+                    cascadeParentId={
+                      filterToEdit?.cascadeParentId
+                    }
+                    cascadeLevel={filterToEdit?.cascadeLevel}
+                    onCascadeParentChange={parentId => {
+                      setNativeFilterFieldValues(
+                        form,
+                        filterId,
+                        {
+                          cascadeParentId: parentId,
+                        },
+                      );
+                      forceUpdate();
+                      formChanged();
+                    }}
+                    onCascadeLevelChange={level => {
+                      setNativeFilterFieldValues(
+                        form,
+                        filterId,
+                        {
+                          cascadeLevel: level,
+                        },
+                      );
+                      forceUpdate();
+                      formChanged();
+                    }}
+                  />
+                </FormItem>
+              </StyledContainer>
+            </StyledSettings>
           ),
         },
         {

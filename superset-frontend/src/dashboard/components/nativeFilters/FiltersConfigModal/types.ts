@@ -48,6 +48,8 @@ export interface NativeFiltersFormItem {
   granularity_sqla?: string;
   type: typeof NativeFilterType.NativeFilter;
   description: string;
+  cascadeParentId?: string | null;
+  cascadeLevel?: string | null;
 }
 export interface NativeFilterDivider {
   id: string;

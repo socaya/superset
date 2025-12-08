@@ -42,6 +42,8 @@ export interface PluginFilterSelectCustomizeProps {
   searchAllOptions: boolean;
   sortAscending?: boolean;
   sortMetric?: string;
+  cascadeParentId?: string | null;
+  cascadeLevel?: string | null;
 }
 
 export type PluginFilterSelectQueryFormData = QueryFormData &

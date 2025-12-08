@@ -216,6 +216,61 @@ def generate_cascade_filter_sql(
     return f"WHERE {where_clause}" if use_where else where_clause
 
 
+def apply_cascade_filter_to_query(
+    query: Any,
+    cascade_parent_id: Optional[str],
+    cascade_parent_column: Optional[str],
+    parent_filter_value: Optional[Union[str, int, List[Union[str, int]]]],
+) -> Any:
+    """Apply cascade filtering to a SQLAlchemy query.
+
+    Args:
+        query: SQLAlchemy query object
+        cascade_parent_id: ID of the parent filter (for logging)
+        cascade_parent_column: Database column of parent filter
+        parent_filter_value: Current value(s) of parent filter
+
+    Returns:
+        Modified query with cascade filter applied
+    """
+    if (
+        not cascade_parent_id
+        or not cascade_parent_column
+        or parent_filter_value is None
+    ):
+        return query
+
+    try:
+        import sqlalchemy as sa
+        from sqlalchemy import Column
+
+        # Convert single value to list for uniform processing
+        values = (
+            parent_filter_value
+            if isinstance(parent_filter_value, list)
+            else [parent_filter_value]
+        )
+
+        # Filter out None values
+        values = [v for v in values if v is not None]
+        if not values:
+            return query
+
+        # Apply IN filter for parent column
+        parent_col = sa.literal_column(f'"{cascade_parent_column}"')
+        query = query.filter(parent_col.in_(values))
+
+        return query
+    except Exception as e:
+        # Log but don't fail - cascade filtering is optional
+        import logging
+
+        logging.warning(
+            f"Failed to apply cascade filter for parent {cascade_parent_id}: {str(e)}"
+        )
+        return query
+
+
 def reset_child_filters(
     filter_state: Dict[str, Optional[Union[str, int, List[Union[str, int]]]]],
     changed_column: str,
