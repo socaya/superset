@@ -29,7 +29,10 @@ import {
 } from 'src/features/datasets/AddDataset/types';
 import { Table } from 'src/hooks/apiResources';
 import { Typography } from '@superset-ui/core/components/Typography';
-import DHIS2ParameterBuilder from '../DHIS2ParameterBuilder';
+import { useSingleViewResource } from 'src/views/CRUD/hooks';
+import DHIS2ParameterBuilder, {
+  parseSourceTable,
+} from '../DHIS2ParameterBuilder';
 
 interface LeftPanelProps {
   setDataset: Dispatch<SetStateAction<object>>;
@@ -124,6 +127,11 @@ export default function LeftPanel({
   datasetNames,
 }: LeftPanelProps) {
   const { addDangerToast } = useToasts();
+  const { createResource } = useSingleViewResource<Partial<DatasetObject>>(
+    'dataset',
+    t('dataset'),
+    addDangerToast,
+  );
 
   const setDatabase = useCallback(
     (db: Partial<DatabaseObject>) => {
@@ -224,22 +232,24 @@ export default function LeftPanel({
           <DHIS2ParameterBuilder
             databaseId={dataset.db?.id}
             endpoint={dataset.table_name}
-            initialDatasetName={dataset.table_name || undefined} 
-            onParametersChange={(parameters) => {
+            initialDatasetName={dataset.table_name || undefined}
+            onParametersChange={(parameters: Record<string, string>) => {
               console.log('DHIS2 Parameters generated:', parameters);
               setDataset({
                 type: DatasetActionType.SetDHIS2Parameters,
                 payload: { parameters },
               });
             }}
-            onColumnsChange={(columns) => {
+            onColumnsChange={(
+              columns: Array<{ name: string; type: string }>,
+            ) => {
               console.log('DHIS2 Columns generated:', columns);
               setDataset({
                 type: DatasetActionType.SetDHIS2Columns,
                 payload: { columns },
               });
             }}
-            onDatasetNameChange={(name) => {
+            onDatasetNameChange={(name: string) => {
               console.log('DHIS2 Dataset name changed:', name);
               // Store the custom name in dataset_name field
               // DO NOT change table_name - it must remain as the source table (e.g., "analytics")
@@ -247,6 +257,47 @@ export default function LeftPanel({
                 type: DatasetActionType.ChangeDataset,
                 payload: { name: 'dataset_name', value: name },
               });
+            }}
+            onSave={async () => {
+              if (!dataset) {
+                return;
+              }
+
+              const datasetIdentifier =
+                dataset.dataset_name || dataset.table_name;
+
+              const data: any = {
+                database: dataset.db?.id,
+                catalog: dataset.catalog,
+                schema: dataset.schema,
+                table_name: datasetIdentifier,
+              };
+
+              if (dataset.dhis2_parameters) {
+                const sourceTable =
+                  parseSourceTable(datasetIdentifier) || dataset.table_name;
+                const paramsStr = Object.entries(dataset.dhis2_parameters)
+                  .map(([key, value]) => `${key}=${value}`)
+                  .join('&');
+
+                data.sql = `SELECT * FROM ${sourceTable}\n/* DHIS2: table=${sourceTable}&${paramsStr} */`;
+                console.log(
+                  '[DHIS2] Creating dataset:',
+                  datasetIdentifier,
+                  'from source table:',
+                  sourceTable,
+                );
+                console.log('[DHIS2] SQL:', data.sql);
+              }
+
+              try {
+                const response = await createResource(data);
+                if (response && typeof response === 'number') {
+                  console.log('[DHIS2] Dataset created with ID:', response);
+                }
+              } catch (error) {
+                console.error('[DHIS2] Failed to create dataset:', error);
+              }
             }}
           />
         </div>

@@ -830,6 +830,80 @@ class DHIS2EngineSpec(BaseEngineSpec):
         return extra_params
 
     @classmethod
+    def fetch_geo_features(
+        cls,
+        database: "Database",
+        ou_params: str,
+        display_property: str = "NAME",
+        include_group_sets: bool = False,
+    ) -> list[dict[str, Any]]:
+        """
+        Fetch geographic features from DHIS2 geoFeatures API.
+
+        Args:
+            database: Superset database instance
+            ou_params: Organisation unit parameter (e.g., 'ou:LEVEL-2' or 'uid')
+            display_property: Property to display (NAME or SHORTNAME)
+            include_group_sets: Include org unit group information
+
+        Returns:
+            List of geoFeature objects from DHIS2
+        """
+        try:
+            from superset.db_engine_specs.dhis2_dialect import DHIS2Dialect
+
+            engine = database.get_sqla_engine()
+            dialect = engine.dialect
+
+            if not isinstance(dialect, DHIS2Dialect):
+                raise ValueError("Database is not a DHIS2 instance")
+
+            connection = engine.raw_connection()
+            if hasattr(connection, "fetch_geo_features"):
+                return connection.fetch_geo_features(
+                    ou_params=ou_params,
+                    display_property=display_property,
+                    include_group_sets=include_group_sets,
+                )
+            else:
+                raise ValueError("DHIS2 connection does not support geoFeatures API")
+        except Exception as e:
+            logger.exception(f"Failed to fetch geoFeatures: {e}")
+            raise
+
+    @classmethod
+    def fetch_org_unit_levels(
+        cls,
+        database: "Database",
+    ) -> list[dict[str, Any]]:
+        """
+        Fetch organisation unit level definitions from DHIS2.
+
+        Args:
+            database: Superset database instance
+
+        Returns:
+            List of organisationUnitLevel objects
+        """
+        try:
+            from superset.db_engine_specs.dhis2_dialect import DHIS2Dialect
+
+            engine = database.get_sqla_engine()
+            dialect = engine.dialect
+
+            if not isinstance(dialect, DHIS2Dialect):
+                raise ValueError("Database is not a DHIS2 instance")
+
+            connection = engine.raw_connection()
+            if hasattr(connection, "fetch_org_unit_levels"):
+                return connection.fetch_org_unit_levels()
+            else:
+                raise ValueError("DHIS2 connection does not support organisationUnitLevels API")
+        except Exception as e:
+            logger.exception(f"Failed to fetch organisation unit levels: {e}")
+            raise
+
+    @classmethod
     def parse_sql(cls, sql: str, **kwargs: Any) -> list[str]:
         """
         DHIS2 doesn't use real SQL - it translates to API calls.
