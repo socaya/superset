@@ -18,7 +18,8 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from flask import Response, jsonify, request
+from flask import jsonify, request
+from werkzeug.wrappers import Response
 from flask_appbuilder import expose
 from flask_appbuilder.api import BaseApi, safe
 from flask_appbuilder.security.decorators import permission_name, protect
@@ -29,8 +30,6 @@ from superset.models.core import Database
 from superset.dhis2.data_values import (
     build_data_value_params,
     convert_to_data_values_response,
-    get_last_n_years,
-    expand_org_unit_keywords,
 )
 
 logger = logging.getLogger(__name__)
@@ -210,8 +209,7 @@ def get_cached_data_values(
         f"{'_'.join(sorted(data_elements or []))}_{'_'.join(str(include_children))}"
     )
 
-    cached = cache_manager.cache.get(cache_key)
-    if cached:
+    if (cached := cache_manager.cache.get(cache_key)):
         logger.info(f"Returning cached data values for {cache_key}")
         return cached
 

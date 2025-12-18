@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Registry, makeSingleton } from '../..';
+import { Registry, makeSingleton, OverwritePolicy } from '../..';
 import { ChartControlPanel } from '../models/ChartControlPanel';
 
 class ChartControlPanelRegistry extends Registry<
@@ -25,7 +25,10 @@ class ChartControlPanelRegistry extends Registry<
   ChartControlPanel
 > {
   constructor() {
-    super({ name: 'ChartControlPanel' });
+    super({
+      name: 'ChartControlPanel',
+      overwritePolicy: OverwritePolicy.Allow,
+    });
   }
 }
 

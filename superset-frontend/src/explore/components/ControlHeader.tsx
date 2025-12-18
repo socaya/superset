@@ -121,7 +121,6 @@ const ControlHeader: FC<ControlHeaderProps> = ({
             position: relative;
             font-size: ${theme.fontSizeSM}px;
           `}
-          htmlFor={name}
         >
           {leftNode && <span>{leftNode} </span>}
           <span

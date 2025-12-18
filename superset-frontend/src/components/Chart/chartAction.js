@@ -44,6 +44,9 @@ import { waitForAsyncData } from 'src/middleware/asyncEvent';
 import { ensureAppRoot } from 'src/utils/pathUtils';
 import { safeStringify } from 'src/utils/safeStringify';
 import { extendedDayjs } from '@superset-ui/core/utils/dates';
+// DHIS2 data caching for faster chart loading
+import { getDHIS2DataCache } from 'src/dhis2/dataCache';
+import { dhis2DataPreloader } from 'src/utils/dhis2DataPreloader';
 
 export const CHART_UPDATE_STARTED = 'CHART_UPDATE_STARTED';
 export function chartUpdateStarted(queryController, latestQueryFormData, key) {
@@ -154,7 +157,202 @@ const legacyChartDataRequest = async (
   );
 };
 
+/**
+ * Check if a datasource is DHIS2 based on the form data
+ */
+const isDHIS2Datasource = formData => {
+  // Check datasource string for DHIS2 indicators
+  const datasource = formData?.datasource || '';
+  if (
+    typeof datasource === 'string' &&
+    datasource.toLowerCase().includes('dhis2')
+  ) {
+    return true;
+  }
+
+  // Check database backend if available
+  const dbBackend = formData?.database?.backend?.toLowerCase() || '';
+  if (dbBackend.includes('dhis2')) {
+    return true;
+  }
+
+  // Check database name
+  const dbName = formData?.database?.name?.toLowerCase() || '';
+  if (dbName.includes('dhis2')) {
+    return true;
+  }
+
+  return false;
+};
+
 const v1ChartDataRequest = async (
+  formData,
+  resultFormat,
+  resultType,
+  force,
+  requestParams,
+  setDataMask,
+  ownState,
+  parseMethod,
+) => {
+  const payload = await buildV1ChartDataPayload({
+    formData,
+    resultType,
+    resultFormat,
+    force,
+    setDataMask,
+    ownState,
+  });
+
+  // The dashboard id is added to query params for tracking purposes
+  const { slice_id: sliceId, datasource } = formData;
+  const { dashboard_id: dashboardId } = requestParams;
+
+  // Check if this is a DHIS2 datasource for caching
+  const isDHIS2 = isDHIS2Datasource(formData);
+  const dhis2Cache = isDHIS2 ? getDHIS2DataCache() : null;
+
+  // For DHIS2, first check if we have preloaded data from the background loader
+  if (isDHIS2 && !force) {
+    const [dsId] = (datasource || '').split('__');
+    const datasetId = parseInt(dsId, 10);
+    if (datasetId) {
+      const preloadedData = dhis2DataPreloader.getPreloadedData(datasetId);
+      if (preloadedData && preloadedData.data && preloadedData.data.length > 0) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `[DHIS2 Chart] ✅ Using preloaded data for dataset ${datasetId}: ${preloadedData.data.length} rows`,
+        );
+
+        // Return preloaded data in the expected format
+        return {
+          response: { status: 200 },
+          json: {
+            result: [
+              {
+                data: preloadedData.data,
+                colnames: preloadedData.columns?.map(c => c.name || c) || Object.keys(preloadedData.data[0] || {}),
+                coltypes: preloadedData.columns?.map(() => 'STRING') || [],
+                rowcount: preloadedData.data.length,
+                from_cache: true,
+                is_cached: true,
+                from_preload: true,
+              },
+            ],
+          },
+        };
+      }
+    }
+  }
+
+  // Generate cache key for DHIS2 requests
+  let cacheKey = null;
+  if (dhis2Cache && !force) {
+    const [dsId, dsType] = (datasource || '').split('__');
+    const queryContext = {
+      datasource: { id: parseInt(dsId, 10) || 0, type: dsType || 'table' },
+      queries: payload.queries || [],
+      form_data: formData,
+    };
+    cacheKey = dhis2Cache.generateCacheKey(queryContext);
+
+    // Try to get from cache first
+    try {
+      const cached = await dhis2Cache.get(cacheKey);
+      if (cached) {
+        const { isStale } = cached;
+        // eslint-disable-next-line no-console
+        console.log(
+          `[DHIS2Cache] ${isStale ? 'Stale' : 'Fresh'} cache hit for chart ${sliceId || 'unknown'}: ${cached.rowcount} rows`,
+        );
+
+        // If stale, trigger background refresh
+        if (isStale) {
+          // Fire and forget - refresh in background
+          v1ChartDataRequestUncached(
+            formData,
+            resultFormat,
+            resultType,
+            true, // force refresh
+            requestParams,
+            setDataMask,
+            ownState,
+            parseMethod,
+          )
+            .then(({ json }) => {
+              if (json?.result) {
+                dhis2Cache.set(cacheKey, queryContext, json, true, 2);
+              }
+            })
+            .catch(() => {
+              // Ignore background refresh errors
+            });
+        }
+
+        // Return cached data immediately
+        return {
+          response: { status: 200 },
+          json: {
+            result: [
+              {
+                data: cached.data,
+                colnames: cached.colnames,
+                coltypes: cached.coltypes,
+                rowcount: cached.rowcount,
+                from_cache: true,
+                is_cached: true,
+              },
+            ],
+          },
+        };
+      }
+    } catch (cacheError) {
+      // eslint-disable-next-line no-console
+      console.warn('[DHIS2Cache] Cache read error:', cacheError);
+    }
+  }
+
+  // Cache miss or force refresh - fetch from API
+  const startTime = performance.now();
+  const result = await v1ChartDataRequestUncached(
+    formData,
+    resultFormat,
+    resultType,
+    force,
+    requestParams,
+    setDataMask,
+    ownState,
+    parseMethod,
+  );
+  const fetchTime = performance.now() - startTime;
+
+  // Cache the result for DHIS2 datasources
+  if (dhis2Cache && cacheKey && result.json?.result) {
+    try {
+      const [dsId, dsType] = (datasource || '').split('__');
+      const queryContext = {
+        datasource: { id: parseInt(dsId, 10) || 0, type: dsType || 'table' },
+        queries: payload.queries || [],
+        form_data: formData,
+      };
+      await dhis2Cache.set(cacheKey, queryContext, result.json, true, 2);
+      // eslint-disable-next-line no-console
+      console.log(
+        `[DHIS2Cache] Cached chart ${sliceId || 'unknown'} data (${fetchTime.toFixed(0)}ms fetch)`,
+      );
+    } catch (cacheError) {
+      // eslint-disable-next-line no-console
+      console.warn('[DHIS2Cache] Cache write error:', cacheError);
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Original v1ChartDataRequest without caching (used for cache misses and background refresh)
+ */
+const v1ChartDataRequestUncached = async (
   formData,
   resultFormat,
   resultType,
@@ -423,6 +621,7 @@ export function exploreJSON(
       dispatch(updateDataMask(formData.slice_id, dataMask));
     };
     dispatch(chartUpdateStarted(controller, formData, key));
+
 
     const chartDataRequest = getChartDataRequest({
       setDataMask,

@@ -1474,6 +1474,15 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
         columns_by_name: dict[str, "TableColumn"],
         template_processor: Optional[BaseTemplateProcessor] = None,
     ) -> Column:
+        is_dhis2_datasource = False
+        if hasattr(self, 'database') and self.database:
+            try:
+                uri = getattr(self.database, 'sqlalchemy_uri_decrypted', None) or getattr(self.database, 'sqlalchemy_uri', '')
+                is_dhis2_datasource = 'dhis2://' in str(uri)
+            except:
+                backend = getattr(self.database, 'backend', '')
+                is_dhis2_datasource = backend in ['dhis2', 'dhis2.dhis2']
+        
         if utils.is_adhoc_metric(series_limit_metric):
             assert isinstance(series_limit_metric, dict)
             ob = self.adhoc_metric_to_sqla(series_limit_metric, columns_by_name)
@@ -1484,6 +1493,27 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
             ob = metrics_by_name[series_limit_metric].get_sqla_col(
                 template_processor=template_processor
             )
+        elif isinstance(series_limit_metric, str):
+            import re
+            agg_pattern = r'^(SUM|AVG|COUNT|MIN|MAX|STDDEV|STDDEV_POP|STDDEV_SAMP|VARIANCE|VAR_POP|VAR_SAMP)\s*\(\s*([^)]+)\s*\)$'
+            match = re.match(agg_pattern, series_limit_metric, re.IGNORECASE)
+            if match:
+                aggregate_func = match.group(1).upper()
+                column_name = match.group(2).strip()
+                
+                adhoc_metric = {
+                    "expressionType": "SIMPLE",
+                    "column": {"column_name": column_name},
+                    "aggregate": aggregate_func,
+                    "label": series_limit_metric,
+                }
+                ob = self.adhoc_metric_to_sqla(adhoc_metric, columns_by_name)
+            elif is_dhis2_datasource and series_limit_metric in columns_by_name:
+                ob = columns_by_name[series_limit_metric].get_sqla_col(template_processor=template_processor)
+            else:
+                raise QueryObjectValidationError(
+                    _("Metric '%(metric)s' does not exist", metric=series_limit_metric)
+                )
         else:
             raise QueryObjectValidationError(
                 _("Metric '%(metric)s' does not exist", metric=series_limit_metric)
@@ -2038,6 +2068,39 @@ class ExploreMixin:  # pylint: disable=too-many-public-methods
                     )
                     metrics_exprs.append(metric_expr)
                     logger.error(f"[METRICS-TRACE]   ✓ Added: {metric_expr.key if hasattr(metric_expr, 'key') else metric_expr.name}")
+                elif isinstance(metric, str):
+                    import re
+                    agg_pattern = r'^(SUM|AVG|COUNT|MIN|MAX|STDDEV|STDDEV_POP|STDDEV_SAMP|VARIANCE|VAR_POP|VAR_SAMP)\s*\(\s*([^)]+)\s*\)$'
+                    match = re.match(agg_pattern, metric, re.IGNORECASE)
+                    if match:
+                        logger.error(f"[METRICS-TRACE] Metric {idx}: converting SQL pattern - {metric}")
+                        aggregate_func = match.group(1).upper()
+                        column_name = match.group(2).strip()
+                        
+                        adhoc_metric = {
+                            "expressionType": "SIMPLE",
+                            "column": {"column_name": column_name},
+                            "aggregate": aggregate_func,
+                            "label": metric,
+                        }
+                        logger.error(f"[METRICS-TRACE]   converted to adhoc: column={column_name}, agg={aggregate_func}")
+                        metric_expr = self.adhoc_metric_to_sqla(
+                            metric=adhoc_metric,
+                            columns_by_name=columns_by_name,
+                            template_processor=template_processor,
+                        )
+                        metrics_exprs.append(metric_expr)
+                        logger.error(f"[METRICS-TRACE]   ✓ Added: {metric_expr.key if hasattr(metric_expr, 'key') else metric_expr.name}")
+                    elif is_dhis2_datasource and metric in columns_by_name:
+                        logger.error(f"[METRICS-TRACE] Metric {idx}: DHIS2 raw column - {metric}")
+                        metric_expr = columns_by_name[metric].get_sqla_col(template_processor=template_processor)
+                        metrics_exprs.append(metric_expr)
+                        logger.error(f"[METRICS-TRACE]   ✓ Added: {metric_expr.key if hasattr(metric_expr, 'key') else metric_expr.name}")
+                    else:
+                        logger.error(f"[METRICS-TRACE] Metric {idx}: ERROR - not found: {metric}")
+                        raise QueryObjectValidationError(
+                            _("Metric '%(metric)s' does not exist", metric=metric)
+                        )
                 else:
                     logger.error(f"[METRICS-TRACE] Metric {idx}: ERROR - not found: {metric}")
                     raise QueryObjectValidationError(

@@ -99,7 +99,14 @@ const FilterValue: FC<FilterControlProps> = ({
   clearAllTrigger,
   onClearAllComplete,
 }) => {
-  const { id, targets, filterType, adhoc_filters, time_range, cascadeParentId } = filter;
+  const {
+    id,
+    targets,
+    filterType,
+    adhoc_filters,
+    time_range,
+    cascadeParentId,
+  } = filter;
   const metadata = getChartMetadataRegistry().get(filterType);
   const dependencies = useFilterDependencies(id, dataMaskSelected);
   const shouldRefresh = useShouldFilterRefresh();
@@ -145,15 +152,22 @@ const FilterValue: FC<FilterControlProps> = ({
 
   const getCascadeParentInfo = useCallback(() => {
     if (!cascadeParentId) {
-      return { cascade_parent_column: undefined, cascade_parent_value: undefined };
+      return {
+        cascade_parent_column: undefined,
+        cascade_parent_value: undefined,
+      };
     }
     const parentFilter = allFilters?.[cascadeParentId];
     if (!parentFilter) {
-      return { cascade_parent_column: undefined, cascade_parent_value: undefined };
+      return {
+        cascade_parent_column: undefined,
+        cascade_parent_value: undefined,
+      };
     }
     const parentTarget = parentFilter.targets?.[0];
     const parentColumn = parentTarget?.column?.name;
-    const parentSelectedValue = dataMaskSelected?.[cascadeParentId]?.filterState?.value;
+    const parentSelectedValue =
+      dataMaskSelected?.[cascadeParentId]?.filterState?.value;
     return {
       cascade_parent_column: parentColumn,
       cascade_parent_value: parentSelectedValue,

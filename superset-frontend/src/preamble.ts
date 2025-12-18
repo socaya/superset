@@ -45,6 +45,36 @@ import 'dayjs/plugin/updateLocale';
 import 'dayjs/plugin/localizedFormat';
 import 'dayjs/plugin/isSameOrBefore';
 
+// Suppress ResizeObserver loop error - this is a harmless browser warning
+// that doesn't affect functionality but shows in webpack-dev-server overlay
+if (typeof window !== 'undefined') {
+  const suppressResizeObserverError = (e: ErrorEvent) => {
+    if (
+      e.message?.includes?.('ResizeObserver loop') ||
+      e.message ===
+        'ResizeObserver loop completed with undelivered notifications.'
+    ) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      return false;
+    }
+    return true;
+  };
+  window.addEventListener('error', suppressResizeObserverError, true);
+
+  // Also override global error handler
+  const originalError = window.onerror;
+  window.onerror = (message, ...args) => {
+    if (
+      typeof message === 'string' &&
+      message.includes('ResizeObserver loop')
+    ) {
+      return true;
+    }
+    return originalError ? originalError(message, ...args) : false;
+  };
+}
+
 configure();
 
 // Set hot reloader config
@@ -75,6 +105,7 @@ setupClient({ appRoot: applicationRoot() });
       configure({ languagePack: json as LanguagePack });
       dayjs.locale(lang);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.warn(
         'Failed to fetch language pack, falling back to default.',
         err,

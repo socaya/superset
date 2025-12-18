@@ -86,7 +86,7 @@ export default function EmbeddingManager({
         },
       });
 
-      const result = response.json.result;
+      const { result } = response.json;
       message.success(t('Dashboard embedding enabled successfully!'));
       onEmbeddingEnabled(result.uuid);
       setIsModalVisible(false);
@@ -123,9 +123,7 @@ export default function EmbeddingManager({
           console.error('Error disabling embedding:', error);
           message.error(
             error?.message ||
-              t(
-                'Failed to disable embedding. You may need admin permissions.',
-              ),
+              t('Failed to disable embedding. You may need admin permissions.'),
           );
         } finally {
           setLoading(false);
@@ -221,7 +219,9 @@ export default function EmbeddingManager({
               )}
             </Paragraph>
             <Input
-              placeholder={t('e.g., https://example.com, https://app.example.com')}
+              placeholder={t(
+                'e.g., https://example.com, https://app.example.com',
+              )}
               value={allowedDomains}
               onChange={e => setAllowedDomains(e.target.value)}
             />

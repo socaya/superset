@@ -60,15 +60,19 @@ const propTypes = {
   getCurrentTab: PropTypes.func,
   getCurrentLabel: PropTypes.func,
   adhocMetric: PropTypes.instanceOf(AdhocMetric).isRequired,
-  columns: PropTypes.arrayOf(PropTypes.shape({
-    column_name: PropTypes.string,
-    type: PropTypes.string,
-  })),
-  savedMetricsOptions: PropTypes.arrayOf(PropTypes.shape({
-    metric_name: PropTypes.string,
-    verbose_name: PropTypes.string,
-    expression: PropTypes.string,
-  })),
+  columns: PropTypes.arrayOf(
+    PropTypes.shape({
+      column_name: PropTypes.string,
+      type: PropTypes.string,
+    }),
+  ),
+  savedMetricsOptions: PropTypes.arrayOf(
+    PropTypes.shape({
+      metric_name: PropTypes.string,
+      verbose_name: PropTypes.string,
+      expression: PropTypes.string,
+    }),
+  ),
   // savedMetric is optional - can be undefined when no saved metric is selected
   savedMetric: PropTypes.oneOfType([
     PropTypes.shape({

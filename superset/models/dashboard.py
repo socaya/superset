@@ -160,6 +160,7 @@ class Dashboard(AuditMixinNullable, ImportExportMixin, Model):
     )
     theme = relationship("Theme", foreign_keys=[theme_id])
     published = Column(Boolean, default=False)
+    display_order = Column(Integer, nullable=True)  # Order for public dashboard list
     is_managed_externally = Column(Boolean, nullable=False, default=False)
     external_url = Column(Text, nullable=True)
     is_public_entry = Column(Boolean, nullable=False, default=False)  # FR-1.2

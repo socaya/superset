@@ -54,7 +54,9 @@ export function getFilteredOptions(
       new Set(
         data
           .map(row => row[currentColumn])
-          .filter((val): val is string | number => val !== null && val !== undefined),
+          .filter(
+            (val): val is string | number => val !== null && val !== undefined,
+          ),
       ),
     );
   }
@@ -83,7 +85,9 @@ export function getDistinctValues(
     new Set(
       data
         .map(row => row[column])
-        .filter((val): val is string | number => val !== null && val !== undefined),
+        .filter(
+          (val): val is string | number => val !== null && val !== undefined,
+        ),
     ),
   );
 }
@@ -120,7 +124,12 @@ export function buildCascadeMapping(
         const parentVal = row[parentLevel.column];
         const currentVal = row[level.column];
 
-        if (parentVal !== null && parentVal !== undefined && currentVal !== null && currentVal !== undefined) {
+        if (
+          parentVal !== null &&
+          parentVal !== undefined &&
+          currentVal !== null &&
+          currentVal !== undefined
+        ) {
           const parentKey = String(parentVal);
           const childKey = String(currentVal);
           if (!valueMap.has(parentKey)) {
@@ -156,9 +165,10 @@ export function getCascadeOptions(
 
   if (!parentColumn || parentValue === null || parentValue === undefined) {
     const allSets = Array.from(columnMap.values());
-    const flattened = allSets.reduce((acc: (string | number)[], set) => {
-      return acc.concat(Array.from(set));
-    }, []);
+    const flattened = allSets.reduce(
+      (acc: (string | number)[], set) => acc.concat(Array.from(set)),
+      [],
+    );
     return Array.from(new Set(flattened));
   }
 
@@ -316,6 +326,10 @@ export function filterDataByCascadeParent(
   const parentValues = Array.isArray(parentValue) ? parentValue : [parentValue];
   return data.filter(row => {
     const rowVal = row[parentColumnName];
-    return rowVal !== null && rowVal !== undefined && parentValues.includes(String(rowVal));
+    return (
+      rowVal !== null &&
+      rowVal !== undefined &&
+      parentValues.includes(String(rowVal))
+    );
   });
 }

@@ -71,6 +71,7 @@ export type AntdExposedProps = Pick<
   | 'virtual'
   | 'getPopupContainer'
   | 'menuItemSelectedIcon'
+  | 'styles'
 >;
 
 export type SelectOptionsType = Exclude<AntdProps['options'], undefined>;

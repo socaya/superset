@@ -71,6 +71,7 @@ const SSHTunnelForm = ({
               {t('SSH Host')}
             </FormLabel>
             <Input
+              id="server_address"
               name="server_address"
               type="text"
               placeholder={t('e.g. 127.0.0.1')}
@@ -86,6 +87,7 @@ const SSHTunnelForm = ({
               {t('SSH Port')}
             </FormLabel>
             <Input
+              id="server_port"
               name="server_port"
               placeholder={t('22')}
               type="number"
@@ -103,6 +105,7 @@ const SSHTunnelForm = ({
               {t('Username')}
             </FormLabel>
             <Input
+              id="username"
               name="username"
               type="text"
               placeholder={t('e.g. Analytics')}
@@ -121,6 +124,7 @@ const SSHTunnelForm = ({
             </FormLabel>
             <StyledFormItem name="use_password" initialValue={usePassword}>
               <Radio.Group
+                id="use_password"
                 onChange={({ target: { value } }) => {
                   setUsePassword(value);
                   setSSHTunnelLoginMethod(value);
@@ -151,6 +155,7 @@ const SSHTunnelForm = ({
                 {t('SSH Password')}
               </FormLabel>
               <StyledInputPassword
+                id="password"
                 name="password"
                 placeholder={t('e.g. ********')}
                 value={db?.ssh_tunnel?.password || ''}
@@ -182,6 +187,7 @@ const SSHTunnelForm = ({
                   {t('Private Key')}
                 </FormLabel>
                 <Input.TextArea
+                  id="private_key"
                   name="private_key"
                   placeholder={t('Paste Private Key here')}
                   value={db?.ssh_tunnel?.private_key || ''}
@@ -199,6 +205,7 @@ const SSHTunnelForm = ({
                   {t('Private Key Password')}
                 </FormLabel>
                 <StyledInputPassword
+                  id="private_key_password"
                   name="private_key_password"
                   placeholder={t('e.g. ********')}
                   value={db?.ssh_tunnel?.private_key_password || ''}

@@ -634,14 +634,26 @@ if (isDevMode) {
       writeToDisk: true,
     },
     historyApiFallback: true,
-    hot: false,  // Disable hot reloading to prevent WebSocket connection issues
-    liveReload: false,  // Disable live reloading
-    webSocketServer: false,  // Disable WebSocket server completely
+    hot: 'only',
+    liveReload: false,
+    webSocketServer: 'ws',
     host: devserverHost,
     port: devserverPort,
     allowedHosts: ['localhost', '.localhost', '127.0.0.1', '::1', '.local'],
     proxy: [() => proxyConfig],
-    client: false,  // Disable client-side WebSocket connection
+    client: {
+      webSocketURL: {
+        protocol: 'ws',
+        hostname: ['0.0.0.0', '127.0.0.1'].includes(devserverHost)
+          ? 'localhost'
+          : devserverHost,
+        port: devserverPort,
+        pathname: '/ws',
+      },
+      // Disable overlay completely to prevent ResizeObserver loop errors from showing
+      // These are harmless browser warnings that don't affect functionality
+      overlay: false,
+    },
     static: {
       directory: path.join(process.cwd(), '../static/assets'),
     },

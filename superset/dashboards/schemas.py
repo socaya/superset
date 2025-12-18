@@ -240,6 +240,10 @@ class DashboardGetResponseSchema(Schema):
     created_on_humanized = fields.String(data_key="created_on_delta_humanized")
     is_managed_externally = fields.Boolean(allow_none=True, dump_default=False)
     uuid = fields.UUID(allow_none=True)
+    display_order = fields.Integer(
+        metadata={"description": "Order for public dashboard list (lower numbers appear first)"},
+        allow_none=True,
+    )
 
     # pylint: disable=unused-argument
     @post_dump()
@@ -359,6 +363,10 @@ class DashboardPostSchema(BaseDashboardSchema):
         validate=validate_json_metadata,
     )
     published = fields.Boolean(metadata={"description": published_description})
+    display_order = fields.Integer(
+        metadata={"description": "Order for public dashboard list (lower numbers appear first)"},
+        allow_none=True,
+    )
     certified_by = fields.String(
         metadata={"description": certified_by_description}, allow_none=True
     )
@@ -422,6 +430,10 @@ class DashboardPutSchema(BaseDashboardSchema):
     )
     published = fields.Boolean(
         metadata={"description": published_description}, allow_none=True
+    )
+    display_order = fields.Integer(
+        metadata={"description": "Order for public dashboard list (lower numbers appear first)"},
+        allow_none=True,
     )
     certified_by = fields.String(
         metadata={"description": certified_by_description}, allow_none=True

@@ -139,7 +139,8 @@ class QueryObject:  # pylint: disable=too-many-instance-attributes
         self._set_annotation_layers(annotation_layers)
         self.applied_time_extras = applied_time_extras or {}
         self.apply_fetch_values_predicate = apply_fetch_values_predicate or False
-        self.columns = columns or []
+        # De-duplicate columns while preserving order
+        self.columns = self._deduplicate_columns(columns or [])
         self.datasource = datasource
         self.extras = extras or {}
         self.filter = filters or []
@@ -166,6 +167,47 @@ class QueryObject:  # pylint: disable=too-many-instance-attributes
         self.inner_to_dttm = kwargs.get("inner_to_dttm")
         self._rename_deprecated_fields(kwargs)
         self._move_deprecated_extra_fields(kwargs)
+
+    @staticmethod
+    def _deduplicate_columns(columns: list[Column]) -> list[Column]:
+        """
+        De-duplicate columns while preserving order.
+        This handles edge cases where the same column might be added multiple times,
+        particularly for DHIS2 datasets where hierarchy columns might be duplicated.
+        """
+        if not columns:
+            return columns
+
+        seen: set[str] = set()
+        result: list[Column] = []
+        duplicates_found: list[str] = []
+
+        for col in columns:
+            # Get column identifier for deduplication
+            if isinstance(col, str):
+                col_key = col
+            elif isinstance(col, dict):
+                # For dict columns, use the label or column_name
+                col_key = col.get("label") or col.get("column_name") or col.get("sqlExpression") or str(col)
+            else:
+                col_key = str(col)
+
+            if col_key not in seen:
+                seen.add(col_key)
+                result.append(col)
+            else:
+                duplicates_found.append(col_key)
+
+        if duplicates_found:
+            logger.info(
+                "[QueryObject] Removed %d duplicate column(s): %s. Original count: %d, New count: %d",
+                len(duplicates_found),
+                duplicates_found,
+                len(columns),
+                len(result),
+            )
+
+        return result
 
     def _set_annotation_layers(
         self, annotation_layers: list[dict[str, Any]] | None
@@ -210,7 +252,21 @@ class QueryObject:  # pylint: disable=too-many-instance-attributes
         is_timeseries: bool | None,
     ) -> None:
         if series_columns:
-            self.series_columns = series_columns
+            # Filter series_columns to only include those present in self.columns
+            # This prevents validation errors when series_columns contains
+            # columns that were removed during deduplication or aren't in the query
+            column_names_set = set(get_column_names(self.columns))
+            filtered_series = []
+            for col in series_columns:
+                col_name = col if isinstance(col, str) else col.get("label") or col.get("column_name") or str(col)
+                if col_name in column_names_set:
+                    filtered_series.append(col)
+                else:
+                    logger.debug(
+                        "[QueryObject] Filtering out series_column '%s' as it's not in columns",
+                        col_name,
+                    )
+            self.series_columns = filtered_series
         elif is_timeseries and metrics:
             self.series_columns = self.columns
         else:
@@ -292,9 +348,28 @@ class QueryObject:  # pylint: disable=too-many-instance-attributes
             return ex
 
     def _validate_no_have_duplicate_labels(self) -> None:
-        all_labels = self.metric_names + self.column_names
+        metric_names = self.metric_names
+        column_names = self.column_names
+        all_labels = metric_names + column_names
+
         if len(set(all_labels)) < len(all_labels):
             dup_labels = find_duplicates(all_labels)
+            # Log detailed info about the duplication for debugging
+            logger.warning(
+                "[DUPLICATE_LABELS] Found duplicates! "
+                "metric_names=%s (count=%d), "
+                "column_names=%s (count=%d), "
+                "all_labels=%s (count=%d, unique=%d), "
+                "duplicates=%s",
+                metric_names,
+                len(metric_names),
+                column_names,
+                len(column_names),
+                all_labels,
+                len(all_labels),
+                len(set(all_labels)),
+                dup_labels,
+            )
             raise QueryObjectValidationError(
                 _(
                     "Duplicate column/metric labels: %(labels)s. Please make "
@@ -360,7 +435,10 @@ class QueryObject:  # pylint: disable=too-many-instance-attributes
                     raise QueryObjectValidationError(ex.message) from ex
 
     def _validate_there_are_no_missing_series(self) -> None:
-        missing_series = [col for col in self.series_columns if col not in self.columns]
+        # Use name-based comparison to handle different object representations
+        column_names_set = set(get_column_names(self.columns))
+        series_column_names = get_column_names(self.series_columns)
+        missing_series = [name for name in series_column_names if name not in column_names_set]
         if missing_series:
             raise QueryObjectValidationError(
                 _(

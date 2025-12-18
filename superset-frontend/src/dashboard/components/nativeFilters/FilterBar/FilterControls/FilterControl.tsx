@@ -381,7 +381,6 @@ const FilterControl = ({
           <div>
             <FormItem
               label={label}
-              htmlFor={filter.id}
               required={filter?.controlValues?.enableEmptyFilter}
               validateStatus={validateStatus}
             >

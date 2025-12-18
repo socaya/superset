@@ -168,7 +168,7 @@ export default function DataSourceSidebar({
   if (loading) {
     return (
       <StyledSidebar>
-        <SidebarTitle>{t('Dashboards')}</SidebarTitle>
+        <SidebarTitle>{t('Categories')}</SidebarTitle>
         <LoadingContainer>
           <Spin />
         </LoadingContainer>
@@ -178,12 +178,10 @@ export default function DataSourceSidebar({
 
   return (
     <StyledSidebar>
-      <SidebarTitle>{t('Dashboards')}</SidebarTitle>
+      <SidebarTitle>{t('Categories')}</SidebarTitle>
       {dashboards.length === 0 ? (
         <LoadingContainer>
-          <span style={{ color: '#999' }}>
-            {t('No dashboards available')}
-          </span>
+          <span style={{ color: '#999' }}>{t('No dashboards available')}</span>
         </LoadingContainer>
       ) : (
         <StyledMenu

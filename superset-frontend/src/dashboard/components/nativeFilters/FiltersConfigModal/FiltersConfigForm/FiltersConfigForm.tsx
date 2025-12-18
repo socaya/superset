@@ -88,9 +88,7 @@ import {
   mergeExtraFormData,
 } from 'src/dashboard/components/nativeFilters/utils';
 import { DatasetSelectLabel } from 'src/features/datasets/DatasetSelectLabel';
-import {
-  getFiltersConfigModalTestId,
-} from '../FiltersConfigModal';
+import { getFiltersConfigModalTestId } from '../FiltersConfigModal';
 import { FilterRemoval, NativeFiltersForm } from '../types';
 import { CollapsibleControl } from './CollapsibleControl';
 import { ColumnSelect } from './ColumnSelect';
@@ -108,7 +106,6 @@ import {
   useForceUpdate,
 } from './utils';
 import { FILTER_SUPPORTED_TYPES, INPUT_WIDTH } from './constants';
-
 
 const FORM_ITEM_WIDTH = 260;
 
@@ -1513,26 +1510,18 @@ const FiltersConfigForm = (
             <StyledSettings>
               <StyledContainer>
                 <FormItem
-                  name={[
-                    'filters',
-                    filterId,
-                    'cascadeParentId',
-                  ]}
-                  initialValue={
-                    filterToEdit?.cascadeParentId || null
-                  }
+                  name={['filters', filterId, 'cascadeParentId']}
+                  initialValue={filterToEdit?.cascadeParentId || null}
                 >
                   <FilterDependencies
                     filterId={filterId}
                     filterType={formFilter?.filterType}
                     availableFilters={availableFilters}
-                    cascadeParentId={
-                      form.getFieldValue([
-                        'filters',
-                        filterId,
-                        'cascadeParentId',
-                      ])
-                    }
+                    cascadeParentId={form.getFieldValue([
+                      'filters',
+                      filterId,
+                      'cascadeParentId',
+                    ])}
                     cascadeLevel={form.getFieldValue([
                       'filters',
                       filterId,
@@ -1546,35 +1535,23 @@ const FiltersConfigForm = (
                       ]) || []
                     }
                     onCascadeParentChange={parentId => {
-                      setNativeFilterFieldValues(
-                        form,
-                        filterId,
-                        {
-                          cascadeParentId: parentId,
-                        },
-                      );
+                      setNativeFilterFieldValues(form, filterId, {
+                        cascadeParentId: parentId,
+                      });
                       forceUpdate();
                       formChanged();
                     }}
                     onCascadeLevelChange={level => {
-                      setNativeFilterFieldValues(
-                        form,
-                        filterId,
-                        {
-                          cascadeLevel: level,
-                        },
-                      );
+                      setNativeFilterFieldValues(form, filterId, {
+                        cascadeLevel: level,
+                      });
                       forceUpdate();
                       formChanged();
                     }}
                     onDependenciesChange={newDependencies => {
-                      setNativeFilterFieldValues(
-                        form,
-                        filterId,
-                        {
-                          dependencies: newDependencies,
-                        },
-                      );
+                      setNativeFilterFieldValues(form, filterId, {
+                        dependencies: newDependencies,
+                      });
                       forceUpdate();
                       validateDependencies();
                       formChanged();
@@ -1582,23 +1559,13 @@ const FiltersConfigForm = (
                   />
                 </FormItem>
                 <FormItem
-                  name={[
-                    'filters',
-                    filterId,
-                    'cascadeLevel',
-                  ]}
-                  initialValue={
-                    filterToEdit?.cascadeLevel || null
-                  }
+                  name={['filters', filterId, 'cascadeLevel']}
+                  initialValue={filterToEdit?.cascadeLevel || null}
                 >
                   <div style={{ display: 'none' }} />
                 </FormItem>
                 <FormItem
-                  name={[
-                    'filters',
-                    filterId,
-                    'dependencies',
-                  ]}
+                  name={['filters', filterId, 'dependencies']}
                   initialValue={dependencies}
                 >
                   <div style={{ display: 'none' }} />

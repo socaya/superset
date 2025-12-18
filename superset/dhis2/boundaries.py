@@ -16,12 +16,11 @@
 # under the License.
 """DHIS2 boundary fetching and caching service."""
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple, Union
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Response, jsonify, request
 from flask_appbuilder import expose
 from flask_appbuilder.api import BaseApi, safe
-from flask_appbuilder.security.decorators import permission_name, protect
 
 from superset import db
 from superset.extensions import cache_manager, event_logger
@@ -30,7 +29,7 @@ from superset.dhis2.geojson_utils import build_ou_parameter, convert_to_geojson
 
 logger = logging.getLogger(__name__)
 
-BOUNDARY_CACHE_TIMEOUT = 3600 * 24
+BOUNDARY_CACHE_TIMEOUT = 3600 * 4
 
 
 class DHIS2BoundariesRestApi(BaseApi):
@@ -40,15 +39,54 @@ class DHIS2BoundariesRestApi(BaseApi):
     allow_browser_login = True
     openapi_spec_tag = "DHIS2 Boundaries"
 
-    @expose("/<int:database_id>/", methods=["GET"])
-    @protect()
+    # Define class-level permission methods
+    class_permission_name = "Database"
+    method_permission_name = {
+        "get_boundaries": "read",
+    }
+
+    @expose("/<int:database_id>/cache_status/", methods=["GET"])
     @safe
-    @permission_name("read")
+    def get_cache_status(self, database_id: int) -> Response:
+        """Get cache status for a database's boundaries."""
+        try:
+            database = db.session.query(Database).get(database_id)
+            if not database:
+                return jsonify({"error": "Database not found"}), 404
+
+            return jsonify({
+                "cache_timeout_hours": BOUNDARY_CACHE_TIMEOUT / 3600,
+                "message": "Cache is enabled for all boundary queries",
+            })
+        except Exception as e:
+            logger.exception(f"Error getting cache status for database {database_id}")
+            return jsonify({"error": str(e)}), 500
+
+    @expose("/<int:database_id>/clear_cache/", methods=["POST"])
+    @safe
+    def clear_cache(self, database_id: int) -> Response:
+        """Clear all cached boundaries for a database."""
+        try:
+            database = db.session.query(Database).get(database_id)
+            if not database:
+                return jsonify({"error": "Database not found"}), 404
+
+            invalidate_boundary_cache(database_id)
+            return jsonify({
+                "message": f"Cleared all cached boundaries for database {database_id}",
+                "cache_timeout_hours": BOUNDARY_CACHE_TIMEOUT / 3600,
+            })
+        except Exception as e:
+            logger.exception(f"Error clearing cache for database {database_id}")
+            return jsonify({"error": str(e)}), 500
+
+    @expose("/<int:database_id>/", methods=["GET"])
+    @safe
     @event_logger.log_this_with_context(
         action=lambda self, *args, **kwargs: "dhis2_boundaries_fetch",
         log_to_statsd=False,
     )
-    def get_boundaries(self, database_id: int) -> Response:
+    def get_boundaries(self, database_id: int) -> Union[Response, Tuple[Response, int]]:
         """
         Fetch GeoJSON boundaries from DHIS2.
 
@@ -150,8 +188,7 @@ def get_cached_boundaries(
     """
     cache_key = f"dhis2_boundaries_{database_id}_{level}_{parent or 'root'}_{include_children}"
 
-    cached = cache_manager.cache.get(cache_key)
-    if cached:
+    if (cached := cache_manager.cache.get(cache_key)):
         logger.info(f"Returning cached boundaries for {cache_key}")
         return cached
 
@@ -190,19 +227,27 @@ def fetch_boundaries_from_dhis2(
         GeoJSON FeatureCollection dictionary
     """
     try:
-        from superset.db_engine_specs.dhis2 import DHIS2
+        from superset.db_engine_specs.dhis2_dialect import DHIS2Dialect
 
-        engine = database.get_sqla_engine()
-        if not isinstance(engine.dialect, DHIS2):
-            raise ValueError(f"Database {database.id} is not a DHIS2 instance")
+        # Use the context manager properly
+        with database.get_sqla_engine() as engine:
+            # Check if it's a DHIS2 database
+            if not isinstance(engine.dialect, DHIS2Dialect):
+                raise ValueError(f"Database {database.id} is not a DHIS2 instance")
 
-        ou_param = build_ou_parameter(level, parent)
+            # Get a raw connection which is a DHIS2Connection instance
+            with engine.connect() as conn:
+                raw_conn = conn.connection.dbapi_connection
 
-        geo_features = engine.dialect.fetch_geo_features(ou_param)
+                # Build the OU parameter - now includes ou: prefix
+                ou_param = build_ou_parameter(level, parent)
+                logger.info(f"Fetching geoFeatures with ou_param: {ou_param}")
 
-        geojson = convert_to_geojson(geo_features)
+                geo_features = raw_conn.fetch_geo_features(ou_param)
 
-        return geojson
+            geojson = convert_to_geojson(geo_features)
+
+            return geojson
 
     except Exception as e:
         logger.exception(f"Failed to fetch boundaries from DHIS2")

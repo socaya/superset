@@ -179,6 +179,9 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
         "oauth2",
         "sync_permissions",
         "dhis2_metadata",
+        "dhis2_preview_columns",
+        "dhis2_preview_data",
+        "dhis2_chart_data",
     }
 
     resource_name = "database"
@@ -2182,13 +2185,40 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
 
         metadata_type = request.args.get("type", "dataElements")
         level = request.args.get("level")  # Optional level filter for org units
+        parent_ids = request.args.getlist("parent_ids")  # Optional parent org unit IDs to filter children
         period_type = request.args.get("periodType", "YEARLY")  # For periods
         table_name = request.args.get("table")  # Optional table context for filtering
-        search_term = request.args.get("search", "")  # NEW: Search filter
+        search_term = request.args.get("search", "")
+        
+        # DX-specific filters
+        domain_type = request.args.get("domainType")  # For data elements: AGGREGATE, TRACKER
+        value_type = request.args.get("valueType")  # For data elements/indicators: NUMBER, INTEGER, etc.
+        aggregation_type = request.args.get("aggregationType")  # For data elements: SUM, AVERAGE, etc.
+        form_type = request.args.get("formType")  # For datasets: CUSTOM, SECTION, etc.
+        program_id = request.args.get("programId")  # For program indicators, event data items
 
         # Handle periods specially - generate fixed periods
         if metadata_type == "periods":
             return self._generate_fixed_periods(period_type)
+
+        # Handle organisationUnitLevels specially - different endpoint structure
+        if metadata_type == "organisationUnitLevels":
+            return self._fetch_org_unit_levels(database)
+
+        # Handle organisationUnitGroups specially - different endpoint structure
+        if metadata_type == "organisationUnitGroups":
+            return self._fetch_org_unit_groups(database)
+
+        # Handle geoFeatures - load geographic features from DHIS2
+        if metadata_type == "geoFeatures":
+            ou_param = request.args.get("ou", "")
+            return self._fetch_geo_features(database, ou_param)
+
+        # Handle geoJSON - load GeoJSON from organisationUnits.geojson endpoint
+        if metadata_type == "geoJSON":
+            levels_param = request.args.get("levels", "")
+            parents_param = request.args.get("parents", "")
+            return self._fetch_geo_json(database, levels_param, parents_param)
 
         try:
             # Parse database URI to get connection details
@@ -2211,71 +2241,104 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
                 auth = (uri.username, uri.password) if uri.username else None
                 headers = {}
 
-            # Build request parameters with aggregationType and valueType for filtering
-            if metadata_type in ["dataElements", "indicators"]:
+            # Build request parameters with DX-specific filtering
+            filters = []
+            
+            if metadata_type == "dataElements":
                 params = {
-                    "fields": "id,displayName,aggregationType,valueType,domainType",
+                    "fields": "id,displayName,aggregationType,valueType,domainType,groups",
                     "paging": "false",
                 }
-
-                # Table-specific filtering based on DHIS2 endpoint requirements
-                filters = []
-
+                
+                # Apply user-selected filters
+                if domain_type:
+                    filters.append(f"domainType:eq:{domain_type}")
+                if value_type:
+                    filters.append(f"valueType:eq:{value_type}")
+                if aggregation_type:
+                    filters.append(f"aggregationType:eq:{aggregation_type}")
+                
+                # Table-specific filtering
                 if table_name == "analytics":
-                    # Analytics requires numeric data (but allow all aggregation types for now)
-                    # Filter to only numeric value types
-                    if metadata_type == "dataElements":
-                        # Expanded numeric types to include all integer variants
-                        filters.append("valueType:in:[NUMBER,INTEGER,INTEGER_POSITIVE,INTEGER_NEGATIVE,INTEGER_ZERO_OR_POSITIVE,PERCENTAGE,UNIT_INTERVAL]")
-                        # Don't filter by aggregationType - let users decide what to aggregate
-                    # Indicators are always aggregatable, no filter needed
-
+                    filters.append("valueType:in:[NUMBER,INTEGER,INTEGER_POSITIVE,INTEGER_NEGATIVE,INTEGER_ZERO_OR_POSITIVE,PERCENTAGE,UNIT_INTERVAL]")
                 elif table_name == "events":
-                    # Events require tracker domain data elements
-                    if metadata_type == "dataElements":
-                        filters.append("domainType:eq:TRACKER")
-                    # Events typically don't use indicators
-
-                elif table_name == "trackedEntityInstances":
-                    # Tracked entities use attributes, not data elements
-                    # This should fetch from /trackedEntityAttributes endpoint instead
-                    # For now, return empty to avoid confusion
-                    pass
-
-                # dataValueSets accepts any data element - no filtering needed
-
-                # Add search filter if provided
-                if search_term:
-                    filters.append(f"displayName:ilike:{search_term}")
-                    logger.info(f"[DHIS2 Metadata] Applying search filter: {search_term}")
-
-                if filters:
-                    params["filter"] = filters
-            else:
+                    filters.append("domainType:eq:TRACKER")
+                    
+            elif metadata_type == "indicators":
                 params = {
-                    "fields": "id,displayName,level,parent",
+                    "fields": "id,displayName,valueType,indicatorType,groups",
                     "paging": "false",
                 }
-
-                # Add search filter for org units
-                if search_term:
-                    if "filter" in params:
-                        if isinstance(params["filter"], list):
-                            params["filter"].append(f"displayName:ilike:{search_term}")
-                        else:
-                            params["filter"] = [params["filter"], f"displayName:ilike:{search_term}"]
-                    else:
-                        params["filter"] = f"displayName:ilike:{search_term}"
-
-            # Add level filter for organization units if specified
-            if metadata_type == "organisationUnits" and level:
-                if "filter" in params:
-                    if isinstance(params["filter"], list):
-                        params["filter"].append(f"level:eq:{level}")
-                    else:
-                        params["filter"] = [params["filter"], f"level:eq:{level}"]
+                
+                if value_type:
+                    filters.append(f"valueType:eq:{value_type}")
+                    
+            elif metadata_type == "dataSets":
+                params = {
+                    "fields": "id,displayName,formType,dataSetElements",
+                    "paging": "false",
+                }
+                
+                if form_type:
+                    filters.append(f"formType:eq:{form_type}")
+                    
+            elif metadata_type == "programIndicators":
+                params = {
+                    "fields": "id,displayName,program,analyticsType",
+                    "paging": "false",
+                }
+                
+                if program_id:
+                    filters.append(f"program.id:eq:{program_id}")
+                    
+            elif metadata_type == "eventDataItems":
+                params = {
+                    "fields": "id,displayName,programStage,dataElement",
+                    "paging": "false",
+                }
+                
+                if program_id:
+                    filters.append(f"programStage.program.id:eq:{program_id}")
+                    
+            elif metadata_type in ["dataElementGroups", "indicatorGroups"]:
+                params = {
+                    "fields": "id,displayName,members",
+                    "paging": "false",
+                }
+                
+            else:
+                # Org units and other metadata types
+                params = {
+                    "fields": "id,displayName,level,parent,path",
+                    "paging": "false",
+                }
+                
+                # Add level filter for org units if specified
+                if metadata_type == "organisationUnits" and level:
+                    filters.append(f"level:eq:{level}")
+                
+                # Add parent filtering for org units if specified
+                # This fetches children of specific parent org units (e.g., all health facilities in a district)
+                if metadata_type == "organisationUnits" and parent_ids:
+                    # Create a filter for org units whose parent is in the parent_ids list
+                    parent_filter = "parent.id:in:[" + ",".join(parent_ids) + "]"
+                    filters.append(parent_filter)
+            
+            # Add search filter if provided
+            if search_term:
+                # Check if search term looks like a DHIS2 UID (11 alphanumeric characters)
+                import re
+                if re.match(r'^[a-zA-Z][a-zA-Z0-9]{10}$', search_term):
+                    # Search by ID for UID-like terms
+                    filters.append(f"id:eq:{search_term}")
+                    logger.info(f"[DHIS2 Metadata] Searching by ID: {search_term}")
                 else:
-                    params["filter"] = f"level:eq:{level}"
+                    # Search by display name for regular search terms
+                    filters.append(f"displayName:ilike:{search_term}")
+                    logger.info(f"[DHIS2 Metadata] Searching by displayName: {search_term}")
+
+            if filters:
+                params["filter"] = filters
 
             # Fetch metadata from DHIS2
             response = requests.get(
@@ -2330,25 +2393,109 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
             return self.response_500(message=str(ex))
 
     def _generate_fixed_periods(self, period_type: str) -> Response:
-        """Generate fixed periods (years, quarters, months) or relative periods.
+        """Generate fixed periods based on period type.
 
         Args:
-            period_type: Type of periods - YEARLY, QUARTERLY, MONTHLY, or RELATIVE
+            period_type: Type of periods - YEARLY, QUARTERLY, MONTHLY, etc.
 
         Returns:
             Response with list of period objects
         """
+        from datetime import timedelta
+        
         current_year = datetime.now().year
+        current_month = datetime.now().month
+        current_day = datetime.now().day
+        current_date = datetime.now().date()
         periods = []
 
-        if period_type == "YEARLY":
-            # Generate last 10 years
-            for year in range(current_year - 9, current_year + 1):
+        if period_type == "DAILY":
+            # Generate last 365 days
+            for i in range(364, -1, -1):
+                d = current_date - timedelta(days=i)
                 periods.append({
-                    "id": str(year),
-                    "displayName": str(year),
-                    "type": "YEARLY"
+                    "id": d.strftime("%Y%m%d"),
+                    "displayName": d.strftime("%Y-%m-%d"),
+                    "type": "DAILY"
                 })
+
+        elif period_type == "WEEKLY" or period_type.startswith("WEEKLY"):
+            # Generate weeks for last 52 weeks
+            from datetime import date
+            
+            # Map weekly types to their start day offset
+            # WEEKLY = Monday, WEEKLY_WED = Wednesday, WEEKLY_THU = Thursday, etc.
+            weekday_offsets = {
+                "WEEKLY": 0,      # Monday
+                "WEEKLY_WED": 2,  # Wednesday
+                "WEEKLY_THU": 3,  # Thursday
+                "WEEKLY_SAT": 5,  # Saturday
+                "WEEKLY_SUN": 6,  # Sunday
+            }
+            
+            start_day = weekday_offsets.get(period_type, 0)
+            
+            for week_offset in range(51, -1, -1):
+                week_start = current_date - timedelta(days=current_date.weekday() - start_day + 7 * week_offset)
+                iso_year, iso_week, iso_day = week_start.isocalendar()
+                periods.append({
+                    "id": f"{iso_year}W{iso_week:02d}",
+                    "displayName": f"W{iso_week} {iso_year}",
+                    "type": period_type
+                })
+
+        elif period_type == "BI_WEEKLY":
+            # Generate bi-weeks for last 26 bi-weeks
+            for biweek_offset in range(25, -1, -1):
+                biweek_start = current_date - timedelta(days=current_date.weekday() + 14 * biweek_offset)
+                iso_year, iso_week, iso_day = biweek_start.isocalendar()
+                periods.append({
+                    "id": f"{iso_year}BW{(iso_week // 2):02d}",
+                    "displayName": f"BW{(iso_week // 2)} {iso_year}",
+                    "type": "BI_WEEKLY"
+                })
+
+        elif period_type == "FOUR_WEEKLY":
+            # Generate four-weekly periods for last 13 four-weeks
+            for fw_offset in range(12, -1, -1):
+                fw_start = current_date - timedelta(days=current_date.weekday() + 28 * fw_offset)
+                iso_year, iso_week, iso_day = fw_start.isocalendar()
+                periods.append({
+                    "id": f"{iso_year}FW{(iso_week // 4):02d}",
+                    "displayName": f"FW{(iso_week // 4)} {iso_year}",
+                    "type": "FOUR_WEEKLY"
+                })
+
+        elif period_type == "MONTHLY":
+            # Generate months from January 2022 to present
+            month_names = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ]
+            for year in range(2022, current_year + 1):
+                max_month = current_month if year == current_year else 12
+                for month in range(1, max_month + 1):
+                    month_id = f"{year}{month:02d}"
+                    periods.append({
+                        "id": month_id,
+                        "displayName": f"{month_names[month-1]} {year}",
+                        "type": "MONTHLY"
+                    })
+            periods.reverse()
+
+        elif period_type == "BI_MONTHLY":
+            # Generate bi-months
+            for year in range(2022, current_year + 1):
+                for bimonth in range(1, 7):
+                    month_start = (bimonth - 1) * 2 + 1
+                    month_end = bimonth * 2
+                    if year < current_year or month_end <= current_month:
+                        periods.append({
+                            "id": f"{year}{bimonth:02d}B",
+                            "displayName": f"BM{bimonth} {year}",
+                            "type": "BI_MONTHLY"
+                        })
+            periods.reverse()
 
         elif period_type == "QUARTERLY":
             # Generate quarters for last 3 years
@@ -2361,39 +2508,1720 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
                         "type": "QUARTERLY"
                     })
 
-        elif period_type == "MONTHLY":
-            # Generate months from January 2022 to present
-            month_names = [
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
-            ]
-            current_month = datetime.now().month
-            # Start from 2022 to current year
-            for year in range(2022, current_year + 1):
-                # For current year, only show months up to current month
-                max_month = current_month if year == current_year else 12
-                for month in range(1, max_month + 1):
-                    month_id = f"{year}{month:02d}"
+        elif period_type == "SIX_MONTHLY":
+            # Generate six-months
+            for year in range(current_year - 4, current_year + 1):
+                for half in range(1, 3):
                     periods.append({
-                        "id": month_id,
-                        "displayName": f"{month_names[month-1]} {year}",
-                        "type": "MONTHLY"
+                        "id": f"{year}S{half}",
+                        "displayName": f"S{half} {year}",
+                        "type": "SIX_MONTHLY"
                     })
-            # Reverse to show most recent months first
-            periods.reverse()
 
-        elif period_type == "RELATIVE":
-            # Relative periods (kept for convenience)
-            periods = [
-                {"id": "LAST_YEAR", "displayName": "Last Year", "type": "RELATIVE"},
-                {"id": "THIS_YEAR", "displayName": "This Year", "type": "RELATIVE"},
-                {"id": "LAST_QUARTER", "displayName": "Last Quarter", "type": "RELATIVE"},
-                {"id": "THIS_QUARTER", "displayName": "This Quarter", "type": "RELATIVE"},
-                {"id": "LAST_MONTH", "displayName": "Last Month", "type": "RELATIVE"},
-                {"id": "THIS_MONTH", "displayName": "This Month", "type": "RELATIVE"},
-                {"id": "LAST_12_MONTHS", "displayName": "Last 12 Months", "type": "RELATIVE"},
-                {"id": "LAST_6_MONTHS", "displayName": "Last 6 Months", "type": "RELATIVE"},
-                {"id": "LAST_3_MONTHS", "displayName": "Last 3 Months", "type": "RELATIVE"},
-            ]
+        elif period_type == "SIX_MONTHLY_APR":
+            # Generate six-months starting April
+            for year in range(current_year - 4, current_year + 1):
+                for half in range(1, 3):
+                    periods.append({
+                        "id": f"{year}SA{half}",
+                        "displayName": f"SA{half} {year}",
+                        "type": "SIX_MONTHLY_APR"
+                    })
+
+        elif period_type == "YEARLY":
+            # Generate last 10 years
+            for year in range(current_year - 9, current_year + 1):
+                periods.append({
+                    "id": str(year),
+                    "displayName": str(year),
+                    "type": "YEARLY"
+                })
+
+        elif period_type in ["FINANCIAL_APR", "FINANCIAL_JUL", "FINANCIAL_OCT", "FINANCIAL_NOV"]:
+            # Generate financial years
+            for year in range(current_year - 9, current_year + 1):
+                periods.append({
+                    "id": f"FY{year}",
+                    "displayName": f"FY {year}",
+                    "type": period_type
+                })
 
         return self.response(200, result=periods)
+
+    def _fetch_org_unit_levels(self, database: Database) -> Response:
+        """Fetch organisation unit levels from DHIS2 API.
+
+        Args:
+            database: The DHIS2 database connection
+
+        Returns:
+            Response with list of organisation unit level objects
+        """
+        import requests
+        from sqlalchemy.engine.url import make_url
+
+        try:
+            # Parse database URI to get connection details
+            uri = make_url(database.sqlalchemy_uri_decrypted)
+
+            # Build DHIS2 API URL
+            api_path = uri.database or "/api"
+            if not api_path.startswith("/"):
+                api_path = f"/{api_path}"
+
+            base_url = f"https://{uri.host}{api_path}"
+
+            # Determine auth method
+            if not uri.username and uri.password:
+                # PAT authentication
+                auth = None
+                headers = {"Authorization": f"ApiToken {uri.password}"}
+            else:
+                # Basic authentication
+                auth = (uri.username, uri.password) if uri.username else None
+                headers = {}
+
+            # Fetch organisation unit levels
+            params = {
+                "fields": "level,displayName,name",
+                "paging": "false",
+            }
+
+            response = requests.get(
+                f"{base_url}/organisationUnitLevels",
+                params=params,
+                auth=auth,
+                headers=headers,
+                timeout=30,
+            )
+
+            logger.info(f"[DHIS2 OrgUnitLevels] Request URL: {base_url}/organisationUnitLevels")
+            logger.info(f"[DHIS2 OrgUnitLevels] Response status: {response.status_code}")
+
+            if response.status_code == 200:
+                data = response.json()
+                items = data.get("organisationUnitLevels", [])
+
+                # Sort by level number
+                items = sorted(items, key=lambda x: x.get("level", 999))
+
+                logger.info(f"[DHIS2 OrgUnitLevels] Found {len(items)} levels")
+
+                return self.response(200, result=items)
+            elif response.status_code == 401:
+                error_msg = f"DHIS2 API authentication failed. Status: {response.status_code}. Please check database credentials."
+                logger.error(f"[DHIS2 OrgUnitLevels] {error_msg}")
+                return self.response_400(message=error_msg)
+            else:
+                error_msg = f"DHIS2 API error: {response.status_code} {response.text[:200]}"
+                logger.error(f"[DHIS2 OrgUnitLevels] {error_msg}")
+                return self.response_400(message=error_msg)
+
+        except Exception as ex:
+            logger.exception("Failed to fetch DHIS2 organisation unit levels")
+            return self.response_500(message=str(ex))
+
+    def _fetch_org_unit_groups(self, database: Database) -> Response:
+        """Fetch organisation unit groups from DHIS2 API.
+
+        Args:
+            database: The DHIS2 database connection
+
+        Returns:
+            Response with list of organisation unit group objects
+        """
+        import requests
+        from sqlalchemy.engine.url import make_url
+
+        try:
+            # Parse database URI to get connection details
+            uri = make_url(database.sqlalchemy_uri_decrypted)
+
+            # Build DHIS2 API URL
+            api_path = uri.database or "/api"
+            if not api_path.startswith("/"):
+                api_path = f"/{api_path}"
+
+            base_url = f"https://{uri.host}{api_path}"
+
+            # Determine auth method
+            if not uri.username and uri.password:
+                # PAT authentication
+                auth = None
+                headers = {"Authorization": f"ApiToken {uri.password}"}
+            else:
+                # Basic authentication
+                auth = (uri.username, uri.password) if uri.username else None
+                headers = {}
+
+            # Fetch organisation unit groups
+            params = {
+                "fields": "id,displayName,name",
+                "paging": "false",
+            }
+
+            response = requests.get(
+                f"{base_url}/organisationUnitGroups",
+                params=params,
+                auth=auth,
+                headers=headers,
+                timeout=30,
+            )
+
+            logger.info(f"[DHIS2 OrgUnitGroups] Request URL: {base_url}/organisationUnitGroups")
+            logger.info(f"[DHIS2 OrgUnitGroups] Response status: {response.status_code}")
+
+            if response.status_code == 200:
+                data = response.json()
+                items = data.get("organisationUnitGroups", [])
+
+                logger.info(f"[DHIS2 OrgUnitGroups] Found {len(items)} groups")
+
+                return self.response(200, result=items)
+            elif response.status_code == 401:
+                error_msg = f"DHIS2 API authentication failed. Status: {response.status_code}. Please check database credentials."
+                logger.error(f"[DHIS2 OrgUnitGroups] {error_msg}")
+                return self.response_400(message=error_msg)
+            else:
+                error_msg = f"DHIS2 API error: {response.status_code} {response.text[:200]}"
+                logger.error(f"[DHIS2 OrgUnitGroups] {error_msg}")
+                return self.response_400(message=error_msg)
+
+        except Exception as ex:
+            logger.exception("Failed to fetch DHIS2 organisation unit groups")
+            return self.response_500(message=str(ex))
+
+    def _fetch_geo_features(self, database: Database, ou_param: str) -> Response:
+        """Fetch geoFeatures from DHIS2 API.
+
+        Args:
+            database: The DHIS2 database connection
+            ou_param: The ou dimension parameter (e.g., "LEVEL-1;LEVEL-2;parent_id")
+
+        Returns:
+            Response with list of geoFeature objects
+        """
+        import requests
+        from sqlalchemy.engine.url import make_url
+
+        try:
+            # Parse database URI to get connection details
+            uri = make_url(database.sqlalchemy_uri_decrypted)
+
+            # Build DHIS2 API URL
+            api_path = uri.database or "/api"
+            if not api_path.startswith("/"):
+                api_path = f"/{api_path}"
+
+            base_url = f"https://{uri.host}{api_path}"
+
+            # Determine auth method
+            if not uri.username and uri.password:
+                # PAT authentication
+                auth = None
+                headers = {"Authorization": f"ApiToken {uri.password}"}
+            else:
+                # Basic authentication
+                auth = (uri.username, uri.password) if uri.username else None
+                headers = {}
+
+            # Build geoFeatures URL
+            # Format: /api/geoFeatures?ou=ou:LEVEL-1;LEVEL-2;parentId
+            params = {}
+            if ou_param:
+                params["ou"] = f"ou:{ou_param}"
+
+            logger.info(f"[DHIS2 GeoFeatures] Fetching geoFeatures with params: {params}")
+
+            response = requests.get(
+                f"{base_url}/geoFeatures",
+                params=params,
+                auth=auth,
+                headers=headers,
+                timeout=120,  # Longer timeout for geo data
+            )
+
+            logger.info(f"[DHIS2 GeoFeatures] Response status: {response.status_code}")
+
+            if response.status_code == 200:
+                data = response.json()
+                # geoFeatures returns an array directly
+                features = data if isinstance(data, list) else data.get("geoFeatures", [])
+                logger.info(f"[DHIS2 GeoFeatures] Found {len(features)} features")
+                return self.response(200, result=features)
+            elif response.status_code == 401:
+                error_msg = f"DHIS2 API authentication failed. Status: {response.status_code}"
+                logger.error(f"[DHIS2 GeoFeatures] {error_msg}")
+                return self.response_400(message=error_msg)
+            else:
+                error_msg = f"DHIS2 API error: {response.status_code} {response.text[:200]}"
+                logger.error(f"[DHIS2 GeoFeatures] {error_msg}")
+                return self.response_400(message=error_msg)
+
+        except Exception as ex:
+            logger.exception("Failed to fetch DHIS2 geoFeatures")
+            return self.response_500(message=str(ex))
+
+    def _fetch_geo_json(self, database: Database, levels_param: str, parents_param: str) -> Response:
+        """Fetch GeoJSON from DHIS2 organisationUnits.geojson endpoint.
+
+        Args:
+            database: The DHIS2 database connection
+            levels_param: Comma-separated list of levels (e.g., "2,3,4")
+            parents_param: Comma-separated list of parent org unit IDs
+
+        Returns:
+            Response with GeoJSON FeatureCollection
+        """
+        import requests
+        from sqlalchemy.engine.url import make_url
+
+        try:
+            # Parse database URI to get connection details
+            uri = make_url(database.sqlalchemy_uri_decrypted)
+
+            # Build DHIS2 API URL
+            api_path = uri.database or "/api"
+            if not api_path.startswith("/"):
+                api_path = f"/{api_path}"
+
+            base_url = f"https://{uri.host}{api_path}"
+
+            # Determine auth method
+            if not uri.username and uri.password:
+                # PAT authentication
+                auth = None
+                headers = {
+                    "Authorization": f"ApiToken {uri.password}",
+                    "Accept": "application/json+geojson",
+                }
+            else:
+                # Basic authentication
+                auth = (uri.username, uri.password) if uri.username else None
+                headers = {"Accept": "application/json+geojson"}
+
+            # Build params for GeoJSON endpoint
+            # Supports multiple level and parent params
+            params = []
+            if levels_param:
+                for level in levels_param.split(","):
+                    level = level.strip()
+                    if level:
+                        params.append(("level", level))
+
+            if parents_param:
+                for parent in parents_param.split(","):
+                    parent = parent.strip()
+                    if parent:
+                        params.append(("parent", parent))
+
+            # Use .geojson extension for native GeoJSON format
+            url = f"{base_url}/organisationUnits.geojson"
+
+            logger.info(f"[DHIS2 GeoJSON] Fetching GeoJSON from: {url}")
+            logger.info(f"[DHIS2 GeoJSON] Params: {params}")
+
+            response = requests.get(
+                url,
+                params=params,
+                auth=auth,
+                headers=headers,
+                timeout=120,  # Longer timeout for geo data
+            )
+
+            logger.info(f"[DHIS2 GeoJSON] Response status: {response.status_code}")
+
+            if response.status_code == 200:
+                data = response.json()
+                # Should be a GeoJSON FeatureCollection
+                feature_count = len(data.get("features", [])) if isinstance(data, dict) else 0
+                logger.info(f"[DHIS2 GeoJSON] Found {feature_count} features")
+                return self.response(200, result=data)
+            elif response.status_code == 401:
+                error_msg = f"DHIS2 API authentication failed. Status: {response.status_code}"
+                logger.error(f"[DHIS2 GeoJSON] {error_msg}")
+                return self.response_400(message=error_msg)
+            else:
+                error_msg = f"DHIS2 API error: {response.status_code} {response.text[:200]}"
+                logger.error(f"[DHIS2 GeoJSON] {error_msg}")
+                return self.response_400(message=error_msg)
+
+        except Exception as ex:
+            logger.exception("Failed to fetch DHIS2 GeoJSON")
+            return self.response_500(message=str(ex))
+
+    @expose("/<int:pk>/dhis2_preview/columns/", methods=("POST",))
+    @safe
+    @statsd_metrics
+    @event_logger.log_this_with_context(
+        action=lambda self, *args, **kwargs: f"{self.__class__.__name__}"
+        f".dhis2_preview_columns",
+        log_to_statsd=False,
+    )
+    def dhis2_preview_columns(self, pk: int) -> Response:
+        """Generate column preview based on selected data elements, periods, and org units.
+        ---
+        post:
+          summary: Generate column preview for DHIS2 dataset
+          parameters:
+          - in: path
+            name: pk
+            schema:
+              type: integer
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    data_elements:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          displayName:
+                            type: string
+                    periods:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          displayName:
+                            type: string
+                    org_units:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          displayName:
+                            type: string
+                          level:
+                            type: integer
+                    include_children:
+                      type: boolean
+                      description: Include descendant org units
+          responses:
+            200:
+              description: Column preview with data structure
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      columns:
+                        type: array
+                        items:
+                          type: object
+                      rows:
+                        type: array
+                        items:
+                          type: object
+            400:
+              $ref: '#/components/responses/400'
+            401:
+              $ref: '#/components/responses/401'
+            404:
+              $ref: '#/components/responses/404'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        from flask import request as flask_request
+        from superset.db_engine_specs.dhis2 import DHIS2EngineSpec
+
+        database = DatabaseDAO.find_by_id(pk)
+        if not database:
+            return self.response_404()
+
+        if database.backend != "dhis2":
+            return self.response_400(message="Database is not a DHIS2 connection")
+
+        try:
+            from datetime import datetime
+            
+            data = flask_request.get_json()
+            data_elements = data.get("data_elements", [])
+            periods = data.get("periods", [])
+            org_units = data.get("org_units", [])
+            include_children = data.get("include_children", False)
+            data_level_scope = data.get("data_level_scope", "selected")
+
+            if not data_elements:
+                return self.response(200, columns=[], rows=[])
+            
+            from dateutil.relativedelta import relativedelta
+            
+            current_year = datetime.now().year
+            current_month = datetime.now().month
+            expanded_periods = []
+            
+            def expand_yearly_period(period_id: str) -> list:
+                if period_id == "LAST_5_YEARS":
+                    return [
+                        {"id": str(current_year - i), "displayName": str(current_year - i)}
+                        for i in range(5)
+                    ]
+                elif period_id == "LAST_10_YEARS":
+                    return [
+                        {"id": str(current_year - i), "displayName": str(current_year - i)}
+                        for i in range(10)
+                    ]
+                elif period_id == "THIS_YEAR":
+                    return [{"id": str(current_year), "displayName": str(current_year)}]
+                elif period_id == "LAST_YEAR":
+                    return [{"id": str(current_year - 1), "displayName": str(current_year - 1)}]
+                return None
+            
+            def expand_monthly_period(period_id: str) -> list:
+                if period_id == "LAST_12_MONTHS":
+                    result = []
+                    for i in range(12):
+                        target_date = datetime.now() - relativedelta(months=i)
+                        period_code = target_date.strftime("%Y%m")
+                        period_name = target_date.strftime("%b %Y")
+                        result.append({"id": period_code, "displayName": period_name})
+                    return result
+                elif period_id == "THIS_MONTH":
+                    period_code = datetime.now().strftime("%Y%m")
+                    period_name = datetime.now().strftime("%b %Y")
+                    return [{"id": period_code, "displayName": period_name}]
+                elif period_id == "LAST_MONTH":
+                    last_month = datetime.now() - relativedelta(months=1)
+                    period_code = last_month.strftime("%Y%m")
+                    period_name = last_month.strftime("%b %Y")
+                    return [{"id": period_code, "displayName": period_name}]
+                elif period_id == "LAST_3_MONTHS":
+                    result = []
+                    for i in range(3):
+                        target_date = datetime.now() - relativedelta(months=i)
+                        period_code = target_date.strftime("%Y%m")
+                        period_name = target_date.strftime("%b %Y")
+                        result.append({"id": period_code, "displayName": period_name})
+                    return result
+                elif period_id == "LAST_6_MONTHS":
+                    result = []
+                    for i in range(6):
+                        target_date = datetime.now() - relativedelta(months=i)
+                        period_code = target_date.strftime("%Y%m")
+                        period_name = target_date.strftime("%b %Y")
+                        result.append({"id": period_code, "displayName": period_name})
+                    return result
+                return None
+            
+            for period in periods:
+                period_id = period.get("id") if isinstance(period, dict) else period
+                
+                yearly_expanded = expand_yearly_period(period_id)
+                if yearly_expanded:
+                    expanded_periods.extend(yearly_expanded)
+                    continue
+                
+                monthly_expanded = expand_monthly_period(period_id)
+                if monthly_expanded:
+                    expanded_periods.extend(monthly_expanded)
+                    continue
+                
+                expanded_periods.append(period if isinstance(period, dict) else {"id": period_id, "displayName": period_id})
+            
+            periods = expanded_periods
+
+            import re
+
+            def sanitize_name(name: str) -> str:
+                # Replace special characters (except alphanumerics) with underscores
+                # This preserves distinctions: "Malaria-Total" -> "Malaria_Total"
+                # instead of removing which would create duplicates
+                sanitized = re.sub(r'[^a-zA-Z0-9_\s]', '_', name).strip()
+                # Collapse multiple underscores to single
+                sanitized = re.sub(r'_+', '_', sanitized)
+                # Strip leading/trailing underscores
+                sanitized = re.sub(r'^_+|_+$', '', sanitized)
+                return sanitized
+
+            de_ids = [
+                de.get("id") if isinstance(de, dict) else de for de in data_elements
+            ]
+            period_ids = [p.get("id") if isinstance(p, dict) else p for p in periods]
+            ou_ids = [ou.get("id") if isinstance(ou, dict) else ou for ou in org_units]
+
+            # Fetch display names for all DX types from DHIS2 API
+            # DX can be: dataElements, indicators, dataSets, programIndicators, eventDataItems
+            import requests
+            de_names = {}
+
+            # Extract IDs from input (could be strings or dicts)
+            all_dx_ids = []
+            for de in data_elements:
+                if isinstance(de, dict):
+                    dx_id = de.get("id")
+                    all_dx_ids.append(dx_id)
+                    # Pre-populate from input if available
+                    display_name = de.get("displayName") or de.get("name")
+                    if display_name and display_name != dx_id:
+                        de_names[dx_id] = display_name
+                else:
+                    all_dx_ids.append(de)
+
+            # Fetch display names from all possible DX endpoints
+            logger.info(f"[DHIS2 Preview] Fetching display names for {len(all_dx_ids)} DX items: {all_dx_ids}")
+            try:
+                with database.get_sqla_engine() as engine:
+                    connection = engine.raw_connection()
+                    if hasattr(connection, "base_url") and hasattr(connection, "auth"):
+                        dx_filter = ",".join(all_dx_ids)
+
+                        # Try each DX type endpoint to find display names
+                        dx_endpoints = [
+                            ("dataElements", "dataElements"),
+                            ("indicators", "indicators"),
+                            ("dataSets", "dataSets"),
+                            ("programIndicators", "programIndicators"),
+                        ]
+
+                        for endpoint_name, response_key in dx_endpoints:
+                            # Skip if we already have names for all IDs
+                            missing_ids = [dx_id for dx_id in all_dx_ids if dx_id not in de_names]
+                            if not missing_ids:
+                                break
+
+                            dx_filter = ",".join(missing_ids)
+                            url = f"{connection.base_url}/{endpoint_name}.json?filter=id:in:[{dx_filter}]&fields=id,name,displayName&paging=false"
+                            logger.info(f"[DHIS2 Preview] Trying {endpoint_name}: {url}")
+
+                            try:
+                                resp = requests.get(url, auth=connection.auth, timeout=30)
+                                if resp.status_code == 200:
+                                    dx_data = resp.json().get(response_key, [])
+                                    if dx_data:
+                                        logger.info(f"[DHIS2 Preview] Found {len(dx_data)} items in {endpoint_name}")
+                                        for dx in dx_data:
+                                            dx_id = dx.get("id")
+                                            dx_display = dx.get("displayName") or dx.get("name") or dx_id
+                                            de_names[dx_id] = dx_display
+                                            logger.info(f"[DHIS2 Preview] {endpoint_name}: {dx_id} -> '{dx_display}'")
+                            except Exception as endpoint_error:
+                                logger.warning(f"[DHIS2 Preview] Error fetching {endpoint_name}: {endpoint_error}")
+                                continue
+
+            except Exception as e:
+                logger.exception(f"[DHIS2 Preview] Could not fetch DX details: {e}")
+
+            # Fill in any missing names with ID as fallback
+            for dx_id in all_dx_ids:
+                if dx_id not in de_names:
+                    de_names[dx_id] = dx_id
+                    logger.warning(f"[DHIS2 Preview] DX {dx_id} has no display name, using ID")
+
+            logger.info(f"[DHIS2 Preview] Final dx_names: {de_names}")
+
+            period_names = {}
+            for p in periods:
+                if isinstance(p, dict):
+                    period_names[p.get("id")] = p.get("displayName", p.get("id"))
+                else:
+                    period_names[p] = p
+
+            ou_names = {}
+            ou_levels = {}
+            ou_parents = {}
+            for ou in org_units:
+                if isinstance(ou, dict):
+                    ou_names[ou.get("id")] = ou.get("displayName", ou.get("id"))
+                    ou_levels[ou.get("id")] = ou.get("level", 0)
+                    ou_parents[ou.get("id")] = ou.get("parent", {}).get("id") if isinstance(ou.get("parent"), dict) else None
+                else:
+                    ou_names[ou] = ou
+                    ou_levels[ou] = 0
+                    ou_parents[ou] = None
+
+            # Fetch org unit level names from DHIS2 API
+            # Using: /api/organisationUnitLevels?paging=false&fields=id,level,name
+            org_unit_levels = []
+            level_names = {}
+            
+            import requests
+            try:
+                with database.get_sqla_engine() as engine:
+                    connection = engine.raw_connection()
+                    if hasattr(connection, "base_url") and hasattr(connection, "auth"):
+                        # Use the correct DHIS2 API endpoint
+                        url = f"{connection.base_url}/organisationUnitLevels.json?paging=false&fields=id,level,name"
+                        logger.info(f"[DHIS2 Preview] Fetching org unit levels from: {url}")
+                        resp = requests.get(url, auth=connection.auth, timeout=30)
+                        if resp.status_code == 200:
+                            org_unit_levels = resp.json().get("organisationUnitLevels", [])
+                            logger.info(f"[DHIS2 Preview] Fetched {len(org_unit_levels)} org unit levels: {org_unit_levels}")
+                        else:
+                            logger.warning(f"[DHIS2 Preview] Failed to fetch org unit levels: HTTP {resp.status_code}")
+            except Exception as e:
+                logger.warning(f"[DHIS2 Preview] Could not fetch org unit levels: {e}")
+                # Fallback to DHIS2EngineSpec
+                try:
+                    org_unit_levels = DHIS2EngineSpec.fetch_org_unit_levels(database)
+                    logger.info(f"[DHIS2 Preview] Fallback via EngineSpec: {len(org_unit_levels)} levels")
+                except Exception as e2:
+                    logger.warning(f"[DHIS2 Preview] Fallback also failed: {e2}")
+
+            if org_unit_levels:
+                for level_obj in org_unit_levels:
+                    level_num = level_obj.get("level", 0)
+                    # Use 'name' field (the actual level name like "Region", "District")
+                    level_name = level_obj.get("name") or level_obj.get("displayName") or f"Level {level_num}"
+                    level_names[level_num - 1] = level_name
+                    logger.info(f"[DHIS2 Preview] Level {level_num} -> '{level_name}'")
+                logger.info(f"[DHIS2 Preview] Final level_names: {level_names}")
+            else:
+                logger.warning("[DHIS2 Preview] No org unit levels from API, will infer from actual data...")
+
+            # First, fetch ancestors for all selected org units to build complete hierarchy
+            # This ensures we have parent org units like "Uganda" when user selects "Acholi Region"
+            expanded_ou_ids = list(ou_ids)
+            expanded_ous = []
+
+            # Fetch org unit details including ancestors using the path
+            try:
+                with database.get_sqla_engine() as engine:
+                    connection = engine.raw_connection()
+                    if hasattr(connection, "base_url") and hasattr(connection, "auth"):
+                        # Fetch selected org units with their ancestors
+                        ou_filter = ",".join(ou_ids)
+                        url = f"{connection.base_url}/organisationUnits.json?filter=id:in:[{ou_filter}]&fields=id,name,displayName,level,path,parent[id,name,displayName]&paging=false"
+                        logger.info(f"[DHIS2 Preview] Fetching org units with path: {url}")
+                        resp = requests.get(url, auth=connection.auth, timeout=30)
+                        if resp.status_code == 200:
+                            ou_data = resp.json().get("organisationUnits", [])
+                            for ou in ou_data:
+                                ou_id = ou.get("id")
+                                ou_names[ou_id] = ou.get("displayName") or ou.get("name") or ou_id
+                                ou_levels[ou_id] = ou.get("level", 0)
+                                parent_info = ou.get("parent", {})
+                                ou_parents[ou_id] = parent_info.get("id") if parent_info else None
+
+                                # Parse the path to get all ancestor IDs
+                                # Path format: /uid1/uid2/uid3/current_uid
+                                path = ou.get("path", "")
+                                if path:
+                                    path_ids = [p for p in path.split("/") if p and p != ou_id]
+                                    logger.info(f"[DHIS2 Preview] OU {ou_id} path ancestors: {path_ids}")
+
+                                    # Fetch ancestor details
+                                    if path_ids:
+                                        ancestor_filter = ",".join(path_ids)
+                                        ancestor_url = f"{connection.base_url}/organisationUnits.json?filter=id:in:[{ancestor_filter}]&fields=id,name,displayName,level&paging=false"
+                                        ancestor_resp = requests.get(ancestor_url, auth=connection.auth, timeout=30)
+                                        if ancestor_resp.status_code == 200:
+                                            ancestors = ancestor_resp.json().get("organisationUnits", [])
+                                            for anc in ancestors:
+                                                anc_id = anc.get("id")
+                                                if anc_id not in ou_names:
+                                                    ou_names[anc_id] = anc.get("displayName") or anc.get("name") or anc_id
+                                                    ou_levels[anc_id] = anc.get("level", 0)
+                                                    logger.info(f"[DHIS2 Preview] Added ancestor: {anc_id} -> '{ou_names[anc_id]}' (level {ou_levels[anc_id]})")
+            except Exception as e:
+                logger.warning(f"[DHIS2 Preview] Could not fetch org unit details: {e}")
+
+            # Expand to include children if requested
+            if include_children:
+                try:
+                    with database.get_sqla_engine() as engine:
+                        connection = engine.raw_connection()
+                        if hasattr(connection, "fetch_org_units_with_descendants"):
+                            expanded_ous = connection.fetch_org_units_with_descendants(ou_ids)
+                            expanded_ou_ids = []
+                            for ou in expanded_ous:
+                                ou_id = ou.get("id")
+                                expanded_ou_ids.append(ou_id)
+                                ou_names[ou_id] = ou.get("displayName") or ou.get("name") or ou_id
+                                ou_levels[ou_id] = ou.get("level", 0)
+                                parent_id = ou.get("parent", {}).get("id") if isinstance(ou.get("parent"), dict) else None
+                                ou_parents[ou_id] = parent_id
+                        else:
+                            logger.warning("Connection does not support fetch_org_units_with_descendants, using original list")
+                except Exception as e:
+                    logger.warning(f"Could not fetch descendants, using original list: {e}")
+                    expanded_ou_ids = ou_ids
+            
+            if not level_names:
+                logger.info("Level names still empty, inferring from expanded or selected organization units...")
+                
+                all_ous = expanded_ous if expanded_ous else org_units
+                
+                for ou in all_ous:
+                    if isinstance(ou, dict):
+                        ou_level = ou.get("level", 0)
+                        if ou_level > 0 and (ou_level - 1) not in level_names:
+                            level_names[ou_level - 1] = f"Level {ou_level}"
+                
+                if level_names:
+                    logger.info(f"Inferred level names from org units: {level_names}")
+
+            # Build hierarchy using the path from DHIS2
+            def build_ou_hierarchy_from_levels(ou_ids_list, ou_names_map, ou_levels_map):
+                """Build hierarchy based on actual DHIS2 levels, not parent-child relationships"""
+                ou_hierarchy = {}
+
+                for ou_id in ou_ids_list:
+                    ou_level = ou_levels_map.get(ou_id, 0)
+
+                    # Find ancestors by looking at org units with lower levels
+                    # that are in the parent chain
+                    ancestors_by_level = {}
+
+                    # Walk up the parent chain
+                    current_id = ou_id
+                    while current_id:
+                        current_level = ou_levels_map.get(current_id, 0)
+                        if current_level > 0:
+                            ancestors_by_level[current_level] = current_id
+                        parent_id = ou_parents.get(current_id)
+                        if parent_id and parent_id in ou_names_map:
+                            current_id = parent_id
+                        else:
+                            break
+
+                    # Build path from level 1 to current level
+                    path = []
+                    for lvl in sorted(ancestors_by_level.keys()):
+                        path.append(ancestors_by_level[lvl])
+
+                    ou_hierarchy[ou_id] = {
+                        "level": ou_level,
+                        "ancestors_by_level": ancestors_by_level,
+                        "path": path,
+                    }
+                    logger.info(f"[DHIS2 Preview] OU {ou_id} (level {ou_level}): path={[ou_names_map.get(p, p) for p in path]}")
+
+                return ou_hierarchy
+
+            ou_hierarchy = build_ou_hierarchy_from_levels(expanded_ou_ids, ou_names, ou_levels)
+
+            # Determine min and max levels from the data
+            all_levels = [ou_levels.get(ou_id, 0) for ou_id in ou_ids]
+            min_level = min(all_levels) if all_levels else 1
+            max_level = max(all_levels) if all_levels else 1
+
+            # Also check ancestors for min level
+            for ou_id in ou_ids:
+                hierarchy_info = ou_hierarchy.get(ou_id, {})
+                for lvl in hierarchy_info.get("ancestors_by_level", {}).keys():
+                    if lvl < min_level:
+                        min_level = lvl
+
+            # Adjust max level based on data_level_scope
+            max_ou_unit_level = max(level_names.keys()) + 1 if level_names else 5
+            if data_level_scope == "children":
+                max_level = min(max_level + 1, max_ou_unit_level)
+                # For children scope, show full hierarchy from level 1
+                min_level = 1
+                logger.info(f"[DHIS2 Preview] Adjusted max_level to {max_level} for 'children' scope")
+            elif data_level_scope == "grandchildren":
+                max_level = min(max_level + 2, max_ou_unit_level)
+                # For grandchildren scope, show full hierarchy from level 1
+                min_level = 1
+                logger.info(f"[DHIS2 Preview] Adjusted max_level to {max_level} for 'grandchildren' scope")
+            elif data_level_scope == "all_levels":
+                max_level = max_ou_unit_level
+                # For all_levels scope, show full hierarchy from level 1
+                min_level = 1
+                logger.info(f"[DHIS2 Preview] Adjusted max_level to {max_level} for 'all_levels' scope")
+
+            logger.info(f"[DHIS2 Preview] Final level range: {min_level} to {max_level}")
+
+            # Generate columns from min_level to max_level (DHIS2 levels are 1-indexed)
+            columns = []
+            for level in range(min_level, max_level + 1):
+                # level_names uses 0-indexed keys, DHIS2 levels are 1-indexed
+                level_name = level_names.get(level - 1, f"Level {level}")
+                logger.info(f"[DHIS2 Preview] Column for DHIS2 level {level}: '{level_name}'")
+                columns.append({
+                    "title": level_name,
+                    "dataIndex": f"ou_level_{level}",
+                    "key": f"ou_level_{level}",
+                    "width": 140,
+                })
+
+            columns.append({
+                "title": "Period",
+                "dataIndex": "period",
+                "key": "period",
+                "width": 120,
+            })
+
+            for de_id in de_ids:
+                de_name = de_names.get(de_id, de_id)
+                # Use the actual display name without sanitization
+                logger.info(f"[DHIS2 Preview] Data Element Column: '{de_name}' (id: {de_id})")
+                columns.append({
+                    "title": de_name,
+                    "dataIndex": f"de_{de_id}",
+                    "key": f"de_{de_id}",
+                    "width": 140,
+                    "de_id": de_id,
+                })
+
+            ou_sorted = sorted(
+                expanded_ou_ids,
+                key=lambda x: (ou_levels.get(x, 0), ou_names.get(x, ""))
+            )
+
+            # Get leaf nodes (lowest level org units where data is tied)
+            leaf_ou_ids = [ou_id for ou_id in ou_sorted if ou_levels.get(ou_id, 0) == max_level]
+            
+            logger.info(f"[DHIS2 Preview] Level range: {min_level}-{max_level}, Total expanded OUs: {len(expanded_ou_ids)}, Leaf nodes: {len(leaf_ou_ids)}")
+
+            row_key_counter = 0
+            rows = []
+            for period_id in period_ids:
+                period_name = period_names.get(period_id, period_id)
+                for ou_id in leaf_ou_ids:
+                    hierarchy_info = ou_hierarchy.get(ou_id, {})
+                    ancestors_by_level = hierarchy_info.get("ancestors_by_level", {})
+
+                    row = {
+                        "key": f"{period_id}_{ou_id}_{row_key_counter}",
+                        "period": period_name,
+                    }
+
+                    # Fill in hierarchy columns using DHIS2 levels (1-indexed)
+                    for level in range(min_level, max_level + 1):
+                        ancestor_id = ancestors_by_level.get(level)
+                        if ancestor_id:
+                            ancestor_name = ou_names.get(ancestor_id, ancestor_id)
+                            row[f"ou_level_{level}"] = ancestor_name
+                        else:
+                            row[f"ou_level_{level}"] = ""
+
+                    for de_id in de_ids:
+                        row[f"de_{de_id}"] = "-"
+
+                    rows.append(row)
+                    row_key_counter += 1
+
+            # Find non-empty levels (using DHIS2 1-indexed levels)
+            non_empty_levels = set()
+            for row in rows:
+                for level in range(min_level, max_level + 1):
+                    if row.get(f"ou_level_{level}", "").strip():
+                        non_empty_levels.add(level)
+
+            logger.info(f"[DHIS2 Preview] Non-empty org unit levels: {sorted(non_empty_levels)}")
+            
+            columns_to_keep = []
+            for col in columns:
+                data_index = col.get("dataIndex", "")
+                if data_index.startswith("ou_level_"):
+                    level_num = int(data_index.split("_")[-1])
+                    if level_num in non_empty_levels:
+                        columns_to_keep.append(col)
+                else:
+                    columns_to_keep.append(col)
+
+            # Clean up empty level columns from rows
+            for row in rows:
+                for level in range(min_level, max_level + 1):
+                    if level not in non_empty_levels and f"ou_level_{level}" in row:
+                        del row[f"ou_level_{level}"]
+
+            column_titles = [col.get("title") for col in columns_to_keep]
+            logger.info(
+                f"[DHIS2 Preview] Generated {len(columns_to_keep)} columns: {column_titles} "
+                f"(removed {len(columns) - len(columns_to_keep)} empty) "
+                f"for {len(rows)} rows"
+            )
+            return self.response(200, columns=columns_to_keep, rows=rows)
+
+        except Exception as ex:
+            logger.exception("Failed to generate DHIS2 column preview")
+            return self.response_500(message=str(ex))
+
+    @expose("/<int:pk>/dhis2_preview/data/", methods=("POST",))
+    @safe
+    @statsd_metrics
+    @event_logger.log_this_with_context(
+        action=lambda self, *args, **kwargs: "DatabaseRestApi.dhis2_preview_data",
+        log_to_statsd=False,
+    )
+    def dhis2_preview_data(self, pk: int) -> Response:
+        """Generate data preview with actual values from DHIS2.
+        ---
+        post:
+          summary: Generate data preview for DHIS2 dataset
+          parameters:
+          - in: path
+            name: pk
+            schema:
+              type: integer
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    data_elements:
+                      type: array
+                      items:
+                        type: string
+                    periods:
+                      type: array
+                      items:
+                        type: string
+                    org_units:
+                      type: array
+                      items:
+                        type: string
+                    limit:
+                      type: integer
+                      default: 10
+                    offset:
+                      type: integer
+                      default: 0
+          responses:
+            200:
+              description: Data preview with actual values
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      columns:
+                        type: array
+                        items:
+                          type: object
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                      total:
+                        type: integer
+            400:
+              $ref: '#/components/responses/400'
+            401:
+              $ref: '#/components/responses/401'
+            404:
+              $ref: '#/components/responses/404'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        from flask import request as flask_request
+        from superset.databases.dhis2_preview_utils import (
+            fetch_org_unit_level_names,
+            fetch_dx_display_names,
+            fetch_org_units_with_ancestors,
+            build_ou_hierarchy,
+            build_preview_columns,
+            calculate_level_range,
+            filter_empty_level_columns,
+            build_ou_dimension_with_levels,
+        )
+
+        database = DatabaseDAO.find_by_id(pk)
+        if not database:
+            return self.response_404()
+
+        if database.backend != "dhis2":
+            return self.response_400(message="Database is not a DHIS2 connection")
+
+        try:
+            import requests
+            from datetime import datetime
+            from dateutil.relativedelta import relativedelta
+
+            data = flask_request.get_json()
+            data_elements = data.get("data_elements", [])
+            periods = data.get("periods", [])
+            org_units = data.get("org_units", [])
+            endpoint = data.get("endpoint", "analytics")
+            limit = data.get("limit", 10)
+            offset = data.get("offset", 0)
+            include_children = data.get("include_children", False)
+            data_level_scope = data.get("data_level_scope", "selected")
+
+            logger.info(f"[DHIS2 Data Preview] Received full payload: {data}")
+            logger.info(f"[DHIS2 Data Preview] Received: endpoint={endpoint}, data_elements={data_elements}, periods={periods}, org_units={org_units}, include_children={include_children}, data_level_scope={data_level_scope}")
+            logger.info(f"[DHIS2 Data Preview] Parameter types: data_elements={type(data_elements)}, periods={type(periods)}, org_units={type(org_units)}")
+            logger.info(f"[DHIS2 Data Preview] Parameter lengths: data_elements={len(data_elements) if isinstance(data_elements, (list, dict)) else 'N/A'}, periods={len(periods) if isinstance(periods, (list, dict)) else 'N/A'}, org_units={len(org_units) if isinstance(org_units, (list, dict)) else 'N/A'}")
+
+            if not data_elements or not periods or not org_units:
+                logger.warning(f"[DHIS2 Data Preview] Empty input - returning empty response. data_elements_empty={not data_elements}, periods_empty={not periods}, org_units_empty={not org_units}")
+                return self.response(
+                    200, columns=[], rows=[], total=0
+                )
+
+            def sanitize_name(name: str) -> str:
+                # Replace special characters (except alphanumerics) with underscores
+                # This preserves distinctions: "Malaria-Total" -> "Malaria_Total"
+                # instead of removing which would create duplicates
+                sanitized = re.sub(r'[^a-zA-Z0-9_\s]', '_', name).strip()
+                # Collapse multiple underscores to single
+                sanitized = re.sub(r'_+', '_', sanitized)
+                # Strip leading/trailing underscores
+                sanitized = re.sub(r'^_+|_+$', '', sanitized)
+                return sanitized
+
+            de_ids = data_elements if isinstance(data_elements, list) else [
+                data_elements
+            ]
+            
+            def expand_yearly_period(period_id):
+                if period_id == "LAST_5_YEARS":
+                    result = []
+                    for i in range(5):
+                        year = datetime.now().year - i
+                        result.append(str(year))
+                    return result
+                elif period_id == "LAST_3_YEARS":
+                    result = []
+                    for i in range(3):
+                        year = datetime.now().year - i
+                        result.append(str(year))
+                    return result
+                elif period_id == "LAST_YEAR":
+                    year = datetime.now().year - 1
+                    return [str(year)]
+                return None
+            
+            def expand_monthly_period(period_id):
+                if period_id == "THIS_YEAR":
+                    result = []
+                    for m in range(1, 13):
+                        period_code = datetime.now().strftime("%Y") + f"{m:02d}"
+                        result.append(period_code)
+                    return result
+                elif period_id == "LAST_YEAR":
+                    result = []
+                    last_year = datetime.now().year - 1
+                    for m in range(1, 13):
+                        period_code = f"{last_year}{m:02d}"
+                        result.append(period_code)
+                    return result
+                elif period_id == "THIS_MONTH":
+                    period_code = datetime.now().strftime("%Y%m")
+                    return [period_code]
+                elif period_id == "LAST_MONTH":
+                    last_month = datetime.now() - relativedelta(months=1)
+                    period_code = last_month.strftime("%Y%m")
+                    return [period_code]
+                elif period_id == "LAST_3_MONTHS":
+                    result = []
+                    for i in range(3):
+                        target_date = datetime.now() - relativedelta(months=i)
+                        period_code = target_date.strftime("%Y%m")
+                        result.append(period_code)
+                    return result
+                elif period_id == "LAST_6_MONTHS":
+                    result = []
+                    for i in range(6):
+                        target_date = datetime.now() - relativedelta(months=i)
+                        period_code = target_date.strftime("%Y%m")
+                        result.append(period_code)
+                    return result
+                return None
+            
+            expanded_periods = []
+            for period in periods:
+                period_id = period if isinstance(period, str) else period.get("id", period)
+                
+                yearly_expanded = expand_yearly_period(period_id)
+                if yearly_expanded:
+                    expanded_periods.extend(yearly_expanded)
+                    continue
+                
+                monthly_expanded = expand_monthly_period(period_id)
+                if monthly_expanded:
+                    expanded_periods.extend(monthly_expanded)
+                    continue
+                
+                expanded_periods.append(period_id)
+            
+            logger.info(f"[DHIS2 Data Preview] Expanded periods: {expanded_periods}")
+            period_ids = expanded_periods
+            
+            # Handle org_units as either strings or objects
+            # If objects, extract IDs and pre-populate metadata
+            ou_ids: list[str] = []
+            ou_names: dict[str, str] = {}
+            ou_levels: dict[str, int] = {}
+            ou_parents: dict[str, str | None] = {}
+
+            raw_org_units = org_units if isinstance(org_units, list) else [org_units]
+            for ou in raw_org_units:
+                if isinstance(ou, dict):
+                    ou_id = ou.get("id", "")
+                    if ou_id:
+                        ou_ids.append(ou_id)
+                        # Pre-populate metadata from frontend if provided
+                        if ou.get("displayName"):
+                            ou_names[ou_id] = ou.get("displayName")
+                        if ou.get("level"):
+                            ou_levels[ou_id] = ou.get("level")
+                        if ou.get("parent"):
+                            parent = ou.get("parent")
+                            if isinstance(parent, dict):
+                                ou_parents[ou_id] = parent.get("id")
+                            elif isinstance(parent, str):
+                                ou_parents[ou_id] = parent
+                elif isinstance(ou, str) and ou:
+                    ou_ids.append(ou)
+
+            logger.info(f"[DHIS2 Data Preview] Parsed {len(ou_ids)} org unit IDs, pre-populated {len(ou_names)} names, {len(ou_levels)} levels")
+
+            # Get connection details for API calls to expand org units if needed
+            base_url = None
+            auth = None
+            try:
+                with database.get_sqla_engine() as engine:
+                    connection = engine.raw_connection()
+                    if hasattr(connection, "base_url") and hasattr(connection, "auth"):
+                        base_url = connection.base_url
+                        auth = connection.auth
+            except Exception as e:
+                logger.warning(f"[DHIS2 Data Preview] Could not get connection: {e}")
+
+            if not base_url or not auth:
+                return self.response_400(message="Could not connect to DHIS2")
+
+            # Use shared utility functions for fetching metadata
+            level_names = fetch_org_unit_level_names(base_url, auth)
+            logger.info(f"[DHIS2 Data Preview] Fetched level_names: {level_names}")
+
+            dx_names = fetch_dx_display_names(base_url, auth, de_ids)
+            logger.info(f"[DHIS2 Data Preview] Fetched dx_names: {dx_names}")
+
+            # Fetch additional org unit details (will merge with pre-populated data)
+            add_ou_names, add_ou_levels, add_ou_parents = fetch_org_units_with_ancestors(base_url, auth, ou_ids)
+            # Merge - API data takes precedence
+            ou_names.update(add_ou_names)
+            ou_levels.update(add_ou_levels)
+            ou_parents.update(add_ou_parents)
+            logger.info(f"[DHIS2 Data Preview] After merge: {len(ou_names)} names, {len(ou_levels)} levels, {len(ou_parents)} parents")
+
+            # Build the org unit dimension with LEVEL syntax based on data_level_scope
+            max_org_unit_level = max(level_names.keys()) if level_names else 5
+            ou_dimension = build_ou_dimension_with_levels(
+                ou_ids=ou_ids,
+                ou_levels=ou_levels,
+                data_level_scope=data_level_scope,
+                max_org_unit_level=max_org_unit_level,
+            )
+            logger.info(f"[DHIS2 Data Preview] Built org unit dimension: {ou_dimension}")
+
+            # Build hierarchy
+            ou_hierarchy = build_ou_hierarchy(ou_ids, ou_names, ou_levels, ou_parents)
+
+            # Calculate level range
+            min_level, max_level = calculate_level_range(ou_ids, ou_levels, ou_hierarchy)
+            logger.info(f"[DHIS2 Data Preview] Level range: {min_level} to {max_level}")
+
+            # Adjust min/max level based on data_level_scope
+            max_ou_unit_level = max(level_names.keys()) + 1 if level_names else 5
+            if data_level_scope == "children":
+                max_level = min(max_level + 1, max_ou_unit_level)
+                min_level = 1
+                logger.info(
+                    f"[DHIS2 Data Preview] Adjusted level range for 'children': {min_level} to {max_level}"
+                )
+            elif data_level_scope == "grandchildren":
+                max_level = min(max_level + 2, max_ou_unit_level)
+                min_level = 1
+                logger.info(
+                    f"[DHIS2 Data Preview] Adjusted level range for 'grandchildren': {min_level} to {max_level}"
+                )
+            elif data_level_scope == "all_levels":
+                max_level = max_ou_unit_level
+                min_level = 1
+                logger.info(
+                    f"[DHIS2 Data Preview] Adjusted level range for 'all_levels': {min_level} to {max_level}"
+                )
+
+            # Fetch analytics data
+            rows = []
+            total_rows = 0
+
+            try:
+                with database.get_sqla_engine() as engine:
+                    connection = engine.raw_connection()
+                    logger.info(f"[DHIS2 Data Preview] Connection type: {type(connection)}")
+                    logger.info(f"[DHIS2 Data Preview] Connection attributes: {dir(connection)[:10]}...")
+                    
+                    if hasattr(connection, "fetch_analytics_data"):
+                        logger.info(f"[DHIS2 Data Preview] Fetching analytics data with custom ou dimension...")
+                        logger.info(f"[DHIS2 Data Preview] fetch_analytics_data params: de_ids={de_ids}, period_ids={period_ids}, ou_ids={ou_ids}, ou_dimension={ou_dimension}")
+                        data_values = connection.fetch_analytics_data(
+                            de_ids=de_ids,
+                            period_ids=period_ids,
+                            ou_ids=ou_ids,
+                            include_children=False,
+                            ou_dimension=ou_dimension,
+                        )
+
+                        logger.info(f"[DHIS2 Data Preview] Received data_values type: {type(data_values)}")
+                        logger.info(f"[DHIS2 Data Preview] data_values content: {data_values}")
+
+                        if data_values and isinstance(data_values, dict):
+                            all_rows = data_values.get("rows", [])
+                            total_rows = len(all_rows)
+                            logger.info(f"[DHIS2 Data Preview] Total rows from analytics: {total_rows}")
+                            if total_rows == 0:
+                                logger.warning(f"[DHIS2 Data Preview] No rows returned from analytics. Full response: {data_values}")
+                    else:
+                        logger.error(f"[DHIS2 Data Preview] Connection does not have fetch_analytics_data method. Available methods: {[m for m in dir(connection) if not m.startswith('_')]}")
+
+                    # Get unique org unit IDs from analytics response
+                    if data_values and isinstance(data_values, dict):
+                        all_rows = data_values.get("rows", [])
+                        analytics_ou_ids = list(set(row.get("ou", "") for row in all_rows if row.get("ou")))
+                        logger.info(f"[DHIS2 Data Preview] Analytics returned {len(analytics_ou_ids)} unique org units: {analytics_ou_ids[:5]}...")
+
+                        # Fetch details for any org units we don't have yet
+                        # Process in batches to avoid URL length limits
+                        missing_ou_ids = [ou_id for ou_id in analytics_ou_ids if ou_id not in ou_names]
+                        logger.info(f"[DHIS2 Data Preview] Before fetch: ou_names={len(ou_names)}, ou_levels={len(ou_levels)}, ou_parents={len(ou_parents)}")
+                        logger.info(f"[DHIS2 Data Preview] Missing org units to fetch: {len(missing_ou_ids)}")
+
+                        if missing_ou_ids:
+                            # Batch fetch to handle large numbers of org units
+                            BATCH_SIZE = 50
+                            for batch_start in range(0, len(missing_ou_ids), BATCH_SIZE):
+                                batch_ids = missing_ou_ids[batch_start:batch_start + BATCH_SIZE]
+                                logger.info(f"[DHIS2 Data Preview] Fetching batch {batch_start // BATCH_SIZE + 1}: {len(batch_ids)} org units")
+                                add_ou_names, add_ou_levels, add_ou_parents = fetch_org_units_with_ancestors(base_url, auth, batch_ids)
+                                logger.info(f"[DHIS2 Data Preview] Batch fetched: names={len(add_ou_names)}, levels={len(add_ou_levels)}, parents={len(add_ou_parents)}")
+                                ou_names.update(add_ou_names)
+                                ou_levels.update(add_ou_levels)
+                                ou_parents.update(add_ou_parents)
+
+                        logger.info(f"[DHIS2 Data Preview] After fetch: ou_names={len(ou_names)}, ou_levels={len(ou_levels)}, ou_parents={len(ou_parents)}")
+
+                        # Rebuild hierarchy with all org units
+                        logger.info(f"[DHIS2 Data Preview] Calling build_ou_hierarchy with {len(analytics_ou_ids)} ou_ids")
+                        logger.info(f"[DHIS2 Data Preview] Sample analytics_ou_id: {analytics_ou_ids[0] if analytics_ou_ids else 'none'}")
+                        if analytics_ou_ids:
+                            sample_id = analytics_ou_ids[0]
+                            logger.info(f"[DHIS2 Data Preview] Sample ou_names[{sample_id}]: {ou_names.get(sample_id, 'NOT FOUND')}")
+                            logger.info(f"[DHIS2 Data Preview] Sample ou_levels[{sample_id}]: {ou_levels.get(sample_id, 'NOT FOUND')}")
+                            logger.info(f"[DHIS2 Data Preview] Sample ou_parents[{sample_id}]: {ou_parents.get(sample_id, 'NOT FOUND')}")
+                        ou_hierarchy = build_ou_hierarchy(analytics_ou_ids, ou_names, ou_levels, ou_parents)
+                        logger.info(f"[DHIS2 Data Preview] Built hierarchy for {len(ou_hierarchy)} org units")
+                        if analytics_ou_ids and ou_hierarchy:
+                            sample_id = analytics_ou_ids[0]
+                            sample_hierarchy = ou_hierarchy.get(sample_id, {})
+                            logger.info(f"[DHIS2 Data Preview] Sample hierarchy for {sample_id}: {sample_hierarchy}")
+
+                        # Recalculate level range
+                        min_level, max_level = calculate_level_range(
+                            analytics_ou_ids, ou_levels, ou_hierarchy
+                        )
+                        logger.info(f"[DHIS2 Data Preview] Updated level range: {min_level} to {max_level}")
+
+                        # Re-apply level scope adjustment after recalculation
+                        if data_level_scope == "children":
+                            max_level = min(max_level + 1, max_ou_unit_level)
+                            min_level = 1
+                        elif data_level_scope == "grandchildren":
+                            max_level = min(max_level + 2, max_ou_unit_level)
+                            min_level = 1
+                        elif data_level_scope == "all_levels":
+                            max_level = max_ou_unit_level
+                            min_level = 1
+
+                        # Debug: log hierarchy info for first few rows
+                        debug_logged = False
+
+                        for idx, value_row in enumerate(all_rows):
+                            if idx >= (offset + limit):
+                                break
+                            if idx < offset:
+                                continue
+
+                            ou_id = value_row.get("ou", "")
+                            hierarchy_info = ou_hierarchy.get(ou_id, {})
+                            ancestors_by_level = hierarchy_info.get("ancestors_by_level", {})
+
+                            # Debug logging for first row
+                            if not debug_logged:
+                                logger.info(f"[DHIS2 Data Preview] DEBUG First row ou_id: '{ou_id}'")
+                                logger.info(f"[DHIS2 Data Preview] DEBUG hierarchy_info: {hierarchy_info}")
+                                logger.info(f"[DHIS2 Data Preview] DEBUG ancestors_by_level: {ancestors_by_level}")
+                                logger.info(f"[DHIS2 Data Preview] DEBUG ou_names sample: {dict(list(ou_names.items())[:5])}")
+                                logger.info(f"[DHIS2 Data Preview] DEBUG ou_levels sample: {dict(list(ou_levels.items())[:5])}")
+                                logger.info(f"[DHIS2 Data Preview] DEBUG ou_parents sample: {dict(list(ou_parents.items())[:5])}")
+                                debug_logged = True
+
+                            row_data = {
+                                "key": f"row_{idx}",
+                                "period": value_row.get("pe", ""),
+                            }
+
+                            # Add hierarchy level columns using DHIS2 levels (1-indexed)
+                            for level in range(min_level, max_level + 1):
+                                ancestor_id = ancestors_by_level.get(level)
+                                if ancestor_id:
+                                    ancestor_name = ou_names.get(ancestor_id, ancestor_id)
+                                    row_data[f"ou_level_{level}"] = ancestor_name
+                                else:
+                                    row_data[f"ou_level_{level}"] = ""
+
+                            for de_id in de_ids:
+                                # Use de_{id} key format to match column dataIndex
+                                row_data[f"de_{de_id}"] = value_row.get(de_id, "-")
+
+                            rows.append(row_data)
+                        logger.info(f"[DHIS2 Data Preview] Processed {len(rows)} rows for response")
+            except Exception as e:
+                logger.exception(f"Could not fetch data values: {e}")
+                total_rows = 0
+
+            # Build columns using shared utility
+            columns = build_preview_columns(level_names, dx_names, de_ids, min_level, max_level)
+
+            # Filter empty level columns
+            columns, rows = filter_empty_level_columns(columns, rows, min_level, max_level)
+
+            logger.info(f"[DHIS2 Data Preview] Generated {len(columns)} columns for {len(rows)} rows")
+            return self.response(
+                200, columns=columns, rows=rows, total=total_rows
+            )
+
+        except Exception as ex:
+            logger.exception("Failed to generate DHIS2 data preview")
+            return self.response_500(message=str(ex))
+
+    @expose("/<int:pk>/dhis2_chart_data/", methods=("POST",))
+    @safe
+    @statsd_metrics
+    @event_logger.log_this_with_context(
+        action=lambda self, *args, **kwargs: "DatabaseRestApi.dhis2_chart_data",
+        log_to_statsd=False,
+    )
+    def dhis2_chart_data(self, pk: int) -> Response:
+        """Fetch DHIS2 data for charts using the same approach as DataPreview.
+
+        This endpoint parses DHIS2 parameters from a dataset's SQL comment and
+        returns data in the same format as the preview endpoint, ensuring charts
+        can display DHIS2 data correctly.
+        ---
+        post:
+          summary: Fetch DHIS2 data for chart visualization
+          parameters:
+          - in: path
+            name: pk
+            schema:
+              type: integer
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    sql:
+                      type: string
+                      description: Dataset SQL with DHIS2 comment parameters
+                    columns:
+                      type: array
+                      items:
+                        type: string
+                      description: Columns to return (optional)
+                    limit:
+                      type: integer
+                      default: 10000
+          responses:
+            200:
+              description: Chart data with columns and rows
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      columns:
+                        type: array
+                      data:
+                        type: array
+                      total:
+                        type: integer
+            400:
+              $ref: '#/components/responses/400'
+            404:
+              $ref: '#/components/responses/404'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        import re
+        from flask import request as flask_request
+        from urllib.parse import unquote
+        from superset.databases.dhis2_preview_utils import (
+            fetch_org_unit_level_names,
+            fetch_dx_display_names,
+            fetch_org_units_with_ancestors,
+            build_ou_hierarchy,
+            build_preview_columns,
+            calculate_level_range,
+            filter_empty_level_columns,
+            build_ou_dimension_with_levels,
+        )
+
+        database = DatabaseDAO.find_by_id(pk)
+        if not database:
+            return self.response_404()
+
+        if database.backend != "dhis2":
+            return self.response_400(message="Database is not a DHIS2 connection")
+
+        try:
+            from datetime import datetime
+            from dateutil.relativedelta import relativedelta
+
+            data = flask_request.get_json()
+            sql = data.get("sql", "")
+            requested_columns = data.get("columns", [])
+            limit = data.get("limit", 10000)
+
+            logger.info(f"[DHIS2 Chart Data] Received SQL: {sql[:200]}...")
+            logger.info(f"[DHIS2 Chart Data] Requested columns: {requested_columns}")
+
+            # Parse DHIS2 parameters from SQL comment
+            # Format: /* DHIS2: table=analytics&dx=id1;id2&pe=LAST_5_YEARS&ou=ou1;ou2&ouMode=DESCENDANTS */
+            params = {}
+            block_comment_match = re.search(r'/\*\s*DHIS2:\s*(.+?)\s*\*/', sql, re.IGNORECASE | re.DOTALL)
+            if block_comment_match:
+                param_str = block_comment_match.group(1).strip()
+                param_str = unquote(param_str)
+                for param in param_str.split('&'):
+                    if '=' in param:
+                        key, value = param.split('=', 1)
+                        params[key.strip()] = value.strip()
+
+            if not params:
+                logger.warning("[DHIS2 Chart Data] No DHIS2 parameters found in SQL")
+                return self.response_400(message="No DHIS2 parameters found in SQL comment")
+
+            logger.info(f"[DHIS2 Chart Data] Parsed params: {params}")
+
+            # Extract parameters
+            de_ids = params.get("dx", "").split(";") if params.get("dx") else []
+            period_ids_raw = params.get("pe", "").split(";") if params.get("pe") else []
+            ou_ids = params.get("ou", "").split(";") if params.get("ou") else []
+            ou_mode = params.get("ouMode", "").upper()
+
+            # Map ouMode to data_level_scope
+            # DESCENDANTS = all levels below selected org units
+            # CHILDREN = one level below selected org units
+            # (default) = only selected org units
+            if ou_mode == "DESCENDANTS":
+                data_level_scope = "all_levels"
+                include_children = True
+            elif ou_mode == "CHILDREN":
+                data_level_scope = "children"
+                include_children = True
+            elif ou_mode == "GRANDCHILDREN":
+                data_level_scope = "grandchildren"
+                include_children = True
+            else:
+                data_level_scope = "selected"
+                include_children = False
+
+            logger.info(f"[DHIS2 Chart Data] ouMode={ou_mode}, data_level_scope={data_level_scope}, include_children={include_children}")
+
+            if not de_ids or not period_ids_raw or not ou_ids:
+                return self.response_400(message="Missing required DHIS2 parameters (dx, pe, ou)")
+
+            # Expand relative periods
+            def expand_period(period_id):
+                current_year = datetime.now().year
+                if period_id == "LAST_5_YEARS":
+                    return [str(current_year - i) for i in range(5)]
+                elif period_id == "LAST_3_YEARS":
+                    return [str(current_year - i) for i in range(3)]
+                elif period_id == "THIS_YEAR":
+                    return [str(current_year)]
+                elif period_id == "LAST_YEAR":
+                    return [str(current_year - 1)]
+                return [period_id]
+
+            period_ids = []
+            for p in period_ids_raw:
+                period_ids.extend(expand_period(p))
+
+            logger.info(f"[DHIS2 Chart Data] Expanded periods: {period_ids}")
+
+            # Get connection details
+            base_url = None
+            auth = None
+            try:
+                with database.get_sqla_engine() as engine:
+                    connection = engine.raw_connection()
+                    if hasattr(connection, "base_url") and hasattr(connection, "auth"):
+                        base_url = connection.base_url
+                        auth = connection.auth
+            except Exception as e:
+                logger.warning(f"[DHIS2 Chart Data] Could not get connection: {e}")
+
+            if not base_url or not auth:
+                return self.response_400(message="Could not connect to DHIS2")
+
+            # Fetch metadata using the same utilities as DataPreview
+            level_names = fetch_org_unit_level_names(base_url, auth)
+            logger.info(f"[DHIS2 Chart Data] Fetched level_names: {level_names}")
+
+            dx_names = fetch_dx_display_names(base_url, auth, de_ids)
+            logger.info(f"[DHIS2 Chart Data] Fetched dx_names: {dx_names}")
+
+            ou_names, ou_levels, ou_parents = fetch_org_units_with_ancestors(base_url, auth, ou_ids)
+            logger.info(f"[DHIS2 Chart Data] Fetched {len(ou_names)} org units with ancestors")
+
+            # Build org unit dimension with levels
+            max_org_unit_level = max(level_names.keys()) if level_names else 5
+            ou_dimension = build_ou_dimension_with_levels(
+                ou_ids=ou_ids,
+                ou_levels=ou_levels,
+                data_level_scope=data_level_scope,
+                max_org_unit_level=max_org_unit_level,
+            )
+            logger.info(f"[DHIS2 Chart Data] Built ou_dimension: {ou_dimension}")
+
+            # Calculate level range
+            ou_hierarchy = build_ou_hierarchy(ou_ids, ou_names, ou_levels, ou_parents)
+            min_level, max_level = calculate_level_range(ou_ids, ou_levels, ou_hierarchy)
+
+            # Adjust level scope
+            max_ou_unit_level = max(level_names.keys()) + 1 if level_names else 5
+            if data_level_scope == "all_levels":
+                max_level = max_ou_unit_level
+                min_level = 1
+
+            # Fetch analytics data
+            rows = []
+            total_rows = 0
+
+            try:
+                with database.get_sqla_engine() as engine:
+                    connection = engine.raw_connection()
+                    if hasattr(connection, "fetch_analytics_data"):
+                        logger.info(f"[DHIS2 Chart Data] Fetching analytics data with ou_mode={ou_mode}...")
+                        data_values = connection.fetch_analytics_data(
+                            de_ids=de_ids,
+                            period_ids=period_ids,
+                            ou_ids=ou_ids,
+                            include_children=False,
+                            ou_dimension=ou_dimension,
+                            ou_mode=ou_mode,  # Pass DESCENDANTS, CHILDREN, etc.
+                        )
+
+                        if data_values and isinstance(data_values, dict):
+                            all_rows = data_values.get("rows", [])
+                            total_rows = len(all_rows)
+                            logger.info(f"[DHIS2 Chart Data] Total rows from analytics: {total_rows}")
+
+                            # Fetch missing org unit details
+                            analytics_ou_ids = list(set(row.get("ou", "") for row in all_rows if row.get("ou")))
+                            missing_ou_ids = [ou_id for ou_id in analytics_ou_ids if ou_id not in ou_names]
+
+                            BATCH_SIZE = 50
+                            for batch_start in range(0, len(missing_ou_ids), BATCH_SIZE):
+                                batch_ids = missing_ou_ids[batch_start:batch_start + BATCH_SIZE]
+                                add_ou_names, add_ou_levels, add_ou_parents = fetch_org_units_with_ancestors(base_url, auth, batch_ids)
+                                ou_names.update(add_ou_names)
+                                ou_levels.update(add_ou_levels)
+                                ou_parents.update(add_ou_parents)
+
+                            # Rebuild hierarchy
+                            ou_hierarchy = build_ou_hierarchy(analytics_ou_ids, ou_names, ou_levels, ou_parents)
+
+                            # Recalculate level range
+                            min_level, max_level = calculate_level_range(analytics_ou_ids, ou_levels, ou_hierarchy)
+                            if data_level_scope == "all_levels":
+                                max_level = max_ou_unit_level
+                                min_level = 1
+
+                            # Build rows with hierarchy
+                            for idx, value_row in enumerate(all_rows):
+                                if idx >= limit:
+                                    break
+
+                                ou_id = value_row.get("ou", "")
+                                hierarchy_info = ou_hierarchy.get(ou_id, {})
+                                ancestors_by_level = hierarchy_info.get("ancestors_by_level", {})
+
+                                row_data = {
+                                    "Period": value_row.get("pe", ""),
+                                }
+
+                                # Add hierarchy level columns
+                                for level in range(min_level, max_level + 1):
+                                    level_name = level_names.get(level, f"Level_{level}")
+                                    # Sanitize column name to match dataset columns
+                                    sanitized_level_name = re.sub(r'[^a-zA-Z0-9\s]', '', level_name).strip()
+                                    sanitized_level_name = re.sub(r'\s+', '_', sanitized_level_name)
+
+                                    ancestor_id = ancestors_by_level.get(level)
+                                    if ancestor_id:
+                                        row_data[sanitized_level_name] = ou_names.get(ancestor_id, ancestor_id)
+                                    else:
+                                        row_data[sanitized_level_name] = ""
+
+                                # Add data element columns with sanitized names
+                                for de_id in de_ids:
+                                    de_name = dx_names.get(de_id, de_id)
+                                    # Sanitize column name
+                                    sanitized_de_name = re.sub(r'[^a-zA-Z0-9\s]', '', de_name).strip()
+                                    sanitized_de_name = re.sub(r'\s+', '_', sanitized_de_name)
+
+                                    raw_value = value_row.get(de_id, None)
+                                    if raw_value is not None:
+                                        try:
+                                            row_data[sanitized_de_name] = float(raw_value)
+                                        except (ValueError, TypeError):
+                                            row_data[sanitized_de_name] = raw_value
+                                    else:
+                                        row_data[sanitized_de_name] = None
+
+                                rows.append(row_data)
+
+                            logger.info(f"[DHIS2 Chart Data] Processed {len(rows)} rows")
+
+            except Exception as e:
+                logger.exception(f"[DHIS2 Chart Data] Error fetching analytics: {e}")
+                return self.response_500(message=f"Failed to fetch analytics data: {str(e)}")
+
+            # Build column metadata
+            columns = []
+            if rows:
+                for col_name in rows[0].keys():
+                    col_type = "STRING"
+                    # Data element columns are FLOAT
+                    for de_id in de_ids:
+                        de_name = dx_names.get(de_id, de_id)
+                        sanitized_de_name = re.sub(r'[^a-zA-Z0-9\s]', '', de_name).strip()
+                        sanitized_de_name = re.sub(r'\s+', '_', sanitized_de_name)
+                        if col_name == sanitized_de_name:
+                            col_type = "FLOAT"
+                            break
+
+                    columns.append({
+                        "name": col_name,
+                        "type": col_type,
+                        "is_dttm": col_name == "Period",
+                    })
+
+            logger.info(f"[DHIS2 Chart Data] Returning {len(rows)} rows, {len(columns)} columns")
+
+            return self.response(
+                200,
+                columns=columns,
+                data=rows,
+                total=total_rows,
+            )
+
+        except Exception as ex:
+            logger.exception("Failed to generate DHIS2 chart data")
+            return self.response_500(message=str(ex))
+
+
+

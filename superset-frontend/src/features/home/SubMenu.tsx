@@ -19,10 +19,10 @@
 import { ReactNode, useState, useEffect, FunctionComponent } from 'react';
 
 import { Link, useHistory } from 'react-router-dom';
-import { styled, SupersetTheme, css, t, useTheme } from '@superset-ui/core';
+import { styled, css, t, useTheme } from '@superset-ui/core';
 import cx from 'classnames';
 import { debounce } from 'lodash';
-import { Menu, MenuMode, MainNav } from '@superset-ui/core/components/Menu';
+import { Menu, MenuMode } from '@superset-ui/core/components/Menu';
 import {
   Button,
   Tooltip,
@@ -114,19 +114,6 @@ const StyledHeader = styled.div<{ backgroundColor?: string }>`
   }
 `;
 
-const styledDisabled = (theme: SupersetTheme) => css`
-  color: ${theme.colorTextDisabled};
-  cursor: not-allowed;
-
-  &:hover {
-    color: ${theme.colorTextDisabled};
-  }
-
-  .ant-menu-item-selected {
-    background-color: ${theme.colorBgContainerDisabled};
-  }
-`;
-
 type MenuChild = {
   label: string;
   name: string;
@@ -160,8 +147,6 @@ export interface SubMenuProps {
   dropDownLinks?: Array<MenuObjectProps>;
   backgroundColor?: string;
 }
-
-const { SubMenu } = MainNav;
 
 const SubMenuComponent: FunctionComponent<SubMenuProps> = props => {
   const [showMenu, setMenu] = useState<MenuMode>('horizontal');
@@ -200,7 +185,10 @@ const SubMenuComponent: FunctionComponent<SubMenuProps> = props => {
     handleResize();
     const resize = debounce(handleResize, 10);
     window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
+    return () => {
+      window.removeEventListener('resize', resize);
+      resize.cancel();
+    };
   }, [props.buttons]);
 
   return (
@@ -249,30 +237,21 @@ const SubMenuComponent: FunctionComponent<SubMenuProps> = props => {
           })}
         />
         <div className={navRightStyle}>
-          <Menu mode="horizontal" triggerSubMenuAction="click" disabledOverflow>
-            {props.dropDownLinks?.map((link, i) => (
-              <SubMenu
-                css={css`
-                  [data-icon='caret-down'] {
-                    color: ${theme.colorIcon};
-                    font-size: ${theme.fontSizeXS}px;
-                    margin-left: ${theme.sizeUnit}px;
-                  }
-                `}
-                key={i}
-                title={link.label}
-                icon={<Icons.CaretDownOutlined />}
-                popupOffset={[10, 20]}
-                className="dropdown-menu-links"
-              >
-                {link.childs?.map(item => {
-                  if (typeof item === 'object') {
-                    return item.disable ? (
-                      <MainNav.Item
-                        key={item.label}
-                        css={styledDisabled}
-                        disabled
-                      >
+          <Menu
+            mode="horizontal"
+            triggerSubMenuAction="click"
+            disabledOverflow
+            items={props.dropDownLinks?.map((link, i) => ({
+              key: `submenu-${i}`,
+              label: link.label,
+              icon: <Icons.CaretDownOutlined />,
+              popupOffset: [10, 20],
+              children: link.childs
+                ?.map((item, idx) => {
+                  if (typeof item === 'object' && item !== null) {
+                    return {
+                      key: `${i}-${idx}`,
+                      label: item.disable ? (
                         <Tooltip
                           placement="top"
                           title={t(
@@ -281,20 +260,28 @@ const SubMenuComponent: FunctionComponent<SubMenuProps> = props => {
                         >
                           {item.label}
                         </Tooltip>
-                      </MainNav.Item>
-                    ) : (
-                      <MainNav.Item key={item.label}>
+                      ) : (
                         <Typography.Link href={item.url} onClick={item.onClick}>
                           {item.label}
                         </Typography.Link>
-                      </MainNav.Item>
-                    );
+                      ),
+                      disabled: item.disable,
+                    };
                   }
                   return null;
-                })}
-              </SubMenu>
-            ))}
-          </Menu>
+                })
+                .filter(Boolean),
+            }))}
+            css={css`
+              .dropdown-menu-links {
+                [data-icon='caret-down'] {
+                  color: ${theme.colorIcon};
+                  font-size: ${theme.fontSizeXS}px;
+                  margin-left: ${theme.sizeUnit}px;
+                }
+              }
+            `}
+          />
           {props.buttons?.map((btn, i) => (
             <Button
               key={i}

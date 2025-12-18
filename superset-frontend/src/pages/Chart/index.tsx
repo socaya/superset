@@ -41,6 +41,7 @@ import { ExploreResponsePayload, SaveActionType } from 'src/explore/types';
 import { fallbackExploreInitialData } from 'src/explore/fixtures';
 import { getItem, LocalStorageKeys } from 'src/utils/localStorageHelpers';
 import { getFormDataWithDashboardContext } from 'src/explore/controlUtils/getFormDataWithDashboardContext';
+import { dhis2DataPreloader } from 'src/utils/dhis2DataPreloader';
 import type Chart from 'src/types/Chart';
 
 const isValidResult = (rv: JsonObject): boolean =>
@@ -150,6 +151,28 @@ export default function ExplorePage() {
               )
             : result.form_data;
 
+          // Preload DHIS2 data in background if this is a DHIS2 dataset
+          const { dataset } = result;
+          const datasetSql = (dataset as any)?.sql;
+          const databaseId = (dataset?.database as any)?.id;
+          if (
+            dataset?.id &&
+            databaseId &&
+            datasetSql &&
+            /\/\*\s*DHIS2:\s*(.+?)\s*\*\//i.test(datasetSql)
+          ) {
+            // eslint-disable-next-line no-console
+            console.log(
+              '[ExplorePage] Triggering DHIS2 data preload for dataset:',
+              dataset.id,
+            );
+            dhis2DataPreloader.preloadDataset(
+              dataset.id,
+              databaseId,
+              datasetSql,
+            );
+          }
+
           dispatch(
             hydrateExplore({
               ...result,
@@ -192,7 +215,10 @@ export default function ExplorePage() {
                 : Promise.reject()
             )
               .then(
-                ({ result: { id, url, owners, form_data: _, ...data } }) => {
+                ({
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  result: { id, url, owners, form_data: _formData, ...data },
+                }) => {
                   const slice = {
                     ...data,
                     datasource: err.extra?.datasource_name,

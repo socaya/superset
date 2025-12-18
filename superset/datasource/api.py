@@ -134,10 +134,9 @@ class DatasourceRestApi(BaseSupersetApi):
         
         # Get cascade filter parameters from query string
         cascade_parent_column = request.args.get("cascade_parent_column")
-        cascade_parent_value = request.args.get("cascade_parent_value")
         
         # Parse cascade parent value (can be comma-separated for multi-select)
-        if cascade_parent_value:
+        if (cascade_parent_value := request.args.get("cascade_parent_value")):
             # Try to convert to list if multiple values
             parent_values = cascade_parent_value.split(",") if "," in cascade_parent_value else cascade_parent_value
         else:

@@ -139,7 +139,7 @@ export function sortAndFilterSeries(
   colnames?: string[],
 ): string[] {
   let seriesNames: string[];
-  
+
   if (colnames && colnames.length > 0) {
     seriesNames = colnames
       .filter(key => key !== xAxis)

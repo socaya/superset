@@ -66,11 +66,11 @@ function DndColumnSelect(props: DndColumnSelectProps) {
   const onDrop = useCallback(
     (item: DatasourcePanelDndItem) => {
       const column = item.value as ColumnMeta;
-      
+
       if (name === 'groupby' && !column.groupby) {
         return;
       }
-      
+
       if (!optionSelector.multi && !isEmpty(optionSelector.values)) {
         optionSelector.replace(0, column.column_name);
       } else {
@@ -85,15 +85,20 @@ function DndColumnSelect(props: DndColumnSelectProps) {
     (item: DatasourcePanelDndItem) => {
       const column = item.value as ColumnMeta;
       const columnName = column.column_name;
-      
-      if (!(columnName in optionSelector.options && !optionSelector.has(columnName))) {
+
+      if (
+        !(
+          columnName in optionSelector.options &&
+          !optionSelector.has(columnName)
+        )
+      ) {
         return false;
       }
-      
+
       if (name === 'groupby' && !column.groupby) {
         return false;
       }
-      
+
       return true;
     },
     [optionSelector, name],

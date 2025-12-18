@@ -171,121 +171,127 @@ export default function Login() {
           min-height: 100vh;
         `}
       >
-      <StyledCard title={t('Sign in')} padded>
-        {authType === AuthType.AuthOID && (
-          <Flex justify="center" vertical gap="middle">
-            <Form layout="vertical" requiredMark="optional" form={form}>
-              {providers.map((provider: OIDProvider) => (
-                <Form.Item<LoginForm>>
-                  <Button
-                    href={buildProviderLoginUrl(provider.name)}
-                    block
-                    iconPosition="start"
-                    icon={getAuthIconElement(provider.name)}
-                  >
-                    {t('Sign in with')} {capitalize(provider.name)}
-                  </Button>
-                </Form.Item>
-              ))}
-            </Form>
-          </Flex>
-        )}
-        {authType === AuthType.AuthOauth && (
-          <Flex justify="center" gap={0} vertical>
-            <Form layout="vertical" requiredMark="optional" form={form}>
-              {providers.map((provider: OAuthProvider) => (
-                <Form.Item<LoginForm>>
-                  <Button
-                    href={buildProviderLoginUrl(provider.name)}
-                    block
-                    iconPosition="start"
-                    icon={getAuthIconElement(provider.name)}
-                  >
-                    {t('Sign in with')} {capitalize(provider.name)}
-                  </Button>
-                </Form.Item>
-              ))}
-            </Form>
-          </Flex>
-        )}
+        <StyledCard title={t('Sign in')} padded>
+          {authType === AuthType.AuthOID && (
+            <Flex justify="center" vertical gap="middle">
+              <Form layout="vertical" requiredMark="optional" form={form}>
+                {providers.map((provider: OIDProvider) => (
+                  <Form.Item<LoginForm>>
+                    <Button
+                      href={buildProviderLoginUrl(provider.name)}
+                      block
+                      iconPosition="start"
+                      icon={getAuthIconElement(provider.name)}
+                    >
+                      {t('Sign in with')} {capitalize(provider.name)}
+                    </Button>
+                  </Form.Item>
+                ))}
+              </Form>
+            </Flex>
+          )}
+          {authType === AuthType.AuthOauth && (
+            <Flex justify="center" gap={0} vertical>
+              <Form layout="vertical" requiredMark="optional" form={form}>
+                {providers.map((provider: OAuthProvider) => (
+                  <Form.Item<LoginForm>>
+                    <Button
+                      href={buildProviderLoginUrl(provider.name)}
+                      block
+                      iconPosition="start"
+                      icon={getAuthIconElement(provider.name)}
+                    >
+                      {t('Sign in with')} {capitalize(provider.name)}
+                    </Button>
+                  </Form.Item>
+                ))}
+              </Form>
+            </Flex>
+          )}
 
-        {(authType === AuthType.AuthDB || authType === AuthType.AuthLDAP) && (
-          <Flex justify="center" vertical gap="middle">
-            <Typography.Text type="secondary">
-              {t('Enter your login and password below:')}
-            </Typography.Text>
-            <Form
-              layout="vertical"
-              requiredMark="optional"
-              form={form}
-              onFinish={onFinish}
-            >
-              <Form.Item<LoginForm>
-                label={<StyledLabel>{t('Username:')}</StyledLabel>}
-                name="username"
-                rules={[
-                  { required: true, message: t('Please enter your username') },
-                ]}
+          {(authType === AuthType.AuthDB || authType === AuthType.AuthLDAP) && (
+            <Flex justify="center" vertical gap="middle">
+              <Typography.Text type="secondary">
+                {t('Enter your login and password below:')}
+              </Typography.Text>
+              <Form
+                layout="vertical"
+                requiredMark="optional"
+                form={form}
+                onFinish={onFinish}
               >
-                <Input
-                  autoFocus
-                  prefix={<Icons.UserOutlined iconSize="l" />}
-                  data-test="username-input"
-                />
-              </Form.Item>
-              <Form.Item<LoginForm>
-                label={<StyledLabel>{t('Password:')}</StyledLabel>}
-                name="password"
-                rules={[
-                  { required: true, message: t('Please enter your password') },
-                ]}
-              >
-                <Input.Password
-                  prefix={<Icons.KeyOutlined iconSize="l" />}
-                  data-test="password-input"
-                />
-              </Form.Item>
-              <Form.Item label={null}>
-                <Flex
-                  vertical
-                  gap="middle"
-                  css={css`
-                    width: 100%;
-                  `}
+                <Form.Item<LoginForm>
+                  label={<StyledLabel>{t('Username:')}</StyledLabel>}
+                  name="username"
+                  rules={[
+                    {
+                      required: true,
+                      message: t('Please enter your username'),
+                    },
+                  ]}
                 >
-                  <Button
-                    block
-                    type="primary"
-                    htmlType="submit"
-                    loading={loading}
-                    data-test="login-button"
+                  <Input
+                    autoFocus
+                    prefix={<Icons.UserOutlined iconSize="l" />}
+                    data-test="username-input"
+                  />
+                </Form.Item>
+                <Form.Item<LoginForm>
+                  label={<StyledLabel>{t('Password:')}</StyledLabel>}
+                  name="password"
+                  rules={[
+                    {
+                      required: true,
+                      message: t('Please enter your password'),
+                    },
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<Icons.KeyOutlined iconSize="l" />}
+                    data-test="password-input"
+                  />
+                </Form.Item>
+                <Form.Item label={null}>
+                  <Flex
+                    vertical
+                    gap="middle"
+                    css={css`
+                      width: 100%;
+                    `}
                   >
-                    {t('Sign in')}
-                  </Button>
-                  {authRegistration && (
+                    <Button
+                      block
+                      type="primary"
+                      htmlType="submit"
+                      loading={loading}
+                      data-test="login-button"
+                    >
+                      {t('Sign in')}
+                    </Button>
+                    {authRegistration && (
+                      <Button
+                        block
+                        type="default"
+                        href="/register/"
+                        data-test="register-button"
+                      >
+                        {t('Register')}
+                      </Button>
+                    )}
                     <Button
                       block
                       type="default"
-                      href="/register/"
-                      data-test="register-button"
+                      href="/superset/public/"
+                      data-test="back-to-public-button"
                     >
-                      {t('Register')}
+                      ← {t('Back to Public Dashboards')}
                     </Button>
-                  )}
-                  <Button
-                    block
-                    type="default"
-                    href="/superset/public/"
-                    data-test="back-to-public-button"
-                  >
-                    ← {t('Back to Public Dashboards')}
-                  </Button>
-                </Flex>
-              </Form.Item>
-            </Form>
-          </Flex>
-        )}
-      </StyledCard>
+                  </Flex>
+                </Form.Item>
+              </Form>
+            </Flex>
+          )}
+        </StyledCard>
       </Flex>
     </FullscreenWrapper>
   );

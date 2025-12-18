@@ -159,7 +159,11 @@ const MapKeys: React.FC<MapKeysProps> = ({
           </ToggleButton>
         </KeysHeader>
       )}
-      {!collapsible && <KeysHeader><KeysTitle>{title}</KeysTitle></KeysHeader>}
+      {!collapsible && (
+        <KeysHeader>
+          <KeysTitle>{title}</KeysTitle>
+        </KeysHeader>
+      )}
       {keys.map((key, index) => (
         <KeyItem key={index}>
           <SymbolBox color={key.color}>{key.symbol}</SymbolBox>

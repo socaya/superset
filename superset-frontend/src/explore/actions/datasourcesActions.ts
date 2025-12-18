@@ -22,6 +22,7 @@ import { ThunkDispatch } from 'redux-thunk';
 import { Dataset } from '@superset-ui/chart-controls';
 import { SupersetClient, getClientErrorObject } from '@superset-ui/core';
 import { addDangerToast } from 'src/components/MessageToasts/actions';
+import { dhis2DataPreloader } from 'src/utils/dhis2DataPreloader';
 import { updateFormDataByDatasource } from './exploreActions';
 import { ExplorePageState } from '../types';
 
@@ -52,6 +53,25 @@ export function changeDatasource(newDatasource: Dataset) {
     } = getState();
     dispatch(setDatasource(newDatasource));
     dispatch(updateFormDataByDatasource(prevDatasource, newDatasource));
+
+    // Check if this is a DHIS2 dataset by looking for DHIS2 comment in SQL
+    // Use type assertion since Dataset type doesn't include sql property
+    const datasourceWithSql = newDatasource as Dataset & { sql?: string };
+    const databaseId = (newDatasource.database as { id?: number })?.id;
+
+    if (
+      newDatasource &&
+      databaseId &&
+      newDatasource.id &&
+      datasourceWithSql.sql &&
+      /\/\*\s*DHIS2:\s*(.+?)\s*\*\//i.test(datasourceWithSql.sql)
+    ) {
+      dhis2DataPreloader.preloadDataset(
+        newDatasource.id,
+        databaseId,
+        datasourceWithSql.sql,
+      );
+    }
   };
 }
 

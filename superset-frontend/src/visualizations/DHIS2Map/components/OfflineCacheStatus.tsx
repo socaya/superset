@@ -120,7 +120,9 @@ const OfflineCacheStatus: React.FC<OfflineCacheStatusProps> = ({
             <StatusDot status="cached" />
             <span>{t('Cached data available')}</span>
           </StatusLine>
-          <ClearButton onClick={handleClearCache}>{t('Clear Cache')}</ClearButton>
+          <ClearButton onClick={handleClearCache}>
+            {t('Clear Cache')}
+          </ClearButton>
         </>
       )}
     </StatusContainer>

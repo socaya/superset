@@ -240,47 +240,57 @@ export default function PivotTableChart(props: PivotTableProps) {
     [metrics],
   );
 
-  const unpivotedData = useMemo(
-    () => {
-      const unpivoted = data.reduce(
-        (acc: Record<string, any>[], record: Record<string, any>) => [
-          ...acc,
-          ...metricNames
-            .map((name: string) => {
-              const value = record[name];
-              if (acc.length === 0) {
-                console.log('[PIVOT_TABLE] Processing metric:', name);
-                console.log('[PIVOT_TABLE]   record keys:', Object.keys(record));
-                console.log('[PIVOT_TABLE]   record[name]:', value);
-              }
-              return {
-                ...record,
-                [METRIC_KEY]: name,
-                value,
-              };
-            })
-            .filter(record => {
-              if (record.value === null) {
-                console.log('[PIVOT_TABLE] Filtered out null value for metric:', record[METRIC_KEY]);
-              }
-              return record.value !== null;
-            }),
-        ],
-        [],
+  const unpivotedData = useMemo(() => {
+    const unpivoted = data.reduce(
+      (acc: Record<string, any>[], record: Record<string, any>) => [
+        ...acc,
+        ...metricNames
+          .map((name: string) => {
+            const value = record[name];
+            if (acc.length === 0) {
+              console.log('[PIVOT_TABLE] Processing metric:', name);
+              console.log('[PIVOT_TABLE]   record keys:', Object.keys(record));
+              console.log('[PIVOT_TABLE]   record[name]:', value);
+            }
+            return {
+              ...record,
+              [METRIC_KEY]: name,
+              value,
+            };
+          })
+          .filter(record => {
+            if (record.value === null) {
+              console.log(
+                '[PIVOT_TABLE] Filtered out null value for metric:',
+                record[METRIC_KEY],
+              );
+            }
+            return record.value !== null;
+          }),
+      ],
+      [],
+    );
+
+    if (unpivoted.length === 0) {
+      console.warn(
+        '[PIVOT_TABLE] No unpivoted data! metricNames:',
+        metricNames,
       );
-      
-      if (unpivoted.length === 0) {
-        console.warn('[PIVOT_TABLE] No unpivoted data! metricNames:', metricNames);
-        console.warn('[PIVOT_TABLE] First record keys:', data.length > 0 ? Object.keys(data[0]) : 'no data');
-      } else {
-        console.log('[PIVOT_TABLE] Unpivoted data generated:', unpivoted.length, 'rows');
-        console.log('[PIVOT_TABLE] First unpivoted row:', unpivoted[0]);
-      }
-      
-      return unpivoted;
-    },
-    [data, metricNames],
-  );
+      console.warn(
+        '[PIVOT_TABLE] First record keys:',
+        data.length > 0 ? Object.keys(data[0]) : 'no data',
+      );
+    } else {
+      console.log(
+        '[PIVOT_TABLE] Unpivoted data generated:',
+        unpivoted.length,
+        'rows',
+      );
+      console.log('[PIVOT_TABLE] First unpivoted row:', unpivoted[0]);
+    }
+
+    return unpivoted;
+  }, [data, metricNames]);
   const groupbyRows = useMemo(
     () => groupbyRowsRaw.map(getColumnLabel),
     [groupbyRowsRaw],

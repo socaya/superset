@@ -93,9 +93,8 @@ def list_dashboards():
     """List all dashboards to help with permission setup."""
     from superset.models.dashboard import Dashboard
 
-    dashboards = db.session.query(Dashboard).all()
 
-    if dashboards:
+    if (dashboards := db.session.query(Dashboard).all()):
         logger.info("\n📊 Available Dashboards:")
         logger.info("-" * 70)
         for dash in dashboards:

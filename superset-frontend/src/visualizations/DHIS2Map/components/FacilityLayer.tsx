@@ -37,38 +37,36 @@ const FacilityLayer: React.FC<FacilityLayerProps> = ({
   colorScale,
   radiusScale,
   onFacilityClick,
-}) => {
-  return (
-    <>
-      {facilities.map((facility) => {
-        const value = dataMap.get(facility.id);
-        if (!facility.coordinates) return null;
+}) => (
+  <>
+    {facilities.map(facility => {
+      const value = dataMap.get(facility.id);
+      if (!facility.coordinates) return null;
 
-        return (
-          <CircleMarker
-            key={facility.id}
-            center={[facility.coordinates.lat, facility.coordinates.lng]}
-            radius={value ? radiusScale(value) : 5}
-            pathOptions={{
-              fillColor: value ? colorScale(value) : '#999',
-              fillOpacity: 0.7,
-              color: '#fff',
-              weight: 1,
-            }}
-            eventHandlers={{
-              click: () => onFacilityClick?.(facility),
-            }}
-          >
-            <Popup>
-              <strong>{facility.name}</strong>
-              <br />
-              {metric}: {value ?? 'No data'}
-            </Popup>
-          </CircleMarker>
-        );
-      })}
-    </>
-  );
-};
+      return (
+        <CircleMarker
+          key={facility.id}
+          center={[facility.coordinates.lat, facility.coordinates.lng]}
+          {...({ radius: value ? radiusScale(value) : 5 } as any)}
+          pathOptions={{
+            fillColor: value ? colorScale(value) : '#999',
+            fillOpacity: 0.7,
+            color: '#fff',
+            weight: 1,
+          }}
+          eventHandlers={{
+            click: () => onFacilityClick?.(facility),
+          }}
+        >
+          <Popup>
+            <strong>{facility.name}</strong>
+            <br />
+            {metric}: {value ?? 'No data'}
+          </Popup>
+        </CircleMarker>
+      );
+    })}
+  </>
+);
 
 export default FacilityLayer;

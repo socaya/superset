@@ -46,6 +46,21 @@ export interface DrillState {
   }>;
 }
 
+export interface LevelBorderColor {
+  level: number;
+  color: { r: number; g: number; b: number; a: number };
+  width?: number;
+}
+
+export type AggregationMethod =
+  | 'sum'
+  | 'average'
+  | 'max'
+  | 'min'
+  | 'count'
+  | 'latest';
+export type LegendType = 'auto' | 'equal_interval' | 'quantile' | 'manual';
+
 export interface DHIS2MapProps {
   width: number;
   height: number;
@@ -53,21 +68,45 @@ export interface DHIS2MapProps {
   databaseId: number;
   orgUnitColumn: string;
   metric: string;
-  boundaryLevel: number;
+  aggregationMethod?: AggregationMethod;
+  boundaryLevels: number[];
   enableDrill: boolean;
   colorScheme: string;
+  linearColorScheme?: string;
+  useLinearColorScheme?: boolean;
   opacity: number;
   strokeColor: { r: number; g: number; b: number; a: number };
   strokeWidth: number;
+  autoThemeBorders?: boolean;
+  levelBorderColors?: LevelBorderColor[];
+  showAllBoundaries?: boolean;
   showLabels: boolean;
   labelType: 'name' | 'value' | 'name_value' | 'percent';
   labelFontSize: number;
   showLegend: boolean;
   legendPosition: 'topleft' | 'topright' | 'bottomleft' | 'bottomright';
   legendClasses: number;
+  legendType?: LegendType;
+  legendMin?: number;
+  legendMax?: number;
+  manualBreaks?: number[];
+  manualColors?: string[];
+  legendReverseColors?: boolean;
+  legendNoDataColor?: { r: number; g: number; b: number; a: number };
   tooltipColumns: string[];
   onDrillDown?: (orgUnitId: string, orgUnitName: string) => void;
   setDataMask?: (dataMask: any) => void;
+  activeFilters?: Array<{
+    col: string;
+    op: string;
+    val: any;
+  }>;
+  nativeFilters?: Record<string, any>;
+  // DHIS2 specific props for fallback data fetching
+  datasetSql?: string;
+  isDHIS2Dataset?: boolean;
+  // Boundary loading method: 'geoFeatures' (default) or 'geoJSON'
+  boundaryLoadMethod?: 'geoFeatures' | 'geoJSON';
 }
 
 export interface ThematicLayerConfig {

@@ -17,13 +17,14 @@
  * under the License.
  */
 import { useReducer, Reducer, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import useDatasetsList from 'src/features/datasets/hooks/useDatasetLists';
 import Header from 'src/features/datasets/AddDataset/Header';
 import EditPage from 'src/features/datasets/AddDataset/EditDataset';
 import DatasetPanel from 'src/features/datasets/AddDataset/DatasetPanel';
 import LeftPanel from 'src/features/datasets/AddDataset/LeftPanel';
 import Footer from 'src/features/datasets/AddDataset/Footer';
+import DHIS2DatasetWizard from 'src/features/datasets/AddDataset/DHIS2DatasetWizard';
 import {
   DatasetActionType,
   DatasetObject,
@@ -94,11 +95,13 @@ const prevUrl =
   '/tablemodelview/list/?pageIndex=0&sortColumn=changed_on_delta_humanized&sortOrder=desc';
 
 export default function AddDataset() {
+  const history = useHistory();
   const [dataset, setDataset] = useReducer<
     Reducer<Partial<DatasetObject> | null, DSReducerActionType>
   >(datasetReducer, null);
   const [hasColumns, setHasColumns] = useState(false);
   const [editPageIsVisible, setEditPageIsVisible] = useState(false);
+  const [isDHIS2Database, setIsDHIS2Database] = useState(false);
 
   const { datasets, datasetNames } = useDatasetsList(
     dataset?.db,
@@ -106,11 +109,18 @@ export default function AddDataset() {
   );
 
   const { datasetId: id } = useParams<{ datasetId: string }>();
+
   useEffect(() => {
     if (!Number.isNaN(parseInt(id, 10))) {
       setEditPageIsVisible(true);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (dataset?.db?.backend) {
+      setIsDHIS2Database(dataset.db.backend === 'dhis2');
+    }
+  }, [dataset?.db?.backend]);
 
   const HeaderComponent = () => (
     <Header setDataset={setDataset} title={dataset?.table_name} />
@@ -146,6 +156,31 @@ export default function AddDataset() {
       datasets={datasetNames}
     />
   );
+
+  const onWizardSaveSuccess = () => {
+    history.push(prevUrl);
+  };
+
+  if (
+    isDHIS2Database &&
+    !editPageIsVisible &&
+    dataset?.db?.id &&
+    dataset?.table_name
+  ) {
+    const filteredDatasets = (datasetNames || []).filter(
+      (name): name is string => typeof name === 'string',
+    );
+    return (
+      <DHIS2DatasetWizard
+        dataset={dataset}
+        setDataset={setDataset}
+        hasColumns={hasColumns}
+        setHasColumns={setHasColumns}
+        datasets={filteredDatasets}
+        onSaveSuccess={onWizardSaveSuccess}
+      />
+    );
+  }
 
   return (
     <DatasetLayout

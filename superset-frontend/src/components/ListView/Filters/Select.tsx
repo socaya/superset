@@ -39,6 +39,7 @@ interface SelectFilterProps extends BaseFilter {
   selects: Filter['selects'];
   loading?: boolean;
   dropdownStyle?: React.CSSProperties;
+  dropdownRootClassName?: string;
 }
 
 function SelectFilter(
@@ -51,9 +52,13 @@ function SelectFilter(
     selects = [],
     loading = false,
     dropdownStyle,
+    dropdownRootClassName,
   }: SelectFilterProps,
   ref: RefObject<FilterHandler>,
 ) {
+  const popupStyles = dropdownStyle
+    ? { root: { ...dropdownStyle } }
+    : undefined;
   const [selectedOption, setSelectedOption] = useState(initialValue);
 
   const onChange = (selected: SelectOption) => {
@@ -109,7 +114,7 @@ function SelectFilter(
           onClear={onClear}
           options={fetchAndFormatSelects}
           placeholder={placeholder}
-          dropdownStyle={dropdownStyle}
+          styles={popupStyles ? { popup: popupStyles } : undefined}
           showSearch
           value={selectedOption}
         />
@@ -123,7 +128,7 @@ function SelectFilter(
           onClear={onClear}
           options={selects}
           placeholder={placeholder}
-          dropdownStyle={dropdownStyle}
+          styles={popupStyles ? { popup: popupStyles } : undefined}
           showSearch
           value={selectedOption}
           loading={loading}

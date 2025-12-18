@@ -179,9 +179,7 @@ const FilterDependencies = ({
   };
 
   const handleDeleteDependency = (filterId: string) => {
-    onDependenciesChange(
-      dependencies.filter(dep => dep !== filterId),
-    );
+    onDependenciesChange(dependencies.filter(dep => dep !== filterId));
   };
 
   const handleChangeDependency = (oldId: string, newId: string) => {
@@ -206,15 +204,21 @@ const FilterDependencies = ({
             <StatusBox variant="success">
               <strong>{t('Cascading Relationship Active')}</strong>
               <br />
-              {t('This filter cascades from')} <strong>{currentParent?.label}</strong>{' '}
-              {t('at level')} <strong>{cascadeLevel}</strong>. {t('Only values associated with the parent selection will be displayed.')}
+              {t('This filter cascades from')}{' '}
+              <strong>{currentParent?.label}</strong> {t('at level')}{' '}
+              <strong>{cascadeLevel}</strong>.{' '}
+              {t(
+                'Only values associated with the parent selection will be displayed.',
+              )}
             </StatusBox>
           )}
 
           <Section>
             <SectionTitle>{t('Parent Filter (1-to-1 Mapping)')}</SectionTitle>
             <StatusBox variant="info">
-              {t('Select a parent filter to establish a hierarchical cascade relationship. This filter will show only values that exist in the parent filter\'s selection.')}
+              {t(
+                "Select a parent filter to establish a hierarchical cascade relationship. This filter will show only values that exist in the parent filter's selection.",
+              )}
             </StatusBox>
 
             <FieldGroup>
@@ -281,9 +285,17 @@ const FilterDependencies = ({
             </div>
 
             {showAdvanced && (
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
+              <div
+                style={{
+                  marginTop: '12px',
+                  paddingTop: '12px',
+                  borderTop: '1px solid #f0f0f0',
+                }}
+              >
                 <StatusBox variant="info" style={{ marginBottom: '12px' }}>
-                  {t('Optionally set up additional filter dependencies. This filter will be constrained by multiple parent filters simultaneously.')}
+                  {t(
+                    'Optionally set up additional filter dependencies. This filter will be constrained by multiple parent filters simultaneously.',
+                  )}
                 </StatusBox>
 
                 <div>
@@ -311,7 +323,9 @@ const FilterDependencies = ({
                               ariaLabel={t('Dependency filter')}
                               labelInValue
                               options={options.filter(
-                                e => e.value === depId || !dependencies.includes(e.value),
+                                e =>
+                                  e.value === depId ||
+                                  !dependencies.includes(e.value),
                               )}
                               onChange={option =>
                                 handleChangeDependency(
@@ -335,18 +349,27 @@ const FilterDependencies = ({
                     <AddFilter
                       role="button"
                       onClick={handleAddDependency}
-                      style={{ marginTop: dependencies.length > 0 ? '12px' : 0 }}
+                      style={{
+                        marginTop: dependencies.length > 0 ? '12px' : 0,
+                      }}
                     >
                       <Icons.PlusOutlined iconSize="xs" />
                       {t('Add filter dependency')}
                     </AddFilter>
                   )}
 
-                  {dependencies.length > 0 && cascadeParentId && cascadeLevel && (
-                    <StatusBox variant="warning" style={{ marginTop: '12px' }}>
-                      {t('Note: Both cascade and dependencies are active. Only dependencies will be applied.')}
-                    </StatusBox>
-                  )}
+                  {dependencies.length > 0 &&
+                    cascadeParentId &&
+                    cascadeLevel && (
+                      <StatusBox
+                        variant="warning"
+                        style={{ marginTop: '12px' }}
+                      >
+                        {t(
+                          'Note: Both cascade and dependencies are active. Only dependencies will be applied.',
+                        )}
+                      </StatusBox>
+                    )}
                 </div>
               </div>
             )}

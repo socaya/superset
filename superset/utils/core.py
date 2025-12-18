@@ -1257,7 +1257,9 @@ def get_metric_name(metric: Metric, verbose_map: dict[str, Any] | None = None) -
             if column and aggregate:
                 return f"{aggregate}({column_name})"
             if column_name:
-                return column_name
+                # Return a default aggregation to avoid conflict with dimension columns
+                # This happens when a metric is created without specifying an aggregate
+                return f"COUNT({column_name})"
 
     if isinstance(metric, str):
         verbose_map = verbose_map or {}

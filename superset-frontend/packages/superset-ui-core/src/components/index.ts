@@ -189,3 +189,22 @@ export {
   type CodeEditorMode,
   type CodeEditorTheme,
 } from './CodeEditor';
+
+// Tabs exports
+export {
+  default as Tabs,
+  type TabsProps,
+  EditableTabs,
+  LineEditableTabs,
+  StyledLineEditableTabs,
+} from './Tabs';
+
+// Spin exports
+export { Spin } from './Spin';
+export type { SpinProps } from 'antd';
+
+// Statistic exports
+export { Statistic, type StatisticProps } from './Statistic';
+
+// Tree exports
+export { default as Tree, type TreeProps, type TreeDataNode } from './Tree';

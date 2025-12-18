@@ -1,10 +1,20 @@
 const CACHE_PREFIX = 'dhis2_map_cache_';
 const DEFAULT_TTL_HOURS = 4;
+// Increment this version when cache structure or data format changes
+// v2: Added geometry type auto-correction for MultiPolygon coordinates
+// v3: Fixed MultiPolygon validation for Ankole/Kigezi regions
+// v4: Added multi-level boundary support with level-specific styling
+// v5: Added timeout handling and improved error messages
+// v6: Added full color scheme support (categorical + sequential) like other charts
+// v7: Enhanced sequential color schemes with proper choices/schemes, manual breaks/colors
+// v8: Added auto-themed borders that derive border color from fill color
+const CACHE_VERSION = 'v8';
 
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
   ttl: number;
+  version?: string;
 }
 
 export class DHIS2MapCache {
@@ -12,23 +22,35 @@ export class DHIS2MapCache {
     return `${CACHE_PREFIX}${type}_${id}`;
   }
 
-  private static isExpired(entry: CacheEntry<any>): boolean {
+  private static isExpired(entry: CacheEntry<unknown>): boolean {
     const now = Date.now();
     const age = (now - entry.timestamp) / (1000 * 60 * 60);
     return age > entry.ttl;
   }
 
-  static set<T>(type: string, id: string, data: T, ttlHours: number = DEFAULT_TTL_HOURS): void {
+  private static isOutdatedVersion(entry: CacheEntry<unknown>): boolean {
+    return entry.version !== CACHE_VERSION;
+  }
+
+  static set<T>(
+    type: string,
+    id: string,
+    data: T,
+    ttlHours: number = DEFAULT_TTL_HOURS,
+  ): void {
     try {
       const key = this.getKey(type, id);
       const entry: CacheEntry<T> = {
         data,
         timestamp: Date.now(),
         ttl: ttlHours,
+        version: CACHE_VERSION,
       };
       localStorage.setItem(key, JSON.stringify(entry));
       // eslint-disable-next-line no-console
-      console.log(`[DHIS2MapCache] Cached ${type}/${id} for ${ttlHours}h`);
+      console.log(
+        `[DHIS2MapCache] Cached ${type}/${id} for ${ttlHours}h (${CACHE_VERSION})`,
+      );
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn('[DHIS2MapCache] Failed to cache data:', e);
@@ -45,6 +67,16 @@ export class DHIS2MapCache {
       }
 
       const entry: CacheEntry<T> = JSON.parse(cached);
+
+      // Check for outdated cache version (e.g., geometry type fixes)
+      if (this.isOutdatedVersion(entry)) {
+        localStorage.removeItem(key);
+        // eslint-disable-next-line no-console
+        console.log(
+          `[DHIS2MapCache] Cache outdated for ${type}/${id} (was ${entry.version || 'v1'}, need ${CACHE_VERSION})`,
+        );
+        return null;
+      }
 
       if (this.isExpired(entry)) {
         localStorage.removeItem(key);

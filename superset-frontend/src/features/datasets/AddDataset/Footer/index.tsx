@@ -23,7 +23,7 @@ import {
   Menu,
   Flex,
 } from '@superset-ui/core/components';
-import { t, useTheme } from '@superset-ui/core';
+import { t, useTheme, SupersetClient } from '@superset-ui/core';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { useSingleViewResource } from 'src/views/CRUD/hooks';
 import { logEvent } from 'src/logger/actions';
@@ -93,11 +93,28 @@ function Footer({
 
   const tooltipText = t('Select a database table.');
 
+  const triggerBackgroundDatasetLoad = async (datasetId: number) => {
+    try {
+      // Trigger background dataset load via refresh endpoint
+      // This will load the dataset data without blocking the UI
+      await SupersetClient.post({
+        endpoint: `/api/v1/dataset/${datasetId}/refresh`,
+      });
+      console.log(
+        '[Background Load] Dataset refresh initiated for ID:',
+        datasetId,
+      );
+    } catch (error) {
+      console.warn('[Background Load] Failed to trigger refresh:', error);
+    }
+  };
+
   const onSave = (createChart: boolean = true) => {
     if (datasetObject) {
       // For DHIS2 datasets: Use dataset_name (custom name like "analytics_version2")
       // Parse the source table from it (e.g., "analytics")
-      const datasetIdentifier = datasetObject.dataset_name || datasetObject.table_name;
+      const datasetIdentifier =
+        datasetObject.dataset_name || datasetObject.table_name;
 
       const data: any = {
         database: datasetObject.db?.id,
@@ -110,7 +127,8 @@ function Footer({
       if (datasetObject.dhis2_parameters) {
         // Parse the source table from the dataset name
         // Example: "analytics_version2" -> "analytics"
-        const sourceTable = parseSourceTable(datasetIdentifier) || datasetObject.table_name;
+        const sourceTable =
+          parseSourceTable(datasetIdentifier) || datasetObject.table_name;
 
         // Embed both source table and parameters in SQL comment
         const paramsStr = Object.entries(datasetObject.dhis2_parameters)
@@ -119,7 +137,12 @@ function Footer({
 
         // SQL includes source table in FROM clause and comment
         data.sql = `SELECT * FROM ${sourceTable}\n/* DHIS2: table=${sourceTable}&${paramsStr} */`;
-        console.log('[DHIS2] Creating dataset:', datasetIdentifier, 'from source table:', sourceTable);
+        console.log(
+          '[DHIS2] Creating dataset:',
+          datasetIdentifier,
+          'from source table:',
+          sourceTable,
+        );
         console.log('[DHIS2] SQL:', data.sql);
       }
 
@@ -130,6 +153,12 @@ function Footer({
         if (typeof response === 'number') {
           logEvent(LOG_ACTIONS_DATASET_CREATION_SUCCESS, datasetObject);
           // When a dataset is created the response we get is its ID number
+          const datasetId = response;
+
+          // Trigger background loading of the dataset to populate its cache
+          // This happens asynchronously in the background without blocking the UI
+          triggerBackgroundDatasetLoad(datasetId);
+
           if (createChart) {
             history.push(`/chart/add/?dataset=${datasetObject.table_name}`);
           } else {
@@ -151,18 +180,6 @@ function Footer({
     !hasColumns ||
     datasets?.includes(datasetObject?.table_name);
 
-  const dropdownMenu = (
-    <Menu
-      items={[
-        {
-          key: 'create-only',
-          onClick: onSaveOnly,
-          label: CREATE_DATASET_ONLY_TEXT,
-        },
-      ]}
-    />
-  );
-
   return (
     <Flex align="center" justify="flex-end" gap="8px">
       <Button buttonStyle="secondary" onClick={cancelButtonOnClick}>
@@ -173,7 +190,17 @@ function Footer({
         disabled={disabledCheck}
         tooltip={!datasetObject?.table_name ? tooltipText : undefined}
         onClick={() => onSave(true)}
-        popupRender={() => dropdownMenu}
+        popupRender={() => (
+          <Menu
+            items={[
+              {
+                key: 'create-only',
+                onClick: onSaveOnly,
+                label: CREATE_DATASET_ONLY_TEXT,
+              },
+            ]}
+          />
+        )}
         icon={
           <Icons.DownOutlined
             iconSize="xs"

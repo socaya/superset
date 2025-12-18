@@ -805,11 +805,18 @@ class DHIS2EngineSpec(BaseEngineSpec):
         """
         Extra parameters to include in database metadata
         Includes dynamic DHIS2-specific configuration
+        
+        Timeout: DHIS2 queries can be slow due to large datasets
+        - Default: 300 seconds (5 minutes) for analytics queries
+        - Can be overridden per database in "extra" config
         """
         extra_params = {
             "engine_params": {
                 "connect_args": {
-                    "timeout": 60,
+                    # DHIS2 queries timeout at 60s by default, but many queries need more time
+                    # Increased to 300s (5 minutes) for large dataset analysis
+                    # Can be further customized per database
+                    "timeout": 300,
                 }
             }
         }
@@ -818,6 +825,11 @@ class DHIS2EngineSpec(BaseEngineSpec):
         try:
             import json
             extra = json.loads(database.extra) if database.extra else {}
+            
+            # Allow overriding timeout per database
+            if "timeout" in extra:
+                extra_params["engine_params"]["connect_args"]["timeout"] = extra["timeout"]
+            
             if "default_params" in extra:
                 extra_params["default_params"] = extra["default_params"]
             if "endpoint_params" in extra:
@@ -901,6 +913,50 @@ class DHIS2EngineSpec(BaseEngineSpec):
                 raise ValueError("DHIS2 connection does not support organisationUnitLevels API")
         except Exception as e:
             logger.exception(f"Failed to fetch organisation unit levels: {e}")
+            raise
+
+    @classmethod
+    def fetch_data_values(
+        cls,
+        database: "Database",
+        params: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Fetch data values from DHIS2 dataValueSets API.
+
+        Args:
+            database: Superset database instance
+            params: Dictionary of dataValueSets API parameters:
+                - dataSet: Dataset UID (required)
+                - orgUnit: Comma-separated org unit UIDs (required)
+                - period: Comma-separated period codes (required)
+                - dataElement: Comma-separated data element UIDs (optional)
+                - children: 'true' to include child org units (optional)
+
+        Returns:
+            Dictionary with dataValues and metadata from DHIS2
+
+        Note:
+            Use concrete org unit UIDs and fixed period codes, not relative keywords.
+            Relative periods (e.g., LAST_5_YEARS) and org unit keywords
+            (e.g., USER_ORGUNIT_GRANDCHILDREN) are only supported in /api/analytics endpoints.
+        """
+        try:
+            from superset.db_engine_specs.dhis2_dialect import DHIS2Dialect
+
+            engine = database.get_sqla_engine()
+            dialect = engine.dialect
+
+            if not isinstance(dialect, DHIS2Dialect):
+                raise ValueError("Database is not a DHIS2 instance")
+
+            connection = engine.raw_connection()
+            if hasattr(connection, "fetch_data_values"):
+                return connection.fetch_data_values(params=params)
+            else:
+                raise ValueError("DHIS2 connection does not support dataValueSets API")
+        except Exception as e:
+            logger.exception(f"Failed to fetch data values: {e}")
             raise
 
     @classmethod

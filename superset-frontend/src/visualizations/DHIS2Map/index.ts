@@ -17,11 +17,31 @@
  * under the License.
  */
 
-import { ChartPlugin } from '@superset-ui/core';
+import { t, ChartMetadata, ChartPlugin, Behavior } from '@superset-ui/core';
 import buildQuery from './buildQuery';
 import controlPanel from './controlPanel';
 import transformProps from './transformProps';
 import DHIS2Map from './DHIS2Map';
+import thumbnail from './images/thumbnailUrl';
+
+const metadata = new ChartMetadata({
+  name: t('DHIS2 Map'),
+  description: t(
+    'Choropleth map for DHIS2 data with org unit boundaries. Supports drill-down navigation through organisation unit hierarchy.',
+  ),
+  category: t('Map'),
+  tags: [
+    t('DHIS2'),
+    t('Map'),
+    t('Geo'),
+    t('Choropleth'),
+    t('Boundaries'),
+    t('Geographic'),
+    t('Spatial'),
+  ],
+  thumbnail,
+  behaviors: [Behavior.InteractiveChart],
+});
 
 export default class DHIS2MapChartPlugin extends ChartPlugin {
   constructor() {
@@ -29,13 +49,7 @@ export default class DHIS2MapChartPlugin extends ChartPlugin {
       buildQuery,
       controlPanel,
       loadChart: () => Promise.resolve(DHIS2Map),
-      metadata: {
-        name: 'DHIS2 Map',
-        description: 'Choropleth map for DHIS2 data with org unit boundaries',
-        category: 'Map',
-        tags: ['dhis2', 'map', 'geo', 'choropleth', 'boundaries'],
-        behaviors: ['INTERACTIVE_CHART', 'DRILL_TO_DETAIL'],
-      },
+      metadata,
       transformProps,
     });
   }

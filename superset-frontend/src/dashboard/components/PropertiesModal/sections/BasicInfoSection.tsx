@@ -17,7 +17,12 @@
  * under the License.
  */
 import { t } from '@superset-ui/core';
-import { FormItem, Input, FormInstance } from '@superset-ui/core/components';
+import {
+  FormItem,
+  Input,
+  InputNumber,
+  FormInstance,
+} from '@superset-ui/core/components';
 import { ModalFormField } from 'src/components/Modal';
 import { ValidationObject } from 'src/components/Modal/useModalValidation';
 
@@ -61,16 +66,26 @@ const BasicInfoSection = ({
           />
         </FormItem>
       </ModalFormField>
-      <ModalFormField
-        label={t('URL Slug')}
-        testId="dashboard-slug-field"
-        bottomSpacing={false}
-      >
+      <ModalFormField label={t('URL Slug')} testId="dashboard-slug-field">
         <FormItem name="slug" noStyle>
           <Input
             placeholder={t('A readable URL for your dashboard')}
             data-test="dashboard-slug-input"
             type="text"
+          />
+        </FormItem>
+      </ModalFormField>
+      <ModalFormField
+        label={t('Display Order (for public list)')}
+        testId="dashboard-display-order-field"
+        bottomSpacing={false}
+      >
+        <FormItem name="displayOrder" noStyle>
+          <InputNumber
+            placeholder={t('Lower numbers appear first (e.g., 1, 2, 3...)')}
+            data-test="dashboard-display-order-input"
+            min={1}
+            style={{ width: '100%' }}
           />
         </FormItem>
       </ModalFormField>

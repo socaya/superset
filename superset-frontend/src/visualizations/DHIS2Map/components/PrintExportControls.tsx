@@ -73,22 +73,14 @@ const PrintExportControls: React.FC<PrintExportControlsProps> = ({
     if (!mapElement) {
       return;
     }
-    await PrintExportManager.exportAsImage(
-      mapElement,
-      'dhis2-map',
-      'png',
-    );
+    await PrintExportManager.exportAsImage(mapElement, 'dhis2-map', 'png');
   };
 
   const handleExportSVG = async () => {
     if (!mapElement) {
       return;
     }
-    await PrintExportManager.exportAsImage(
-      mapElement,
-      'dhis2-map',
-      'svg',
-    );
+    await PrintExportManager.exportAsImage(mapElement, 'dhis2-map', 'svg');
   };
 
   const handlePrint = () => {

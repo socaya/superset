@@ -130,7 +130,10 @@ const ViewMoreButton = styled(Button)`
   `}
 `;
 
-const ChartPreviewContainer = styled.div<{ gridWidth?: number; gridHeight?: number }>`
+const ChartPreviewContainer = styled.div<{
+  gridWidth?: number;
+  gridHeight?: number;
+}>`
   ${({ theme, gridWidth = 6, gridHeight = 40 }) => `
     border: 1px solid ${theme.colorBorderSecondary};
     border-radius: ${theme.borderRadiusLG}px;
@@ -171,7 +174,7 @@ interface Category {
 
 interface ChartDimensions {
   chartId: number;
-  width: number;  // Grid units (out of 12)
+  width: number; // Grid units (out of 12)
   height: number; // Pixels
 }
 
@@ -182,7 +185,7 @@ interface ChartItem {
   thumbnail_url?: string;
   url: string;
   viz_type: string;
-  is_public?: boolean;  // FR-2.1: Chart-level public access flag
+  is_public?: boolean; // FR-2.1: Chart-level public access flag
   tags?: Array<{ id: number; name: string; type: string }>;
 }
 
@@ -214,7 +217,10 @@ function extractTabsFromLayout(positionData: DashboardLayout): Category[] {
   const categories: Category[] = [];
 
   console.log('Analyzing position data structure...');
-  console.log('All component types:', Object.entries(positionData).map(([k, v]) => `${k}: ${v.type}`));
+  console.log(
+    'All component types:',
+    Object.entries(positionData).map(([k, v]) => `${k}: ${v.type}`),
+  );
 
   // Find TABS components in the layout
   Object.entries(positionData).forEach(([key, component]) => {
@@ -254,7 +260,9 @@ function extractTabsFromLayout(positionData: DashboardLayout): Category[] {
 }
 
 // Extract chart dimensions from position_json
-function extractChartDimensions(positionData: DashboardLayout): Map<number, ChartDimensions> {
+function extractChartDimensions(
+  positionData: DashboardLayout,
+): Map<number, ChartDimensions> {
   const dimensions = new Map<number, ChartDimensions>();
 
   Object.entries(positionData).forEach(([key, component]) => {
@@ -268,7 +276,7 @@ function extractChartDimensions(positionData: DashboardLayout): Map<number, Char
         // - height: grid rows (each row is ~GRID_BASE_UNIT pixels, typically 10px)
         dimensions.set(chartId, {
           chartId,
-          width: meta?.width || 6,  // Default to half width
+          width: meta?.width || 6, // Default to half width
           height: meta?.height || 50, // Default to 500px (50 * 10)
         });
       }
@@ -290,7 +298,12 @@ function extractChartIdsFromComponent(
     const meta = component.meta as any;
     const sliceId = meta?.chartId || meta?.sliceId || meta?.slice_id;
 
-    console.log('Found CHART component with meta:', meta, 'extracted sliceId:', sliceId);
+    console.log(
+      'Found CHART component with meta:',
+      meta,
+      'extracted sliceId:',
+      sliceId,
+    );
 
     if (sliceId) {
       chartIds.push(sliceId);
@@ -316,18 +329,28 @@ export default function DashboardContentArea({
   useEmbeddedSDK = true,
   showEmbeddingManager = false,
 }: DashboardContentAreaProps) {
-  console.log('DashboardContentArea rendered with dashboard:', selectedDashboard);
+  console.log(
+    'DashboardContentArea rendered with dashboard:',
+    selectedDashboard,
+  );
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [allCharts, setAllCharts] = useState<ChartItem[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [chartsToDisplay, setChartsToDisplay] = useState(10); // Load 10 initially for all users
-  const [chartDimensions, setChartDimensions] = useState<Map<number, ChartDimensions>>(new Map());
+  const [chartDimensions, setChartDimensions] = useState<
+    Map<number, ChartDimensions>
+  >(new Map());
   // Fetched embedded dashboard UUID to use with Embedded SDK
   const [embeddedUuid, setEmbeddedUuid] = useState<string | null>(null);
 
-  console.log('Current state - categories:', categories, 'activeCategory:', activeCategory);
+  console.log(
+    'Current state - categories:',
+    categories,
+    'activeCategory:',
+    activeCategory,
+  );
 
   useEffect(() => {
     if (!selectedDashboard) {
@@ -359,18 +382,26 @@ export default function DashboardContentArea({
         // Fetch embedded configuration to get the embedded UUID
         try {
           const embeddedEndpoint = `/api/v1/dashboard/${selectedDashboard.id}/embedded`;
-          const embeddedResponse = await SupersetClient.get({ endpoint: embeddedEndpoint });
+          const embeddedResponse = await SupersetClient.get({
+            endpoint: embeddedEndpoint,
+          });
           const embeddedConfig = embeddedResponse.json.result;
           console.log('Embedded config:', embeddedConfig);
           setEmbeddedUuid(embeddedConfig.uuid || null);
         } catch (embeddedError) {
-          console.warn('Dashboard has no embedded configuration:', embeddedError);
+          console.warn(
+            'Dashboard has no embedded configuration:',
+            embeddedError,
+          );
           setEmbeddedUuid(null);
         }
 
         const positionData = dashboardData.position_json || {};
         console.log('Position data type:', typeof positionData);
-        console.log('Position data is string?', typeof positionData === 'string');
+        console.log(
+          'Position data is string?',
+          typeof positionData === 'string',
+        );
 
         // If position_json is a string, parse it
         let parsedPositionData = positionData;
@@ -388,15 +419,23 @@ export default function DashboardContentArea({
         const dimensions = extractChartDimensions(parsedPositionData);
         setChartDimensions(dimensions);
 
-        console.log('Extracted categories from dashboard:', extractedCategories);
-        console.log('Extracted chart dimensions:', Array.from(dimensions.entries()));
+        console.log(
+          'Extracted categories from dashboard:',
+          extractedCategories,
+        );
+        console.log(
+          'Extracted chart dimensions:',
+          Array.from(dimensions.entries()),
+        );
 
         if (extractedCategories.length > 0) {
           setCategories(extractedCategories);
           setActiveCategory(extractedCategories[0].key);
         } else {
           // No tabs found, use default single category with all charts
-          console.log('No tabs found in dashboard, using default "All Charts" category');
+          console.log(
+            'No tabs found in dashboard, using default "All Charts" category',
+          );
           setCategories(DEFAULT_CATEGORIES);
           setActiveCategory('all');
         }
@@ -438,7 +477,9 @@ export default function DashboardContentArea({
     if (categoryKey === 'all') {
       // If we have chart IDs from position_json, use them
       if (currentCategory.chartIds.length > 0) {
-        return allCharts.filter(chart => currentCategory.chartIds.includes(chart.id));
+        return allCharts.filter(chart =>
+          currentCategory.chartIds.includes(chart.id),
+        );
       }
       // Otherwise collect all chart IDs from all categories (tabs)
       const allChartIds = new Set<number>();
@@ -457,7 +498,9 @@ export default function DashboardContentArea({
     if (currentCategory.chartIds.length === 0) {
       return allCharts;
     }
-    return allCharts.filter(chart => currentCategory.chartIds.includes(chart.id));
+    return allCharts.filter(chart =>
+      currentCategory.chartIds.includes(chart.id),
+    );
   };
 
   const allChartsForCategory = getChartsForCategory(activeCategory);
@@ -497,11 +540,7 @@ export default function DashboardContentArea({
         <EmptyStateContainer>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <span>
-                {t('No charts in this category yet.')}
-              </span>
-            }
+            description={<span>{t('No charts in this category yet.')}</span>}
           />
         </EmptyStateContainer>
       );
@@ -539,7 +578,8 @@ export default function DashboardContentArea({
             icon={<Icons.PlusOutlined />}
             onClick={handleLoadMore}
           >
-            {t('Load 5 More Charts')} ({allChartsForCategory.length - chartsToDisplay} {t('remaining')})
+            {t('Load 5 More Charts')} (
+            {allChartsForCategory.length - chartsToDisplay} {t('remaining')})
           </ViewMoreButton>
         )}
       </>

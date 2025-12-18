@@ -370,7 +370,7 @@ class DHIS2ResponseNormalizer:
         return None
 
     @staticmethod
-    def _normalize_analytics_long_format(headers: list, rows_data: list, get_name_func) -> tuple[list[str], list[tuple]]:
+    def _normalize_analytics_long_format(headers: list, rows_data: list, get_name_func, org_unit_hierarchy: dict | None = None, selected_levels: list[int] | None = None) -> tuple[list[str], list[tuple]]:
         """
         Return analytics data in LONG/UNPIVOTED format
 
@@ -415,17 +415,19 @@ class DHIS2ResponseNormalizer:
         return col_names, long_rows
 
     @staticmethod
-    def normalize_analytics(data: dict, pivot: bool = True) -> tuple[list[str], list[tuple]]:
+    def normalize_analytics(data: dict, pivot: bool = True, org_unit_hierarchy: dict | None = None, selected_levels: list[int] | None = None, org_unit_level_names: dict | None = None) -> tuple[list[str], list[tuple]]:
         """
-        Normalize analytics endpoint response
+        Normalize analytics endpoint response with hierarchical org unit enrichment
 
         Args:
             data: DHIS2 analytics API response
             pivot: If True, return WIDE format (pivoted). If False, return LONG/TIDY format (unpivoted)
+            org_unit_hierarchy: Dict mapping org unit IDs to their hierarchy info
+            selected_levels: List of org unit levels (always uses [1,2,3,4,5,6] for complete hierarchy)
 
         Formats:
-        - WIDE (pivoted): Period, OrgUnit, DataElement_A, DataElement_B, ...
-          Traditional format for browsing
+        - WIDE (pivoted): Period, OrgUnit, Level_1_Name, Level_2_Name, DataElement_A, DataElement_B, ...
+          Traditional format for browsing with hierarchy
         - LONG/TIDY (unpivoted): Period, OrgUnit, DataElement, Value
           Better for Superset - enables filters, metrics, cross-filters
           This is used by default for analytics endpoint
@@ -539,14 +541,31 @@ class DHIS2ResponseNormalizer:
                     pivot_data[key] = {}
                 pivot_data[key][dx] = val
 
-        # Build column names: Period, OrgUnit, DataElement_1, DataElement_2, ...
+        # Build column names: Period, Level_1_Name, Level_2_Name, ..., DataElement_1, DataElement_2, ...
         # IMPORTANT: ALL columns MUST be SANITIZED to match column metadata from get_columns()!
         # This ensures consistency between:
         # 1. Dataset metadata (stored in DB) - uses sanitize_dhis2_column_name()
         # 2. Chart formData (user selections) - references sanitized names
         # 3. Query results (this function) - must return sanitized names
+        # Note: OrgUnit column removed - hierarchy levels provide the granular context
         data_element_list = sorted(data_elements)
-        col_names = [sanitize_dhis2_column_name("Period"), sanitize_dhis2_column_name("OrgUnit")] + [sanitize_dhis2_column_name(get_name(de)) for de in data_element_list]
+        col_names = [sanitize_dhis2_column_name("Period")]
+        
+        if org_unit_level_names is None:
+            org_unit_level_names = {}
+        
+        # Only include levels that are actually available in DHIS2
+        if org_unit_level_names:
+            for level in sorted(org_unit_level_names.keys()):
+                level_name = org_unit_level_names.get(level)
+                col_names.append(sanitize_dhis2_column_name(level_name))
+        else:
+            # Fallback to 6 levels if not specified
+            for level in range(1, 7):
+                level_name = f"Level_{level}_Name"
+                col_names.append(sanitize_dhis2_column_name(level_name))
+        
+        col_names.extend([sanitize_dhis2_column_name(get_name(de)) for de in data_element_list])
 
         print(f"[DHIS2] PIVOT CONSTRUCTION:")
         print(f"[DHIS2]   data_elements (UIDs): {sorted(data_elements)}")
@@ -559,13 +578,36 @@ class DHIS2ResponseNormalizer:
         pivoted_rows = []
         for (pe, ou) in sorted(pivot_data.keys()):
             pe_name = get_name(pe)
-            ou_name = get_name(ou)
 
             # Debug logging to identify concatenation
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f"Pivoting row - PE UID: {pe}, PE name: {pe_name}, OU UID: {ou}, OU name: {ou_name}")
+                logger.debug(f"Pivoting row - PE UID: {pe}, PE name: {pe_name}, OU UID: {ou}")
 
-            row = [pe_name, ou_name]
+            row = [pe_name]
+            
+            # Append hierarchy values for available levels only
+            if org_unit_level_names:
+                levels_to_append = sorted(org_unit_level_names.keys())
+            else:
+                levels_to_append = list(range(1, 7))
+            
+            if org_unit_hierarchy and ou:
+                try:
+                    hierarchy_info = org_unit_hierarchy.get(ou, {})
+                    # Debug: Log hierarchy info for first few rows
+                    if len(pivoted_rows) < 3:
+                        print(f"[DHIS2] Row {len(pivoted_rows)}: OU={ou}, hierarchy_info={hierarchy_info}")
+                    for level in levels_to_append:
+                        level_name = hierarchy_info.get(f"level_{level}", None)
+                        row.append(level_name)
+                except Exception as e:
+                    logger.warning(f"Error appending hierarchy for {ou}: {e}")
+                    row.extend([None] * len(levels_to_append))
+            else:
+                if len(pivoted_rows) < 3:
+                    print(f"[DHIS2] Row {len(pivoted_rows)}: OU={ou}, NO HIERARCHY (org_unit_hierarchy={bool(org_unit_hierarchy)})")
+                row.extend([None] * len(levels_to_append))
+            
             for de in data_element_list:
                 value = pivot_data[(pe, ou)].get(de, None)
                 row.append(value)
@@ -575,45 +617,103 @@ class DHIS2ResponseNormalizer:
             if len(pivoted_rows) == 1:
                 logger.info(f"[DHIS2] FIRST ROW CONSTRUCTION:")
                 logger.info(f"[DHIS2]   Period (index 0): {row[0]}")
-                logger.info(f"[DHIS2]   OrgUnit (index 1): {row[1]}")
+                data_element_start_idx = 1 + len(levels_to_append)
                 for i, de in enumerate(data_element_list):
-                    logger.info(f"[DHIS2]   {get_name(de)} (index {i+2}): {row[i+2]}")
+                    de_idx = data_element_start_idx + i
+                    logger.info(f"[DHIS2]   {get_name(de)} (index {de_idx}): {row[de_idx]}")
 
         # Log first few rows for debugging
         if pivoted_rows and logger.isEnabledFor(logging.INFO):
-            logger.info(f"First pivoted row - Period: '{pivoted_rows[0][0]}', OrgUnit: '{pivoted_rows[0][1]}'")
+            logger.info(f"First pivoted row - Period: '{pivoted_rows[0][0]}'")
             logger.info(f"[DHIS2] Total pivoted rows: {len(pivoted_rows)}, columns: {len(col_names)}")
 
         return col_names, pivoted_rows
 
     @staticmethod
-    def normalize_data_value_sets(data: dict) -> tuple[list[str], list[tuple]]:
+    def normalize_data_value_sets(data: dict, org_unit_hierarchy: dict | None = None, selected_levels: list[int] | None = None, org_unit_level_names: dict | None = None) -> tuple[list[str], list[tuple]]:
         """
-        Normalize dataValueSets endpoint response
+        Normalize dataValueSets endpoint response with hierarchical org unit enrichment
+
+        Args:
+            data: DHIS2 dataValueSets API response
+            org_unit_hierarchy: Dict mapping org unit IDs to their parent hierarchy info
+            selected_levels: List of org unit levels to include as columns (e.g., [1, 2, 3])
 
         Returns:
             Tuple of (column_names, rows)
         """
         data_values = data.get("dataValues", [])
 
-        if not data_values:
-            # ALL columns MUST be SANITIZED
-            return [sanitize_dhis2_column_name(col) for col in ["dataElement", "period", "orgUnit", "value"]], []
+        if org_unit_level_names is None:
+            org_unit_level_names = {}
 
-        # Dynamically detect columns from first row - ALL MUST be SANITIZED
-        col_names = [sanitize_dhis2_column_name(col) for col in data_values[0].keys()]
+        if not data_values:
+            col_names = [sanitize_dhis2_column_name(col) for col in ["dataElement", "period", "value"]]
+            if org_unit_level_names:
+                for level in sorted(org_unit_level_names.keys()):
+                    level_name = org_unit_level_names.get(level)
+                    col_names.append(sanitize_dhis2_column_name(level_name))
+            else:
+                for level in range(1, 7):
+                    col_names.append(sanitize_dhis2_column_name(f"Level_{level}_Name"))
+            return col_names, []
+
+        col_names = [sanitize_dhis2_column_name(col) for col in ["dataElement", "period", "value"]]
+        
+        if org_unit_level_names:
+            for level in sorted(org_unit_level_names.keys()):
+                level_name = org_unit_level_names.get(level)
+                col_names.append(sanitize_dhis2_column_name(level_name))
+        else:
+            for level in range(1, 7):
+                col_names.append(sanitize_dhis2_column_name(f"Level_{level}_Name"))
 
         rows = []
+        
+        # Determine which levels to append
+        if org_unit_level_names:
+            levels_to_append = sorted(org_unit_level_names.keys())
+        else:
+            levels_to_append = list(range(1, 7))
+        
         for dv in data_values:
-            rows.append(tuple(dv.get(col, None) for col in data_values[0].keys()))
+            row = [
+                dv.get("dataElement"),
+                dv.get("period"),
+                dv.get("value"),
+            ]
+            
+            if org_unit_hierarchy and dv.get("orgUnit"):
+                try:
+                    org_unit_id = dv.get("orgUnit")
+                    hierarchy_info = org_unit_hierarchy.get(org_unit_id, {})
+                    for level in levels_to_append:
+                        level_name = hierarchy_info.get(f"level_{level}", None)
+                        row.append(level_name)
+                except Exception as e:
+                    logger.warning(f"Error appending hierarchy for {dv.get('orgUnit')}: {e}")
+                    row.extend([None] * len(levels_to_append))
+            else:
+                row.extend([None] * len(levels_to_append))
+            
+            rows.append(tuple(row))
 
         return col_names, rows
 
     @staticmethod
-    def normalize_events(data: dict) -> tuple[list[str], list[tuple]]:
+    def normalize_events(
+        data: dict,
+        org_unit_hierarchy: dict | None = None,
+        org_unit_level_names: dict | None = None,
+    ) -> tuple[list[str], list[tuple]]:
         """
         Normalize events endpoint response
-        Flattens nested dataValues structure
+        Flattens nested dataValues structure and enriches with org unit hierarchy
+
+        Args:
+            data: DHIS2 events API response
+            org_unit_hierarchy: Dict mapping org unit IDs to their hierarchy info
+            org_unit_level_names: Dict mapping level numbers to level names
 
         Returns:
             Tuple of (column_names, rows)
@@ -622,10 +722,28 @@ class DHIS2ResponseNormalizer:
 
         if not events:
             # ALL columns MUST be SANITIZED
-            return [sanitize_dhis2_column_name(col) for col in ["event", "program", "orgUnit", "eventDate"]], []
+            base_cols = ["event", "program", "orgUnit", "eventDate"]
+            return [sanitize_dhis2_column_name(col) for col in base_cols], []
 
-        # Extract base columns + dataValues - ALL MUST be SANITIZED
-        base_cols = ["event", "program", "orgUnit", "eventDate", "status"]
+        # Extract base columns - ALL MUST be SANITIZED
+        base_cols = ["event", "program", "programStage", "enrollment", "trackedEntityInstance"]
+
+        # Build column names with hierarchy levels
+        col_names = [sanitize_dhis2_column_name(col) for col in base_cols]
+
+        # Add org unit hierarchy level columns
+        if org_unit_level_names:
+            for level in sorted(org_unit_level_names.keys()):
+                level_name = org_unit_level_names.get(level)
+                col_names.append(sanitize_dhis2_column_name(level_name))
+        else:
+            # Fallback to 6 levels if not specified
+            for level in range(1, 7):
+                level_name = f"Level_{level}_Name"
+                col_names.append(sanitize_dhis2_column_name(level_name))
+
+        # Add date and status columns
+        col_names.extend([sanitize_dhis2_column_name(col) for col in ["eventDate", "dueDate", "status", "created", "lastUpdated"]])
 
         # Collect all unique dataElement IDs from all events
         data_element_ids = set()
@@ -633,18 +751,44 @@ class DHIS2ResponseNormalizer:
             for dv in event.get("dataValues", []):
                 data_element_ids.add(dv.get("dataElement"))
 
-        # ALL columns MUST be SANITIZED
-        col_names = [sanitize_dhis2_column_name(col) for col in base_cols] + [sanitize_dhis2_column_name(de_id) for de_id in sorted(data_element_ids)]
+        # Add data element columns
+        col_names.extend([sanitize_dhis2_column_name(de_id) for de_id in sorted(data_element_ids)])
 
         rows = []
         for event in events:
+            ou_id = event.get("orgUnit")
+
             row = [
                 event.get("event"),
                 event.get("program"),
-                event.get("orgUnit"),
-                event.get("eventDate"),
-                event.get("status"),
+                event.get("programStage"),
+                event.get("enrollment"),
+                event.get("trackedEntityInstance"),
             ]
+
+            # Add hierarchy values
+            if org_unit_level_names:
+                levels_to_append = sorted(org_unit_level_names.keys())
+            else:
+                levels_to_append = list(range(1, 7))
+
+            if org_unit_hierarchy and ou_id:
+                hierarchy_info = org_unit_hierarchy.get(ou_id, {})
+                for level in levels_to_append:
+                    level_value = hierarchy_info.get(f"level_{level}", None)
+                    row.append(level_value)
+            else:
+                for _ in levels_to_append:
+                    row.append(None)
+
+            # Add date and status values
+            row.extend([
+                event.get("eventDate"),
+                event.get("dueDate"),
+                event.get("status"),
+                event.get("created"),
+                event.get("lastUpdated"),
+            ])
 
             # Build dict of dataElement -> value
             dv_dict = {
@@ -661,10 +805,19 @@ class DHIS2ResponseNormalizer:
         return col_names, rows
 
     @staticmethod
-    def normalize_tracked_entity_instances(data: dict) -> tuple[list[str], list[tuple]]:
+    def normalize_tracked_entity_instances(
+        data: dict,
+        org_unit_hierarchy: dict | None = None,
+        org_unit_level_names: dict | None = None,
+    ) -> tuple[list[str], list[tuple]]:
         """
         Normalize trackedEntityInstances endpoint response
-        Flattens nested attributes structure
+        Flattens nested attributes structure and enriches with org unit hierarchy
+
+        Args:
+            data: DHIS2 trackedEntityInstances API response
+            org_unit_hierarchy: Dict mapping org unit IDs to their hierarchy info
+            org_unit_level_names: Dict mapping level numbers to level names
 
         Returns:
             Tuple of (column_names, rows)
@@ -675,8 +828,25 @@ class DHIS2ResponseNormalizer:
             # ALL columns MUST be SANITIZED
             return [sanitize_dhis2_column_name(col) for col in ["trackedEntityInstance", "orgUnit", "trackedEntityType"]], []
 
-        # Extract base columns + attributes - ALL MUST be SANITIZED
-        base_cols = ["trackedEntityInstance", "orgUnit", "trackedEntityType"]
+        # Extract base columns - ALL MUST be SANITIZED
+        base_cols = ["trackedEntityInstance", "trackedEntityType"]
+
+        # Build column names
+        col_names = [sanitize_dhis2_column_name(col) for col in base_cols]
+
+        # Add org unit hierarchy level columns
+        if org_unit_level_names:
+            for level in sorted(org_unit_level_names.keys()):
+                level_name = org_unit_level_names.get(level)
+                col_names.append(sanitize_dhis2_column_name(level_name))
+        else:
+            # Fallback to 6 levels if not specified
+            for level in range(1, 7):
+                level_name = f"Level_{level}_Name"
+                col_names.append(sanitize_dhis2_column_name(level_name))
+
+        # Add timestamp columns
+        col_names.extend([sanitize_dhis2_column_name(col) for col in ["created", "lastUpdated", "inactive"]])
 
         # Collect all unique attribute IDs
         attribute_ids = set()
@@ -684,21 +854,145 @@ class DHIS2ResponseNormalizer:
             for attr in tei.get("attributes", []):
                 attribute_ids.add(attr.get("attribute"))
 
-        # ALL columns MUST be SANITIZED
-        col_names = [sanitize_dhis2_column_name(col) for col in base_cols] + [sanitize_dhis2_column_name(attr_id) for attr_id in sorted(attribute_ids)]
+        # Add attribute columns
+        col_names.extend([sanitize_dhis2_column_name(attr_id) for attr_id in sorted(attribute_ids)])
 
         rows = []
         for tei in teis:
+            ou_id = tei.get("orgUnit")
+
             row = [
                 tei.get("trackedEntityInstance"),
-                tei.get("orgUnit"),
                 tei.get("trackedEntityType"),
             ]
+
+            # Add hierarchy values
+            if org_unit_level_names:
+                levels_to_append = sorted(org_unit_level_names.keys())
+            else:
+                levels_to_append = list(range(1, 7))
+
+            if org_unit_hierarchy and ou_id:
+                hierarchy_info = org_unit_hierarchy.get(ou_id, {})
+                for level in levels_to_append:
+                    level_value = hierarchy_info.get(f"level_{level}", None)
+                    row.append(level_value)
+            else:
+                for _ in levels_to_append:
+                    row.append(None)
+
+            # Add timestamp and status values
+            row.extend([
+                tei.get("created"),
+                tei.get("lastUpdated"),
+                tei.get("inactive"),
+            ])
 
             # Build dict of attribute -> value
             attr_dict = {
                 attr.get("attribute"): attr.get("value")
                 for attr in tei.get("attributes", [])
+            }
+
+            # Append values for each attribute column
+            for attr_id in sorted(attribute_ids):
+                row.append(attr_dict.get(attr_id))
+
+            rows.append(tuple(row))
+
+        return col_names, rows
+
+    @staticmethod
+    def normalize_enrollments(
+        data: dict,
+        org_unit_hierarchy: dict | None = None,
+        org_unit_level_names: dict | None = None,
+    ) -> tuple[list[str], list[tuple]]:
+        """
+        Normalize enrollments endpoint response
+        Flattens nested attributes structure and enriches with org unit hierarchy
+
+        Args:
+            data: DHIS2 enrollments API response
+            org_unit_hierarchy: Dict mapping org unit IDs to their hierarchy info
+            org_unit_level_names: Dict mapping level numbers to level names
+
+        Returns:
+            Tuple of (column_names, rows)
+        """
+        enrollments = data.get("enrollments", [])
+
+        if not enrollments:
+            # ALL columns MUST be SANITIZED
+            return [sanitize_dhis2_column_name(col) for col in ["enrollment", "program", "orgUnit", "enrollmentDate"]], []
+
+        # Extract base columns - ALL MUST be SANITIZED
+        base_cols = ["enrollment", "trackedEntityInstance", "program"]
+
+        # Build column names
+        col_names = [sanitize_dhis2_column_name(col) for col in base_cols]
+
+        # Add org unit hierarchy level columns
+        if org_unit_level_names:
+            for level in sorted(org_unit_level_names.keys()):
+                level_name = org_unit_level_names.get(level)
+                col_names.append(sanitize_dhis2_column_name(level_name))
+        else:
+            # Fallback to 6 levels if not specified
+            for level in range(1, 7):
+                level_name = f"Level_{level}_Name"
+                col_names.append(sanitize_dhis2_column_name(level_name))
+
+        # Add date and status columns
+        col_names.extend([sanitize_dhis2_column_name(col) for col in ["enrollmentDate", "incidentDate", "status", "created", "lastUpdated"]])
+
+        # Collect all unique attribute IDs from all enrollments
+        attribute_ids = set()
+        for enrollment in enrollments:
+            for attr in enrollment.get("attributes", []):
+                attribute_ids.add(attr.get("attribute"))
+
+        # Add attribute columns
+        col_names.extend([sanitize_dhis2_column_name(attr_id) for attr_id in sorted(attribute_ids)])
+
+        rows = []
+        for enrollment in enrollments:
+            ou_id = enrollment.get("orgUnit")
+
+            row = [
+                enrollment.get("enrollment"),
+                enrollment.get("trackedEntityInstance"),
+                enrollment.get("program"),
+            ]
+
+            # Add hierarchy values
+            if org_unit_level_names:
+                levels_to_append = sorted(org_unit_level_names.keys())
+            else:
+                levels_to_append = list(range(1, 7))
+
+            if org_unit_hierarchy and ou_id:
+                hierarchy_info = org_unit_hierarchy.get(ou_id, {})
+                for level in levels_to_append:
+                    level_value = hierarchy_info.get(f"level_{level}", None)
+                    row.append(level_value)
+            else:
+                for _ in levels_to_append:
+                    row.append(None)
+
+            # Add date and status values
+            row.extend([
+                enrollment.get("enrollmentDate"),
+                enrollment.get("incidentDate"),
+                enrollment.get("status"),
+                enrollment.get("created"),
+                enrollment.get("lastUpdated"),
+            ])
+
+            # Build dict of attribute -> value
+            attr_dict = {
+                attr.get("attribute"): attr.get("value")
+                for attr in enrollment.get("attributes", [])
             }
 
             # Append values for each attribute column
@@ -767,7 +1061,7 @@ class DHIS2ResponseNormalizer:
         return [sanitize_dhis2_column_name("data")], [(json.dumps(data),)]
 
     @classmethod
-    def normalize(cls, endpoint: str, data: dict, pivot: bool = True) -> tuple[list[str], list[tuple]]:
+    def normalize(cls, endpoint: str, data: dict, pivot: bool = True, org_unit_hierarchy: dict | None = None, selected_levels: list[int] | None = None, org_unit_level_names: dict | None = None) -> tuple[list[str], list[tuple]]:
         """
         Normalize DHIS2 API response based on endpoint type
 
@@ -775,18 +1069,23 @@ class DHIS2ResponseNormalizer:
             endpoint: DHIS2 API endpoint name
             data: Raw JSON response from DHIS2
             pivot: Whether to pivot analytics data (wide format) or keep long format
+            org_unit_hierarchy: Dict mapping org unit IDs to their hierarchy info
+            selected_levels: List of org unit levels to include as columns
+            org_unit_level_names: Dict mapping level numbers to their display names
 
         Returns:
             Tuple of (column_names, rows)
         """
         if endpoint == "analytics":
-            return cls.normalize_analytics(data, pivot=pivot)
+            return cls.normalize_analytics(data, pivot=pivot, org_unit_hierarchy=org_unit_hierarchy, selected_levels=selected_levels, org_unit_level_names=org_unit_level_names)
         elif endpoint == "dataValueSets":
-            return cls.normalize_data_value_sets(data)
+            return cls.normalize_data_value_sets(data, org_unit_hierarchy=org_unit_hierarchy, selected_levels=selected_levels, org_unit_level_names=org_unit_level_names)
         elif endpoint == "events":
-            return cls.normalize_events(data)
+            return cls.normalize_events(data, org_unit_hierarchy=org_unit_hierarchy, org_unit_level_names=org_unit_level_names)
+        elif endpoint == "enrollments":
+            return cls.normalize_enrollments(data, org_unit_hierarchy=org_unit_hierarchy, org_unit_level_names=org_unit_level_names)
         elif endpoint == "trackedEntityInstances":
-            return cls.normalize_tracked_entity_instances(data)
+            return cls.normalize_tracked_entity_instances(data, org_unit_hierarchy=org_unit_hierarchy, org_unit_level_names=org_unit_level_names)
         elif endpoint in ["dataElements", "dataSets", "indicators", "organisationUnits",
                           "programs", "programStages", "programIndicators"]:
             return cls.normalize_metadata_list(data, endpoint)
@@ -982,7 +1281,7 @@ class DHIS2Dialect(default.DefaultDialect):
                         "name": sanitize_dhis2_column_name("Period"),
                         "type": types.String(),
                         "nullable": True,
-                        "groupby": False,
+                        "groupby": True,  # Enable grouping for period dimension
                         "filterable": True,
                         "is_numeric": False,
                         "is_dttm": False,
@@ -1058,7 +1357,7 @@ class DHIS2Dialect(default.DefaultDialect):
                                     is_numeric = False
 
                                 # Add column for this data element with SANITIZED name
-                                # Store original name in description for reference
+                                # Store original displayName in verbose_name for chart display
                                 columns.append({
                                     "name": column_name,
                                     "type": sql_type,
@@ -1068,7 +1367,7 @@ class DHIS2Dialect(default.DefaultDialect):
                                     "description": f"{meta_type[:-1]} - {item_id} ({item_name})",
                                     "dhis2_id": item_id,
                                     "is_dttm": False,
-                                    "verbose_name": column_name,  # SANITIZED name for display and queries
+                                    "verbose_name": item_name,  # Original displayName for human-readable display in charts
                                 })
                                 total_items += 1
 
@@ -1254,6 +1553,570 @@ class DHIS2Connection:
     def rollback(self):
         """No-op rollback"""
         pass
+
+    def fetch_user_root_org_units(self) -> list[dict[str, Any]]:
+        """
+        Fetch the current user's assigned organisation units.
+
+        Returns:
+            List of organisation unit objects with id, displayName, level
+        """
+        try:
+            url = f"{self.base_url}/me"
+            params = "fields=organisationUnits[id,displayName,level,path]"
+
+            logger.info(f"Fetching user org units from {url}?{params}")
+
+            response = requests.get(
+                f"{url}?{params}",
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            return data.get("organisationUnits", [])
+
+        except Exception as e:
+            logger.exception(f"Failed to fetch user org units: {e}")
+            return []
+
+    def fetch_geo_features(
+        self,
+        ou_params: str,
+        display_property: str = "NAME",
+        include_group_sets: bool = False,
+    ) -> list[dict[str, Any]]:
+        """
+        Fetch geographic features from DHIS2 geoFeatures API.
+
+        Args:
+            ou_params: Organisation unit parameter in format 'ou:LEVEL-2' or 'ou:UID'
+            display_property: Property to display (NAME or SHORTNAME)
+            include_group_sets: Include org unit group information
+
+        Returns:
+            List of geoFeature objects from DHIS2
+        """
+        try:
+            # Build URL - the ou_params already contains the 'ou:' prefix
+            # DHIS2 expects format: /geoFeatures?ou=ou:LEVEL-2
+            url = f"{self.base_url}/geoFeatures?ou={ou_params}"
+            if include_group_sets:
+                url += "&includeGroupSets=true"
+
+            logger.info(f"Fetching geoFeatures from {url}")
+
+            response = requests.get(
+                url,
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout,
+            )
+
+            # If 409 Conflict, try alternative approach
+            if response.status_code == 409:
+                logger.warning(f"409 Conflict with {ou_params}, trying fallback approach")
+                return self._fetch_org_units_with_coordinates(ou_params)
+
+            response.raise_for_status()
+
+            data = response.json()
+
+            # DHIS2 geoFeatures API returns array directly or nested under key
+            if isinstance(data, list):
+                return data
+            elif isinstance(data, dict):
+                return data.get("geoFeatures", data.get("organisationUnits", []))
+            else:
+                logger.warning(f"Unexpected geoFeatures response type: {type(data)}")
+                return []
+
+        except Exception as e:
+            logger.exception(f"Failed to fetch geoFeatures: {e}")
+            raise
+
+    def _fetch_org_units_with_coordinates(self, ou_params: str) -> list[dict[str, Any]]:
+        """
+        Fallback method to fetch org units with coordinates from organisationUnits API.
+        Converts the response to geoFeatures format.
+
+        Args:
+            ou_params: OU parameter string (may contain LEVEL-n, UID, etc.)
+
+        Returns:
+            List of geoFeature-like objects
+        """
+        try:
+            # Parse the ou_params to determine the query
+            level = None
+            parent_uid = None
+
+            parts = ou_params.split(';')
+            for part in parts:
+                if part.startswith('LEVEL-'):
+                    level = int(part.replace('LEVEL-', ''))
+                elif part and not part.startswith('LEVEL'):
+                    parent_uid = part
+
+            # Build the organisationUnits query
+            fields = "id,displayName,level,parent[id,displayName],coordinates,geometry,featureType"
+            filter_params = []
+
+            if level:
+                filter_params.append(f"level:eq:{level}")
+            if parent_uid:
+                filter_params.append(f"path:like:{parent_uid}")
+
+            url = f"{self.base_url}/organisationUnits?fields={fields}&paging=false"
+            if filter_params:
+                url += "&filter=" + "&filter=".join(filter_params)
+
+            logger.info(f"Fallback: Fetching org units from {url}")
+
+            response = requests.get(
+                url,
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            org_units = data.get("organisationUnits", [])
+
+            # Convert to geoFeatures format
+            geo_features = []
+            for ou in org_units:
+                coordinates = ou.get("coordinates") or ou.get("geometry", {}).get("coordinates")
+                if not coordinates:
+                    continue
+
+                feature_type = ou.get("featureType", "POLYGON")
+                geo_type = {
+                    "POINT": 1,
+                    "POLYGON": 2,
+                    "MULTI_POLYGON": 3,
+                }.get(feature_type, 2)
+
+                geo_features.append({
+                    "id": ou.get("id"),
+                    "na": ou.get("displayName"),
+                    "le": ou.get("level"),
+                    "pi": ou.get("parent", {}).get("id"),
+                    "pn": ou.get("parent", {}).get("displayName"),
+                    "ty": geo_type,
+                    "co": coordinates if isinstance(coordinates, str) else json.dumps(coordinates),
+                    "hcd": False,
+                    "hcu": bool(ou.get("parent")),
+                })
+
+            logger.info(f"Fallback returned {len(geo_features)} org units with coordinates")
+            return geo_features
+
+        except Exception as e:
+            logger.exception(f"Fallback org unit fetch failed: {e}")
+            return []
+
+
+    def fetch_org_unit_levels(self) -> list[dict[str, Any]]:
+        """
+        Fetch organisation unit level definitions from DHIS2.
+
+        Returns:
+            List of organisationUnitLevel objects with id, level, displayName
+        """
+        try:
+            fields = "id,level,displayName,created,lastUpdated"
+            url = f"{self.base_url}/organisationUnitLevels"
+            params = f"fields={fields}&paging=false"
+
+            logger.info(f"Fetching org unit levels from {url}?{params}")
+
+            response = requests.get(
+                f"{url}?{params}",
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            levels = data.get("organisationUnitLevels", [])
+            
+            if not levels:
+                logger.warning("organisationUnitLevels endpoint returned empty list, trying alternative endpoint")
+                levels = self._fetch_org_unit_levels_alternative()
+            else:
+                logger.info(f"Successfully fetched {len(levels)} org unit levels: {[(l.get('level'), l.get('displayName')) for l in levels]}")
+            
+            return levels
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch org unit levels from primary endpoint: {e}, trying alternative")
+            try:
+                return self._fetch_org_unit_levels_alternative()
+            except Exception as alt_e:
+                logger.exception(f"Alternative fetch also failed: {alt_e}")
+                raise
+
+    def _fetch_org_unit_levels_alternative(self) -> list[dict[str, Any]]:
+        """
+        Alternative method to fetch org unit levels.
+        Tries multiple approaches: basic endpoint, with paging, and building from org units.
+        """
+        try:
+            url = f"{self.base_url}/organisationUnitLevels"
+            
+            logger.info(f"Trying alternative level fetch from {url}")
+            
+            response = requests.get(
+                url,
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            levels = data.get("organisationUnitLevels", [])
+            
+            if levels:
+                logger.info(f"Successfully fetched {len(levels)} levels via alternative method: {[(l.get('level'), l.get('displayName'), l.get('name')) for l in levels]}")
+                return levels
+            else:
+                logger.warning("Alternative endpoint returned empty list, response keys: " + str(list(data.keys())))
+                
+                logger.info("Attempting to build level names from organisation units...")
+                return self._build_levels_from_org_units()
+            
+        except Exception as e:
+            logger.warning(f"Alternative level fetch failed: {e}, building from org units")
+            return self._build_levels_from_org_units()
+
+    def _build_levels_from_org_units(self) -> list[dict[str, Any]]:
+        """
+        Attempt to fetch organisation unit levels with alternate field parameters.
+        """
+        try:
+            url = f"{self.base_url}/organisationUnitLevels"
+            
+            fields_variants = [
+                "id,level,displayName,name",
+                "id,level,displayName",
+                "*",
+                ""
+            ]
+            
+            for fields in fields_variants:
+                try:
+                    if fields:
+                        params = f"fields={fields}&paging=false"
+                    else:
+                        params = "paging=false"
+                    
+                    logger.info(f"Trying organisationUnitLevels with fields={fields}")
+                    
+                    response = requests.get(
+                        f"{url}?{params}",
+                        auth=self.auth,
+                        headers=self.headers,
+                        timeout=self.timeout,
+                    )
+                    response.raise_for_status()
+                    
+                    data = response.json()
+                    levels = data.get("organisationUnitLevels", [])
+                    
+                    if levels:
+                        logger.info(f"Success with fields={fields}, got {len(levels)} levels: {[(l.get('level'), l.get('displayName'), l.get('name')) for l in levels]}")
+                        return levels
+                    else:
+                        logger.info(f"No levels with fields={fields}")
+                        
+                except Exception as e:
+                    logger.debug(f"Failed with fields={fields}: {e}")
+                    continue
+            
+            logger.warning("All field variants exhausted, returning empty list")
+            return []
+            
+        except Exception as e:
+            logger.warning(f"Failed to build levels: {e}")
+            return []
+
+    def fetch_org_units_with_descendants(self, ou_ids: list[str]) -> list[dict[str, Any]]:
+        """
+        Fetch organisation units and their descendants from DHIS2.
+
+        Args:
+            ou_ids: List of organisation unit IDs to fetch with descendants
+
+        Returns:
+            List of organisation unit objects including all descendants
+        """
+        try:
+            all_ous = []
+            fields = "id,displayName,level,path,parent[id,displayName]"
+
+            for ou_id in ou_ids:
+                url = f"{self.base_url}/organisationUnits/{ou_id}"
+                params = f"fields={fields}&paging=false"
+
+                logger.info(f"Fetching org unit {ou_id} with descendants from {url}")
+
+                response = requests.get(
+                    f"{url}?{params}",
+                    auth=self.auth,
+                    headers=self.headers,
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+
+                data = response.json()
+                ou = data
+                if ou:
+                    all_ous.append(ou)
+
+                ou_id_val = ou.get("id")
+                if ou_id_val:
+                    descendants_url = f"{self.base_url}/organisationUnits?filter=path:like:{ou_id_val}&fields={fields}&paging=false"
+
+                    logger.info(f"Fetching descendants of {ou_id}")
+
+                    descendants_response = requests.get(
+                        descendants_url,
+                        auth=self.auth,
+                        headers=self.headers,
+                        timeout=self.timeout,
+                    )
+                    descendants_response.raise_for_status()
+
+                    descendants_data = descendants_response.json()
+                    descendants = descendants_data.get("organisationUnits", [])
+
+                    existing_ids = {o.get("id") for o in all_ous}
+                    for desc in descendants:
+                        if desc.get("id") not in existing_ids:
+                            all_ous.append(desc)
+                            existing_ids.add(desc.get("id"))
+
+            return all_ous
+
+        except Exception as e:
+            logger.exception(f"Failed to fetch org units with descendants: {e}")
+            raise
+
+    def fetch_data_elements(self, de_ids: list[str]) -> list[dict[str, Any]]:
+        """
+        Fetch data element metadata from DHIS2.
+
+        Args:
+            de_ids: List of data element IDs to fetch
+
+        Returns:
+            List of data element objects with id and displayName
+        """
+        try:
+            all_des = []
+            fields = "id,displayName"
+
+            for de_id in de_ids:
+                url = f"{self.base_url}/dataElements/{de_id}"
+                params = f"fields={fields}"
+                
+                logger.info(f"Fetching data element {de_id}")
+                
+                response = requests.get(
+                    f"{url}?{params}",
+                    auth=self.auth,
+                    headers=self.headers,
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                
+                data = response.json()
+                if data and data.get("id"):
+                    all_des.append(data)
+
+            return all_des
+
+        except Exception as e:
+            logger.exception(f"Failed to fetch data elements: {e}")
+            raise
+
+    def fetch_analytics_data(
+        self,
+        de_ids: list[str],
+        period_ids: list[str],
+        ou_ids: list[str],
+        include_children: bool = False,
+        ou_dimension: str | None = None,
+        ou_mode: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Fetch analytics data from DHIS2.
+
+        Args:
+            de_ids: List of data element IDs
+            period_ids: List of period codes
+            ou_ids: List of organization unit IDs
+            include_children: If True, include data from descendant org units (legacy, use ou_mode instead)
+            ou_dimension: Custom org unit dimension string (e.g., "ou_id1;ou_id2;LEVEL-3")
+            ou_mode: DHIS2 ouMode parameter - SELECTED, CHILDREN, DESCENDANTS, ALL
+
+        Returns:
+            Dictionary with rows containing {ou, pe, and data element values}
+        """
+        try:
+            dx_param = ";".join(de_ids)
+            pe_param = ";".join(period_ids)
+
+            # Use custom ou_dimension if provided, otherwise build from ou_ids
+            if ou_dimension:
+                ou_param = ou_dimension
+                logger.info(f"[Analytics API] Using custom ou dimension: {ou_param}")
+            else:
+                ou_param = ";".join(ou_ids)
+
+            url = f"{self.base_url}/analytics"
+
+            # Determine ouMode - use explicit ou_mode if provided, else legacy include_children
+            # ouMode options: SELECTED (default), CHILDREN, DESCENDANTS, ALL
+            effective_ou_mode = ou_mode.upper() if ou_mode else ("DESCENDANTS" if include_children else None)
+
+            if effective_ou_mode:
+                params = (
+                    f"dimension=dx:{dx_param}"
+                    f"&dimension=pe:{pe_param}"
+                    f"&dimension=ou:{ou_param}"
+                    f"&ouMode={effective_ou_mode}"
+                    f"&tableLayout=true"
+                    f"&paging=false"
+                )
+                logger.info(f"[Analytics API] Using ouMode={effective_ou_mode}")
+            else:
+                params = (
+                    f"dimension=dx:{dx_param}"
+                    f"&dimension=pe:{pe_param}"
+                    f"&dimension=ou:{ou_param}"
+                    f"&tableLayout=true"
+                    f"&paging=false"
+                )
+
+            logger.info(f"[Analytics API] Fetching from {url} with de_ids={de_ids}, period_ids={period_ids}, ou_ids={ou_ids}, ou_mode={effective_ou_mode}")
+
+            response = requests.get(
+                f"{url}?{params}",
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            logger.info(f"[Analytics API] Response status: success, keys: {list(data.keys())}")
+            
+            rows = []
+
+            if "rows" in data:
+                raw_rows = data.get("rows", [])
+                logger.info(f"[Analytics API] Found {len(raw_rows)} raw rows from analytics")
+                
+                headers = data.get("headers", [])
+                dx_idx = next(
+                    (i for i, h in enumerate(headers) if h.get("name") == "dx"),
+                    -1,
+                )
+                pe_idx = next(
+                    (i for i, h in enumerate(headers) if h.get("name") == "pe"),
+                    -1,
+                )
+                ou_idx = next(
+                    (i for i, h in enumerate(headers) if h.get("name") == "ou"),
+                    -1,
+                )
+                value_idx = next(
+                    (i for i, h in enumerate(headers)
+                     if h.get("name") == "value"),
+                    -1,
+                )
+
+                logger.info(f"[Analytics API] Column indices: dx={dx_idx}, pe={pe_idx}, ou={ou_idx}, value={value_idx}")
+
+                row_map = {}
+
+                for row in raw_rows:
+                    dx_val = row[dx_idx] if dx_idx >= 0 else ""
+                    pe_val = row[pe_idx] if pe_idx >= 0 else ""
+                    ou_val = row[ou_idx] if ou_idx >= 0 else ""
+                    val = row[value_idx] if value_idx >= 0 else ""
+
+                    key = (ou_val, pe_val)
+
+                    if key not in row_map:
+                        row_map[key] = {
+                            "ou": ou_val,
+                            "pe": pe_val,
+                        }
+
+                    if dx_val:
+                        row_map[key][dx_val] = val
+
+                rows = list(row_map.values())
+                logger.info(f"[Analytics API] Pivoted {len(raw_rows)} rows into {len(rows)} unique ou/period combinations")
+            else:
+                logger.warning(f"[Analytics API] No 'rows' key in response. Available keys: {list(data.keys())}")
+
+            return {"rows": rows}
+
+        except Exception as e:
+            logger.exception(f"[Analytics API] Failed to fetch analytics data: {e}")
+            return {"rows": []}
+
+    def fetch_data_values(self, params: dict[str, Any]) -> dict[str, Any]:
+        """
+        Fetch data values from DHIS2 dataValueSets API.
+
+        Args:
+            params: Dictionary of dataValueSets API parameters:
+                - dataSet: Dataset UID (required)
+                - orgUnit: Comma-separated org unit UIDs (required)
+                - period: Comma-separated period codes (required)
+                - dataElement: Comma-separated data element UIDs (optional)
+                - children: 'true' to include child org units (optional)
+
+        Returns:
+            Dictionary with dataValues and metadata from DHIS2
+
+        Note:
+            Use concrete org unit UIDs and fixed period codes, not relative keywords.
+            Relative periods (e.g., LAST_5_YEARS) and org unit keywords
+            (e.g., USER_ORGUNIT_GRANDCHILDREN) are only supported in /api/analytics endpoints.
+        """
+        try:
+            url = f"{self.base_url}/dataValueSets"
+            query_string = "&".join(f"{k}={v}" for k, v in params.items())
+            if query_string:
+                url = f"{url}?{query_string}"
+
+            logger.info(f"Fetching data values from {url}")
+
+            response = requests.get(
+                url,
+                auth=self.auth,
+                headers=self.headers,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            return data
+
+        except Exception as e:
+            logger.exception(f"Failed to fetch data values: {e}")
+            raise
 
     def close(self):
         """Close connection"""
@@ -1579,14 +2442,21 @@ class DHIS2Cursor:
         # Layer 0: DHIS2 smart defaults based on endpoint
         # Only add defaults if not overridden by query params
         if endpoint == "analytics":
-            # Check if query has explicit period dimension (pe:)
-            has_period_dimension = False
+            # Check if query has explicit period (DHIS2 API rule: can't use both period AND startDate/endDate)
+            has_period = False
+            
+            # Check for pe parameter directly (before conversion to dimension)
+            if "pe" in query_params and query_params["pe"]:
+                has_period = True
+            
+            # Or check for period in dimension parameter
             if "dimension" in query_params:
                 dimensions = query_params["dimension"].split(";")
-                has_period_dimension = any(d.startswith("pe:") for d in dimensions)
+                has_period = has_period or any(d.startswith("pe:") for d in dimensions)
 
-            # Only add startDate/endDate if no explicit period dimension
-            if not has_period_dimension:
+            # Only add startDate/endDate if NO period specified
+            # (DHIS2 API rule: cannot use period AND startDate/endDate simultaneously)
+            if not has_period:
                 from datetime import datetime, timedelta
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=365)  # Last year
@@ -1595,6 +2465,8 @@ class DHIS2Cursor:
                     "startDate": start_date.strftime("%Y-%m-%d"),
                     "endDate": end_date.strftime("%Y-%m-%d"),
                 })
+            else:
+                logger.info("Period dimension detected - omitting startDate/endDate (DHIS2 API rule)")
 
             # Always add these defaults
             merged.update({
@@ -1634,8 +2506,198 @@ class DHIS2Cursor:
             endpoint: DHIS2 endpoint name
             params: Query parameters
             query: Original SQL query (for pivot detection)
+
+        Caching:
+            This method integrates with DHIS2CacheService to cache API responses.
+            Cache hits return instantly, cache misses fetch from DHIS2 and store.
+
+        Loading Strategies:
+            Uses intelligent batching and retry logic to avoid timeouts:
+            - DIRECT: Single request for small queries
+            - BATCHED: Split data elements into batches
+            - PAGINATED: Add pagination for large result sets
+            - ASYNC_QUEUE: Background processing for very large queries
         """
+        import time
+        start_time = time.time()
+
+        # ============================================================
+        # CACHING LAYER - Check cache before making API request
+        # ============================================================
+        try:
+            from superset.db_engine_specs.dhis2_cache import get_dhis2_cache
+            cache = get_dhis2_cache()
+
+            # Check cache first
+            cached_data = cache.get(endpoint, params, self.connection.base_url)
+            if cached_data is not None:
+                cache_time = time.time() - start_time
+                print(f"[DHIS2] ⚡ CACHE HIT for {endpoint} ({cache_time*1000:.1f}ms)")
+                logger.info(f"[DHIS2 Cache] HIT for {endpoint} - returning cached data instantly")
+
+                # Parse the cached response
+                rows = self._parse_response(endpoint, cached_data, query)
+                return rows
+        except ImportError:
+            logger.debug("[DHIS2] Cache module not available, proceeding without cache")
+            cache = None
+        except Exception as e:
+            logger.warning(f"[DHIS2] Cache check failed: {e}, proceeding without cache")
+            cache = None
+
+        # ============================================================
+        # LOADING STRATEGY SELECTION - Intelligently choose how to load
+        # ============================================================
+        try:
+            from superset.db_engine_specs.dhis2_loading_strategies import (
+                DHIS2LoadingStrategy,
+                TimeoutConfig,
+                LoadStrategy,
+            )
+            from superset.config import get_app
+
+            # Get DHIS2 loading configuration from Superset config
+            try:
+                app = get_app()
+                loading_config = app.config.get("DHIS2_LOADING_CONFIG", {})
+            except Exception:
+                loading_config = {}
+
+            # Create loading strategy instance
+            timeout_config = TimeoutConfig(
+                base_timeout=loading_config.get("base_timeout", 30),
+                preview_timeout=loading_config.get("preview_timeout", 10),
+                large_query_timeout=loading_config.get("large_query_timeout", 300),
+                timeout_per_data_element=loading_config.get("timeout_per_data_element", 5),
+                timeout_per_org_unit=loading_config.get("timeout_per_org_unit", 2),
+            )
+            loading_strategy = DHIS2LoadingStrategy(timeout_config)
+
+            # Extract data elements and org units for complexity calculation
+            dimension_str = params.get("dimension", "")
+            data_elements = self._extract_dimension_values(dimension_str, "dx")
+            org_units = self._extract_dimension_values(dimension_str, "ou")
+
+            # Calculate adaptive timeout
+            is_preview = "queryLimit" in params or len(data_elements) <= 1
+            adaptive_timeout = loading_strategy.calculate_adaptive_timeout(
+                len(data_elements),
+                len(org_units),
+                is_preview,
+            )
+            # Use adaptive timeout for this request
+            self.connection.timeout = adaptive_timeout
+
+        except ImportError:
+            logger.debug("[DHIS2] Loading strategy module not available, using default timeout")
+            loading_strategy = None
+
+        # ============================================================
+        # CACHE MISS - Make API request
+        # ============================================================
         url = f"{self.connection.base_url}/{endpoint}"
+
+        # Convert separate dx, pe, ou parameters to DHIS2 dimension format
+        # BEFORE: {dx: 'id1;id2', pe: 'LAST_YEAR', ou: 'ouId', ouMode: 'DESCENDANTS'}
+        # AFTER: {dimension: 'dx:id1;id2;pe:LAST_YEAR;ou:ouId;LEVEL-3;LEVEL-4;...'}
+        if "dimension" not in params and any(k in params for k in ["dx", "pe", "ou"]):
+            dimension_parts = []
+            
+            # Add data elements
+            if "dx" in params and params["dx"]:
+                dimension_parts.append(f"dx:{params['dx']}")
+            
+            # Add periods
+            if "pe" in params and params["pe"]:
+                dimension_parts.append(f"pe:{params['pe']}")
+            
+            # Add org units with LEVEL syntax when ouMode=DESCENDANTS
+            # This ensures data is returned at all descendant levels, not just aggregated
+            if "ou" in params and params["ou"]:
+                ou_value = params["ou"]
+                ou_mode = params.get("ouMode", "").upper()
+                data_level_scope = params.get("dataLevelScope", "all_levels").lower()
+
+                # When DESCENDANTS mode is used, we need to add LEVEL-X syntax
+                # to get data at each descendant level instead of just aggregated data
+                # dataLevelScope options:
+                # - all_levels (default): Data at all levels from selected to deepest
+                # - lowest_level: Data ONLY at the lowest/deepest level (leaf nodes)
+                # - children: Data at one level below selected
+                # - selected: Data only at selected org units (no LEVEL syntax)
+                if ou_mode == "DESCENDANTS" or data_level_scope in ["all_levels", "lowest_level", "children"]:
+                    try:
+                        # Fetch org unit levels to know what levels exist
+                        org_unit_level_names = self._fetch_org_unit_levels()
+                        max_level = max(org_unit_level_names.keys()) if org_unit_level_names else 6
+
+                        # Get the levels of selected org units to know starting level
+                        ou_ids = [o.strip() for o in ou_value.split(";") if o.strip() and not o.startswith("LEVEL-")]
+                        if ou_ids:
+                            # Fetch org unit details to get their levels
+                            BATCH_SIZE = 50
+                            selected_levels = []
+                            for batch_start in range(0, len(ou_ids), BATCH_SIZE):
+                                batch_ids = ou_ids[batch_start:batch_start + BATCH_SIZE]
+                                ou_filter = ",".join(batch_ids)
+                                ou_url = f"{self.connection.base_url}/organisationUnits.json?filter=id:in:[{ou_filter}]&fields=id,level&paging=false"
+                                try:
+                                    ou_resp = requests.get(
+                                        ou_url,
+                                        auth=self.connection.auth,
+                                        headers=self.connection.headers,
+                                        timeout=60,
+                                    )
+                                    if ou_resp.status_code == 200:
+                                        for ou in ou_resp.json().get("organisationUnits", []):
+                                            if ou.get("level"):
+                                                selected_levels.append(ou.get("level"))
+                                except Exception as e:
+                                    logger.warning(f"[DHIS2] Could not fetch org unit levels: {e}")
+
+                            if selected_levels:
+                                min_selected_level = min(selected_levels)
+                                level_parts = []
+
+                                if data_level_scope == "lowest_level":
+                                    # Only add the deepest/lowest level
+                                    level_parts.append(f"LEVEL-{max_level}")
+                                    logger.info(f"[DHIS2] Using lowest_level scope: LEVEL-{max_level}")
+                                    print(f"[DHIS2] Using lowest_level scope: LEVEL-{max_level}")
+                                elif data_level_scope == "children":
+                                    # Only add one level below selected
+                                    next_level = min_selected_level + 1
+                                    if next_level <= max_level:
+                                        level_parts.append(f"LEVEL-{next_level}")
+                                        logger.info(f"[DHIS2] Using children scope: LEVEL-{next_level}")
+                                        print(f"[DHIS2] Using children scope: LEVEL-{next_level}")
+                                else:
+                                    # all_levels (default with DESCENDANTS): Add all levels below selected
+                                    for level in range(min_selected_level + 1, max_level + 1):
+                                        level_parts.append(f"LEVEL-{level}")
+                                    logger.info(f"[DHIS2] Using all_levels scope: {level_parts}")
+                                    print(f"[DHIS2] Using all_levels scope: {level_parts}")
+
+                                if level_parts:
+                                    # Combine org unit IDs with LEVEL syntax
+                                    ou_value = f"{ou_value};{';'.join(level_parts)}"
+
+                        # Remove ouMode and dataLevelScope since we're using LEVEL syntax
+                        params.pop("ouMode", None)
+                        params.pop("dataLevelScope", None)
+                    except Exception as e:
+                        logger.warning(f"[DHIS2] Error building LEVEL syntax: {e}")
+                        # Fall back to using ouMode without LEVEL syntax
+
+                dimension_parts.append(f"ou:{ou_value}")
+
+            if dimension_parts:
+                params["dimension"] = ";".join(dimension_parts)
+                # Remove individual parameters - DHIS2 API doesn't recognize them
+                params.pop("dx", None)
+                params.pop("pe", None)
+                params.pop("ou", None)
+                logger.info(f"Converted dx/pe/ou to dimension parameter: {params['dimension']}")
 
         # Handle dimension parameter specially - DHIS2 requires multiple dimension parameters
         # Format: dimension=dx:id1;id2;id3;pe:LAST_YEAR;ou:OrgUnit
@@ -1658,8 +2720,8 @@ class DHIS2Cursor:
         if query_params:
             url = f"{url}?{'&'.join(query_params)}"
 
-        print(f"[DHIS2] API request URL: {url}")
-        logger.info(f"DHIS2 API request: {url}")
+        print(f"[DHIS2] 🔄 CACHE MISS - API request URL: {url}")
+        logger.info(f"DHIS2 API request (cache miss): {url}")
 
         try:
             response = requests.get(
@@ -1696,6 +2758,20 @@ class DHIS2Cursor:
                 if data.get('rows'):
                     print(f"[DHIS2] First raw row: {data['rows'][0]}")
 
+            # ============================================================
+            # CACHE STORAGE - Store successful response in cache
+            # ============================================================
+            api_time = time.time() - start_time
+            if cache is not None:
+                try:
+                    cache.set(endpoint, params, data, self.connection.base_url)
+                    print(f"[DHIS2] ✅ Cached response for {endpoint} (API took {api_time*1000:.1f}ms)")
+                    logger.info(f"[DHIS2 Cache] Stored response for {endpoint}")
+                except Exception as e:
+                    logger.warning(f"[DHIS2 Cache] Failed to store response: {e}")
+            else:
+                print(f"[DHIS2] API response received (no cache, took {api_time*1000:.1f}ms)")
+
             # Parse response based on endpoint structure - pass query for pivot detection
             rows = self._parse_response(endpoint, data, query)
 
@@ -1715,6 +2791,245 @@ class DHIS2Cursor:
             logger.error(f"DHIS2 API request failed: {e}")
             raise DHIS2DBAPI.OperationalError(f"API request failed: {e}")
 
+    def _extract_dimension_values(self, dimension_str: str, dimension_type: str) -> list[str]:
+        """
+        Extract specific dimension values from DHIS2 dimension string
+
+        Args:
+            dimension_str: Dimension string like "dx:id1;id2;pe:LAST_YEAR;ou:OU1;OU2"
+            dimension_type: Dimension type to extract ("dx", "pe", or "ou")
+
+        Returns:
+            List of values for the specified dimension type
+        """
+        if not dimension_str:
+            return []
+
+        values = []
+        parts = dimension_str.split(";")
+
+        for part in parts:
+            if part.startswith(f"{dimension_type}:"):
+                # Extract the value after the dimension prefix
+                value_part = part[len(f"{dimension_type}:") :]
+                if value_part:
+                    values.append(value_part)
+
+        return values
+
+    def _extract_hierarchy_info_from_query(self, query: str) -> tuple[list[int], list[str]]:
+        """
+        Extract hierarchy configuration from query
+        
+        Always returns all 6 levels since we always include complete hierarchy
+
+        Returns:
+            Tuple of ([1,2,3,4,5,6], []) - always return all levels
+        """
+        return list(range(1, 7)), []
+
+    def _fetch_org_unit_hierarchy(self, org_unit_ids: list[str]) -> dict:
+        """
+        Fetch complete hierarchy information for given org units from DHIS2 API.
+        Uses parent-walking approach (same as dhis2_preview_utils.build_ou_hierarchy)
+        to correctly resolve all ancestors by level.
+
+        Returns:
+            Dict mapping org unit ID to hierarchy info: {ou_id: {level_1: name, level_2: name, ..., level_6: name}}
+        """
+        if not org_unit_ids:
+            logger.warning("[DHIS2] _fetch_org_unit_hierarchy called with empty org_unit_ids")
+            return {}
+
+        try:
+            # Step 1: Fetch all org units with parent info using batch queries
+            ou_names: dict[str, str] = {}
+            ou_levels: dict[str, int] = {}
+            ou_parents: dict[str, str | None] = {}
+            all_parent_ids: set[str] = set()
+
+            BATCH_SIZE = 50
+            unique_ou_ids = list(set(org_unit_ids))
+            logger.info(f"[DHIS2] _fetch_org_unit_hierarchy: Fetching {len(unique_ou_ids)} unique org units in batches...")
+            print(f"[DHIS2] _fetch_org_unit_hierarchy: Fetching {len(unique_ou_ids)} unique org units")
+
+            for batch_start in range(0, len(unique_ou_ids), BATCH_SIZE):
+                batch_ids = unique_ou_ids[batch_start:batch_start + BATCH_SIZE]
+                ou_filter = ",".join(batch_ids)
+                url = f"{self.connection.base_url}/organisationUnits.json?filter=id:in:[{ou_filter}]&fields=id,name,displayName,level,parent[id]&paging=false"
+
+                try:
+                    response = requests.get(
+                        url,
+                        auth=self.connection.auth,
+                        headers=self.connection.headers,
+                        timeout=300,
+                    )
+
+                    if response.status_code == 200:
+                        ou_data = response.json().get("organisationUnits", [])
+                        print(f"[DHIS2] Batch {batch_start//BATCH_SIZE + 1}: Got {len(ou_data)} org units from DHIS2")
+                        for ou in ou_data:
+                            ou_id = ou.get("id")
+                            if not ou_id:
+                                continue
+                            ou_names[ou_id] = ou.get("displayName") or ou.get("name") or ou_id
+                            ou_levels[ou_id] = ou.get("level", 0)
+                            parent_obj = ou.get("parent")
+                            parent_id = parent_obj.get("id") if isinstance(parent_obj, dict) else None
+                            ou_parents[ou_id] = parent_id
+
+                            # Collect parent IDs for fetching
+                            if parent_id:
+                                all_parent_ids.add(parent_id)
+
+                            # Debug: Log first few org units
+                            if len(ou_names) <= 3:
+                                print(f"[DHIS2]   OU: {ou_id}, name={ou_names[ou_id]}, level={ou_levels[ou_id]}, parent={parent_id}")
+                    else:
+                        logger.warning(f"[DHIS2] Failed to fetch org units batch: HTTP {response.status_code}")
+                        print(f"[DHIS2] ERROR: Batch fetch failed with HTTP {response.status_code}")
+                except Exception as e:
+                    logger.warning(f"[DHIS2] Error fetching org units batch: {e}")
+
+            logger.info(f"[DHIS2] Fetched {len(ou_names)} org units, found {len(all_parent_ids)} parent IDs")
+
+            # Step 2: Fetch all ancestors by walking up the parent chain
+            # Keep fetching parents until we've resolved all of them
+            max_iterations = 10  # Safety limit for hierarchy depth
+            iteration = 0
+
+            while all_parent_ids and iteration < max_iterations:
+                iteration += 1
+                missing_parents = [p for p in all_parent_ids if p not in ou_names]
+
+                if not missing_parents:
+                    break
+
+                logger.info(f"[DHIS2] Iteration {iteration}: Fetching {len(missing_parents)} missing parent org units...")
+                new_parent_ids: set[str] = set()
+
+                for batch_start in range(0, len(missing_parents), BATCH_SIZE):
+                    batch_ids = missing_parents[batch_start:batch_start + BATCH_SIZE]
+                    anc_filter = ",".join(batch_ids)
+                    anc_url = f"{self.connection.base_url}/organisationUnits.json?filter=id:in:[{anc_filter}]&fields=id,name,displayName,level,parent[id]&paging=false"
+
+                    try:
+                        anc_response = requests.get(
+                            anc_url,
+                            auth=self.connection.auth,
+                            headers=self.connection.headers,
+                            timeout=300,
+                        )
+                        if anc_response.status_code == 200:
+                            ancestors = anc_response.json().get("organisationUnits", [])
+                            for anc in ancestors:
+                                anc_id = anc.get("id")
+                                if not anc_id:
+                                    continue
+                                ou_names[anc_id] = anc.get("displayName") or anc.get("name") or anc_id
+                                ou_levels[anc_id] = anc.get("level", 0)
+                                parent_obj = anc.get("parent")
+                                parent_id = parent_obj.get("id") if isinstance(parent_obj, dict) else None
+                                ou_parents[anc_id] = parent_id
+
+                                if parent_id:
+                                    new_parent_ids.add(parent_id)
+                    except Exception as e:
+                        logger.warning(f"[DHIS2] Error fetching ancestors batch: {e}")
+
+                all_parent_ids = new_parent_ids
+
+            logger.info(f"[DHIS2] Total org unit names available: {len(ou_names)}")
+            print(f"[DHIS2] Total org unit names available: {len(ou_names)} after {iteration} iterations")
+
+            # Step 3: Build hierarchy dict for each org unit by walking up parent chain
+            hierarchy_data = {}
+            for ou_id in unique_ou_ids:
+                hierarchy_info = {f'level_{i}': None for i in range(1, 7)}
+
+                # Walk up the parent chain to build ancestors_by_level
+                current_id: str | None = ou_id
+                visited: set[str] = set()
+                depth = 0
+                max_depth = 10
+
+                while current_id and current_id not in visited and depth < max_depth:
+                    visited.add(current_id)
+                    depth += 1
+
+                    current_level = ou_levels.get(current_id, 0)
+                    current_name = ou_names.get(current_id, current_id)
+
+                    # Add to hierarchy if valid level
+                    if current_level and 1 <= current_level <= 6:
+                        hierarchy_info[f'level_{current_level}'] = current_name
+
+                    # Move to parent
+                    parent_id = ou_parents.get(current_id)
+                    if parent_id:
+                        current_id = parent_id
+                    else:
+                        break
+
+                hierarchy_data[ou_id] = hierarchy_info
+
+            # Log sample for debugging
+            if hierarchy_data:
+                sample_ou = list(hierarchy_data.keys())[0]
+                print(f"[DHIS2] Sample hierarchy for {sample_ou}: {hierarchy_data[sample_ou]}")
+                # Log a few more samples
+                for i, (ou_id, h) in enumerate(hierarchy_data.items()):
+                    if i >= 3:
+                        break
+                    filled_levels = [k for k, v in h.items() if v is not None]
+                    print(f"[DHIS2]   {ou_id}: filled levels = {filled_levels}")
+                logger.info(f"[DHIS2] Sample hierarchy for {sample_ou}: {hierarchy_data[sample_ou]}")
+
+            logger.info(f"[DHIS2] _fetch_org_unit_hierarchy completed: {len(hierarchy_data)} org units with hierarchy")
+            return hierarchy_data
+
+        except Exception as e:
+            logger.error(f"[DHIS2] Error in _fetch_org_unit_hierarchy: {str(e)}", exc_info=True)
+            return {}
+
+    def _fetch_org_unit_levels(self) -> dict[int, str]:
+        """
+        Fetch org unit level names from DHIS2 metadata API
+        
+        Returns:
+            Dict mapping level number to level name: {1: "Country", 2: "Region", ...}
+        """
+        try:
+            url = f"{self.connection.base_url}/organisationUnitLevels"
+            params = {'fields': 'level,displayName', 'paging': 'false'}
+            
+            response = requests.get(
+                url,
+                auth=self.connection.auth,
+                headers=self.connection.headers,
+                timeout=self.connection.timeout,
+                params=params,
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                levels_map = {}
+                for level in data.get('organisationUnitLevels', []):
+                    level_num = level.get('level')
+                    level_name = level.get('displayName', f'Level_{level_num}')
+                    if level_num:
+                        levels_map[level_num] = level_name
+                
+                logger.info(f"Fetched org unit levels: {levels_map}")
+                return levels_map
+            else:
+                logger.warning(f"Failed to fetch org unit levels: {response.status_code}")
+                return {}
+        except Exception as e:
+            logger.warning(f"Error fetching org unit levels: {str(e)}")
+            return {}
+
     def _parse_response(self, endpoint: str, data: dict, query: str = "") -> list[tuple]:
         """
         Parse DHIS2 API response using endpoint-aware normalizers
@@ -1728,22 +3043,90 @@ class DHIS2Cursor:
         print(f"[DHIS2] Response keys: {list(data.keys())}")
         print(f"[DHIS2] Response sample: {str(data)[:500]}")
 
-        # Use WIDE/PIVOTED format for analytics data - dx dimensions as separate columns
-        # Wide format (Period, OrgUnit, DataElement_1, DataElement_2, ...) enables:
-        # - Each data element as its own column (horizontal data view)
-        # - Direct column selection in charts
-        # - Better for region-based analysis
-        # - Compatible with non-time-series charts
+        # Use WIDE/PIVOTED format for analytics data - Period + Hierarchy levels + Data elements as columns
+        # Wide format enables:
+        # - Hierarchy levels as separate columns for cascade filtering
+        # - Direct column selection for org unit levels
+        # - Better for geospatial charts like DHIS2Map
+        # - Compatible with boundary matching by org unit level
         #
-        # ALWAYS use WIDE/PIVOTED format for analytics endpoint
-        should_pivot = True  # Always pivot analytics to get dx as separate columns
+        # WIDE format provides hierarchy context needed for cascade-filtered maps
+        should_pivot = True  # Use WIDE format for hierarchy level columns
 
-        format_msg = "WIDE/PIVOTED format (Period, OrgUnit, DX1, DX2, ...)" if should_pivot else "LONG format"
+        format_msg = "WIDE/PIVOTED format (Period, Level_1_Name, Level_2_Name, ..., DX1, DX2, ...)" if should_pivot else "LONG format"
         print(f"[DHIS2] Using {format_msg} for {endpoint}")
         logger.info(f"Using {'wide/pivoted' if should_pivot else 'long'} format for {endpoint}")
 
-        # Use the normalizer to parse response
-        col_names, rows = DHIS2ResponseNormalizer.normalize(endpoint, data, pivot=should_pivot)
+        # Fetch org unit level names for column naming
+        org_unit_level_names = self._fetch_org_unit_levels()
+        
+        # ALWAYS fetch hierarchy for analytics data to ensure complete hierarchy in chart data
+        # This matches the behavior of dhis2_chart_data endpoint which returns full hierarchy
+        org_unit_hierarchy = None
+
+        # Extract all org unit IDs from the response data
+        try:
+            org_units = set()
+            if endpoint == "analytics" and "rows" in data:
+                # Find the ou column index from headers
+                headers = data.get("headers", [])
+                print(f"[DHIS2] Analytics headers: {headers}")
+                ou_idx = None
+                for idx, h in enumerate(headers):
+                    header_name = h.get("name") if isinstance(h, dict) else h
+                    header_col = h.get("column") if isinstance(h, dict) else None
+                    if header_name == "ou" or header_col == "ou":
+                        ou_idx = idx
+                        print(f"[DHIS2] Found 'ou' column at index {ou_idx}")
+                        break
+
+                if ou_idx is not None:
+                    rows_data = data.get("rows", [])
+                    print(f"[DHIS2] Processing {len(rows_data)} rows to extract org unit IDs")
+                    for row in rows_data:
+                        if len(row) > ou_idx and row[ou_idx]:
+                            org_units.add(row[ou_idx])
+                    print(f"[DHIS2] Extracted {len(org_units)} unique org unit IDs from rows")
+                    print(f"[DHIS2] Found {len(org_units)} unique org units in analytics response")
+                else:
+                    print(f"[DHIS2] Warning: Could not find 'ou' column in headers: {headers}")
+
+            elif endpoint == "dataValueSets" and "dataValues" in data:
+                for dv in data.get("dataValues", []):
+                    if dv.get("orgUnit"):
+                        org_units.add(dv["orgUnit"])
+                print(f"[DHIS2] Found {len(org_units)} unique org units in dataValueSets response")
+
+            if org_units:
+                print(f"[DHIS2] Fetching hierarchy for {len(org_units)} org units...")
+                org_unit_hierarchy = self._fetch_org_unit_hierarchy(list(org_units))
+                print(f"[DHIS2] Fetched hierarchy for {len(org_unit_hierarchy)} org units")
+                if org_unit_hierarchy:
+                    # Log sample hierarchy
+                    sample_ou = list(org_unit_hierarchy.keys())[0] if org_unit_hierarchy else None
+                    if sample_ou:
+                        print(f"[DHIS2] Sample hierarchy for {sample_ou}: {org_unit_hierarchy[sample_ou]}")
+            else:
+                print(f"[DHIS2] No org units found in response data")
+        except Exception as e:
+            print(f"[DHIS2] Warning: Could not fetch org unit hierarchy: {e}")
+            logger.warning(f"Could not fetch org unit hierarchy: {e}")
+            org_unit_hierarchy = None
+
+        print(f"[DHIS2] Calling DHIS2ResponseNormalizer.normalize with:")
+        print(f"[DHIS2]   - endpoint: {endpoint}")
+        print(f"[DHIS2]   - pivot: {should_pivot}")
+        print(f"[DHIS2]   - org_unit_hierarchy: {len(org_unit_hierarchy) if org_unit_hierarchy else 'None'} entries")
+        print(f"[DHIS2]   - org_unit_level_names: {org_unit_level_names}")
+
+        col_names, rows = DHIS2ResponseNormalizer.normalize(
+            endpoint,
+            data,
+            pivot=should_pivot,
+            org_unit_hierarchy=org_unit_hierarchy,
+            selected_levels=list(range(1, 7)),
+            org_unit_level_names=org_unit_level_names,
+        )
 
         print(f"[DHIS2] Normalized columns: {col_names}")
         print(f"[DHIS2] Normalized row count: {len(rows)}")
@@ -1757,20 +3140,31 @@ class DHIS2Cursor:
         return rows
 
     def _set_description(self, col_names: list[str]):
-        """Set cursor description from column names with proper types"""
+        """Set cursor description from column names with proper types
+
+        IMPORTANT: All column names must be sanitized to match the dataset columns
+        that were saved during dataset creation. The sanitization ensures:
+        - Special characters like '.', '-', '/', '(' are replaced with '_'
+        - Spaces are replaced with '_'
+        - Column names match exactly between dataset metadata and query results
+        """
         self._description = []
         for name in col_names:
+            # Ensure column name is sanitized to match dataset columns
+            sanitized_name = sanitize_dhis2_column_name(name)
+
             # Set proper type based on column name
-            if name in ["Value", "value"]:
+            if sanitized_name in ["Value", "value"]:
                 # Value column is numeric (can be aggregated)
                 col_type = types.Float
             else:
                 # All other columns are strings (dimensions)
                 col_type = types.String
 
-            self._description.append((name, col_type, None, None, None, None, True))
+            self._description.append((sanitized_name, col_type, None, None, None, None, True))
 
-        print(f"[DHIS2] _set_description: columns={col_names}, types={[desc[1].__name__ for desc in self._description]}")
+        sanitized_cols = [desc[0] for desc in self._description]
+        print(f"[DHIS2] _set_description: original={col_names}, sanitized={sanitized_cols}, types={[desc[1].__name__ for desc in self._description]}")
 
     def _translate_query_column_names(self, query: str, table_name: str) -> str:
         """

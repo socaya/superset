@@ -64,7 +64,7 @@ interface DHIS2ParameterBuilderProps {
 
 const Container = styled.div`
   ${({ theme }) => `
-    padding: ${theme.sizeUnit * 4}px;
+    padding: ${theme.sizeUnit * 3}px;
     background: ${theme.colorBgContainer};
     border-radius: ${theme.borderRadius}px;
     margin: ${theme.sizeUnit * 2}px 0;
@@ -73,7 +73,12 @@ const Container = styled.div`
 
 const ParameterSection = styled.div`
   ${({ theme }) => `
-    margin-bottom: ${theme.sizeUnit * 4}px;
+    margin-bottom: ${theme.sizeUnit * 3}px;
+    
+    h3, h4 {
+      margin-bottom: ${theme.sizeUnit}px;
+      font-weight: 600;
+    }
   `}
 `;
 
@@ -81,26 +86,48 @@ const InfoBox = styled.div`
   ${({ theme }) => `
     background: ${theme.colorBgElevated};
     border-left: 4px solid ${theme.colorPrimary};
-    padding: ${theme.sizeUnit * 2}px;
-    margin-bottom: ${theme.sizeUnit * 3}px;
+    padding: ${theme.sizeUnit * 1.5}px ${theme.sizeUnit * 2}px;
+    margin-bottom: ${theme.sizeUnit * 2}px;
     border-radius: ${theme.borderRadius}px;
+    font-size: 12px;
+    line-height: 1.5;
   `}
 `;
 
 const PreviewUrlSection = styled.div`
   ${({ theme }) => `
-    padding: 20px;
-    background-color: ${theme.colorBgContainer};
+    padding: 12px;
+    background-color: ${theme.colorBgElevated};
     border-bottom: 1px solid ${theme.colorBorder};
+    border-radius: ${theme.borderRadius}px ${theme.borderRadius}px 0 0;
   `}
 `;
 
 const PreviewDataSection = styled.div`
   ${({ theme }) => `
-    padding: 20px;
+    padding: 12px;
     flex: 1;
     overflow: auto;
     background-color: ${theme.colorBgContainer};
+    
+    .ant-table-wrapper {
+      .ant-table {
+        font-size: 12px;
+        
+        .ant-table-thead > tr > th {
+          padding: 8px 12px;
+          font-weight: 600;
+          background-color: ${theme.colorBgElevated};
+        }
+        
+        .ant-table-tbody > tr > td {
+          padding: 6px 12px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
   `}
 `;
 
@@ -119,6 +146,16 @@ const PreviewTable = styled.div`
   ${({ theme }) => `
     background-color: ${theme.colorBgContainer};
     border-radius: ${theme.borderRadius}px;
+    overflow: hidden;
+    
+    .ant-table-container {
+      font-size: 12px !important;
+    }
+    
+    .ant-table-cell {
+      max-width: 200px;
+      padding: 6px 12px !important;
+    }
   `}
 `;
 
@@ -172,7 +209,7 @@ const DimensionBadge = styled.span`
 // NOTE: PERIOD_OPTIONS removed - now using PeriodSelector component with tabs
 
 // Preview optimization: limit rows for fast loading
-const PREVIEW_ROW_LIMIT = 20;
+const PREVIEW_ROW_LIMIT = 10;
 
 /**
  * Extract the source table name from a dataset name
@@ -1040,7 +1077,7 @@ const DHIS2ParameterBuilder = forwardRef<
           ) {
             throw new Error(
               'Preview timed out - the DHIS2 server is responding slowly. ' +
-                'This is common for large data queries. The preview is limited to 1 data element and 1 period (20 rows) for speed. ' +
+                'This is common for large data queries. The preview is limited to 1 data element and 1 period (10 rows) for speed. ' +
                 'You can still create the dataset with all your selections - ' +
                 'the actual dataset will be processed with all selected data elements, periods, and org units. ' +
                 'Note: Large DHIS2 queries may take several minutes to complete.',
@@ -1158,23 +1195,6 @@ const DHIS2ParameterBuilder = forwardRef<
     useEffect(() => {
       fetchPreviewDataRef.current = fetchPreviewData;
     }, [fetchPreviewData]);
-
-    // Trigger background data loading (fire and forget)
-    const triggerBackgroundLoad = useCallback(() => {
-      if (selectedData.length === 0) {
-        return;
-      }
-
-      console.log('[DHIS2] Starting background data load for preview...');
-      if (fetchPreviewDataRef.current) {
-        fetchPreviewDataRef.current().catch(error => {
-          console.log(
-            '[DHIS2] Background load completed (or failed silently):',
-            error,
-          );
-        });
-      }
-    }, [selectedData]);
 
     // Show builder for ALL DHIS2 endpoints
     if (!endpoint || !databaseId) {
@@ -1307,31 +1327,6 @@ const DHIS2ParameterBuilder = forwardRef<
         />
 
         <Divider />
-
-        {/* Save Dataset Section */}
-        <ParameterSection>
-          <Button
-            type="primary"
-            onClick={() => {
-              if (onDatasetNameChange) {
-                onDatasetNameChange(datasetName);
-              }
-              triggerBackgroundLoad();
-              if (onSave) {
-                onSave();
-              }
-              message.success(t('Dataset saved. Background loading started.'));
-            }}
-            disabled={selectedData.length === 0}
-          >
-            {t('Save')}
-          </Button>
-          <Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
-            {t(
-              'Save your dataset selections. The dataset will be created and data will load in the background.',
-            )}
-          </Paragraph>
-        </ParameterSection>
 
         {/* Preview Data Modal (will be triggered from dataset menu, not here) */}
         <Modal

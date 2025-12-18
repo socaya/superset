@@ -142,9 +142,7 @@ const AnimationControls: React.FC<AnimationControlsProps> = ({
       <Button onClick={handlePrevious} disabled={periods.length === 1}>
         ◄
       </Button>
-      <Button onClick={handlePlayPause}>
-        {isPlaying ? '⏸' : '▶'}
-      </Button>
+      <Button onClick={handlePlayPause}>{isPlaying ? '⏸' : '▶'}</Button>
       <Button onClick={handleNext} disabled={periods.length === 1}>
         ►
       </Button>

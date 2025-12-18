@@ -82,7 +82,7 @@ const initialState: LoadingState = {
  * Please address new needs with new hooks if possible,
  * rather than adding config options to this hook.
  *
- * @param endpoint The url where the resource is located.
+ * @param endpoint The url where the resource is located. If empty/falsy, no request will be made.
  */
 export function useApiResourceFullBody<RESULT>(
   endpoint: string,
@@ -91,6 +91,12 @@ export function useApiResourceFullBody<RESULT>(
   const cancelRef = useRef<() => void>(() => {});
 
   useEffect(() => {
+    // Skip API call if endpoint is empty/falsy
+    if (!endpoint) {
+      setResource(initialState);
+      return undefined;
+    }
+
     // If refresh is implemented, this will need to change.
     // The previous values should stay during refresh.
     setResource(initialState);
@@ -179,11 +185,13 @@ const extractInnerResult = <T>(responseBody: { result: T }) =>
  * This returns the data under the "result" field in the API response body.
  * If you need the full response body, use {useFullApiResource} instead.
  *
- * @param endpoint The url where the resource is located.
+ * @param endpoint The url where the resource is located. If null/undefined/empty, no request will be made.
  */
-export function useApiV1Resource<RESULT>(endpoint: string): Resource<RESULT> {
+export function useApiV1Resource<RESULT>(
+  endpoint: string | null | undefined,
+): Resource<RESULT> {
   return useTransformedResource(
-    useApiResourceFullBody<{ result: RESULT }>(endpoint),
+    useApiResourceFullBody<{ result: RESULT }>(endpoint || ''),
     extractInnerResult,
   );
 }

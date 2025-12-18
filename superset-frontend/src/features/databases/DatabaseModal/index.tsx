@@ -724,7 +724,8 @@ const DatabaseModal: FunctionComponent<DatabaseModalProps> = ({
         parameters: db.parameters,
         engine: db.engine,
         driver: db?.driver,
-        configuration_method: db?.configuration_method || ConfigurationMethod.DynamicForm,
+        configuration_method:
+          db?.configuration_method || ConfigurationMethod.DynamicForm,
       }),
       ssh_tunnel:
         !isEmpty(db?.ssh_tunnel) && useSSHTunneling

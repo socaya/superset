@@ -41,12 +41,12 @@ const generateSQLAlchemyURI = (
   try {
     // Parse the URL to extract hostname and path
     const url = new URL(host.startsWith('http') ? host : `https://${host}`);
-    const hostname = url.hostname;
+    const { hostname } = url;
     let path = url.pathname;
 
     // Ensure path ends with /api
     if (!path.endsWith('/api')) {
-      path = path.replace(/\/$/, '') + '/api';
+      path = `${path.replace(/\/$/, '')}/api`;
     }
 
     // Build credentials part
@@ -104,7 +104,7 @@ export const DHIS2AuthenticationFields = ({
         target: {
           type: 'text',
           name: 'authentication_type',
-          value: value,
+          value,
           checked: false,
         },
       });
@@ -269,4 +269,3 @@ export const DHIS2AuthenticationFields = ({
     </>
   );
 };
-

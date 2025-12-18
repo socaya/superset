@@ -112,9 +112,12 @@ export class ClusteringManager {
     return clusters;
   }
 
-  private static getBounds(
-    feature: BoundaryFeature,
-  ): { minLat: number; maxLat: number; minLng: number; maxLng: number } {
+  static getBounds(feature: BoundaryFeature): {
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  } {
     let minLat = 90;
     let maxLat = -90;
     let minLng = 180;
@@ -149,8 +152,6 @@ export class CustomSymbologyManager {
 
     const halfSize = size / 2;
 
-    let pathData = '';
-
     switch (type) {
       case 'circle':
         return `
@@ -174,7 +175,12 @@ export class CustomSymbologyManager {
                    fill="${color}" stroke="${borderColor}" stroke-width="${borderWidth}"/>
         `;
       case 'star':
-        const points = this.getStarPoints(halfSize, halfSize, halfSize - borderWidth, 5);
+        const points = this.getStarPoints(
+          halfSize,
+          halfSize,
+          halfSize - borderWidth,
+          5,
+        );
         return `
           <polygon points="${points}"
                    fill="${color}" stroke="${borderColor}" stroke-width="${borderWidth}"/>
@@ -211,10 +217,7 @@ export class Heat3DVisualizationManager {
     if (max === min) {
       return minHeight;
     }
-    return (
-      minHeight +
-      ((value - min) / (max - min)) * (maxHeight - minHeight)
-    );
+    return minHeight + ((value - min) / (max - min)) * (maxHeight - minHeight);
   }
 
   static generate3DGeometry(
@@ -252,7 +255,7 @@ export class HeatMapManager {
       if (feature.geometry.type === 'Point') {
         [lng, lat] = coords as [number, number];
       } else {
-        const bounds = ClusteringManager['getBounds'](feature);
+        const bounds = ClusteringManager.getBounds(feature);
         lat = (bounds.minLat + bounds.maxLat) / 2;
         lng = (bounds.minLng + bounds.maxLng) / 2;
       }
@@ -266,6 +269,7 @@ export class HeatMapManager {
 
 export class OfflineCacheManager {
   private static readonly DB_NAME = 'DHIS2MapCache';
+
   private static readonly STORE_NAME = 'boundaries';
 
   static async cacheBoundaries(
@@ -295,12 +299,16 @@ export class OfflineCacheManager {
       const store = tx.objectStore(this.STORE_NAME);
 
       const key = `boundaries_${databaseId}_${boundaryLevel}`;
-      const result = await store.get(key);
+      const request = store.get(key);
 
-      if (
-        result &&
-        Date.now() - result.timestamp < maxAge
-      ) {
+      const result = await new Promise<
+        { data: any; timestamp: number } | undefined
+      >((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+
+      if (result && Date.now() - result.timestamp < maxAge) {
         return result.data;
       }
 
@@ -362,7 +370,9 @@ export class PrintExportManager {
   ): Promise<void> {
     try {
       const canvas = await this.getCanvasFromElement(mapElement);
-      console.log('PDF export requires external library. Using canvas image instead.');
+      console.log(
+        'PDF export requires external library. Using canvas image instead.',
+      );
       const link = document.createElement('a');
       link.href = canvas.toDataURL('image/png');
       link.download = `${filename}.png`;
@@ -390,10 +400,10 @@ export class PrintExportManager {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const svgElements = element.querySelectorAll('svg');
-    svgElements.forEach((svg, index) => {
+    svgElements.forEach(svg => {
       const svgRect = svg.getBoundingClientRect();
-      const x = svgRect.left - rect.left;
-      const y = svgRect.top - rect.top;
+      const offsetX = svgRect.left - rect.left;
+      const offsetY = svgRect.top - rect.top;
 
       const canvas2 = document.createElement('canvas');
       canvas2.width = svgRect.width;
@@ -404,6 +414,8 @@ export class PrintExportManager {
       img.onload = () => {
         const ctx2 = canvas2.getContext('2d');
         ctx2?.drawImage(img, 0, 0);
+        // Draw the SVG canvas onto the main canvas at the correct position
+        ctx.drawImage(canvas2, offsetX, offsetY);
       };
       img.src = `data:image/svg+xml;base64,${btoa(data)}`;
     });
@@ -421,8 +433,7 @@ export class AutoThemingManager {
     textColor: string;
     accentColor: string;
   } {
-    const avgValue =
-      dataValues.reduce((a, b) => a + b, 0) / dataValues.length;
+    const avgValue = dataValues.reduce((a, b) => a + b, 0) / dataValues.length;
     const variance =
       dataValues.reduce((sum, val) => sum + Math.pow(val - avgValue, 2), 0) /
       dataValues.length;

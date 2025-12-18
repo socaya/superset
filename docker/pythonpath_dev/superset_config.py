@@ -116,6 +116,61 @@ AUTH_ROLE_PUBLIC = "Public"  # Name of the public role
 # Enable public dashboard entry point (FR-1.1)
 PUBLIC_DASHBOARD_ENTRY_ENABLED = True  # Globally enable public dashboard access
 
+# Public Page Layout Configuration
+# Customize the public landing page appearance
+PUBLIC_PAGE_CONFIG = {
+    "navbar": {
+        "enabled": True,
+        "height": 60,
+        "backgroundColor": "#ffffff",
+        "boxShadow": "0 2px 8px rgba(0, 0, 0, 0.1)",
+        "logo": {
+            "enabled": True,
+            "alt": "Uganda Ministry of Health",
+            "height": 40,
+        },
+        "title": {
+            "enabled": True,
+            "text": "Uganda Malaria Data Repository",
+            "fontSize": "18px",
+            "fontWeight": 700,
+            "color": "#1890ff",
+        },
+        "loginButton": {
+            "enabled": True,
+            "text": "Login",
+            "url": "/login/",
+            "type": "primary",
+        },
+        "customLinks": [],
+    },
+    "sidebar": {
+        "enabled": True,
+        "width": 280,
+        "position": "left",
+        "backgroundColor": "#ffffff",
+        "borderStyle": "1px solid #f0f0f0",
+        "title": "Categories",
+        "collapsibleOnMobile": True,
+        "mobileBreakpoint": 768,
+    },
+    "content": {
+        "backgroundColor": "#f5f5f5",
+        "padding": "0",
+        "showWelcomeMessage": True,
+        "welcomeTitle": "Welcome to Uganda Malaria Data Repository",
+        "welcomeDescription": "Select a category from the sidebar to view dashboards and explore malaria data.",
+    },
+    "footer": {
+        "enabled": False,
+        "height": 50,
+        "backgroundColor": "#fafafa",
+        "text": "© 2025 Ministry of Health Uganda",
+        "textColor": "#666666",
+        "links": [],
+    },
+}
+
 # Note: After enabling this, you must:
 # 1. Create the "Public" role via UI (Security -> List Roles)
 # 2. Grant specific dashboard permissions to the Public role

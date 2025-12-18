@@ -502,7 +502,7 @@ function ChartList(props: ChartListProps) {
               addSuccessToast(
                 newIsPublic
                   ? t('Chart is now publicly accessible')
-                  : t('Chart is now private')
+                  : t('Chart is now private'),
               );
               refreshData();
             } catch (error) {
@@ -594,7 +594,7 @@ function ChartList(props: ChartListProps) {
                     style={{
                       color: original.is_public ? '#52c41a' : '#8c8c8c',
                       fontSize: '18px',
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
                     }}
                   >
                     {original.is_public ? '🔓' : '🔒'}

@@ -74,40 +74,40 @@ const DrillControls: React.FC<DrillControlsProps> = ({
   breadcrumbs,
   onDrillUp,
   onBreadcrumbClick,
-}) => {
-  return (
-    <ControlsContainer>
-      <BreadcrumbContainer>
-        <Button
-          size="small"
-          icon={<HomeOutlined />}
-          onClick={() => onBreadcrumbClick(0)}
-          title={t('Return to top level')}
-        />
-        <Button
-          size="small"
-          icon={<ArrowLeftOutlined />}
-          onClick={onDrillUp}
-          title={t('Go up one level')}
-        />
-        <Separator>|</Separator>
-        <BreadcrumbItem clickable onClick={() => onBreadcrumbClick(0)}>
-          {t('All')}
-        </BreadcrumbItem>
-        {breadcrumbs.map((crumb, index) => (
-          <React.Fragment key={crumb.id}>
-            <Separator>›</Separator>
-            <BreadcrumbItem
-              clickable={index < breadcrumbs.length - 1}
-              onClick={() => index < breadcrumbs.length - 1 && onBreadcrumbClick(index + 1)}
-            >
-              {crumb.name}
-            </BreadcrumbItem>
-          </React.Fragment>
-        ))}
-      </BreadcrumbContainer>
-    </ControlsContainer>
-  );
-};
+}) => (
+  <ControlsContainer>
+    <BreadcrumbContainer>
+      <Button
+        size="small"
+        icon={<HomeOutlined />}
+        onClick={() => onBreadcrumbClick(0)}
+        title={t('Return to top level')}
+      />
+      <Button
+        size="small"
+        icon={<ArrowLeftOutlined />}
+        onClick={onDrillUp}
+        title={t('Go up one level')}
+      />
+      <Separator>|</Separator>
+      <BreadcrumbItem clickable onClick={() => onBreadcrumbClick(0)}>
+        {t('All')}
+      </BreadcrumbItem>
+      {breadcrumbs.map((crumb, index) => (
+        <React.Fragment key={crumb.id}>
+          <Separator>›</Separator>
+          <BreadcrumbItem
+            clickable={index < breadcrumbs.length - 1}
+            onClick={() =>
+              index < breadcrumbs.length - 1 && onBreadcrumbClick(index + 1)
+            }
+          >
+            {crumb.name}
+          </BreadcrumbItem>
+        </React.Fragment>
+      ))}
+    </BreadcrumbContainer>
+  </ControlsContainer>
+);
 
 export default DrillControls;

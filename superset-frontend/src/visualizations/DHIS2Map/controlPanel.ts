@@ -17,16 +17,20 @@
  * under the License.
  */
 
-import { t } from '@superset-ui/core';
+import {
+  t,
+  getSequentialSchemeRegistry,
+  SequentialScheme,
+} from '@superset-ui/core';
 import {
   ControlPanelConfig,
-  sections,
   sharedControls,
 } from '@superset-ui/chart-controls';
 
+const sequentialSchemeRegistry = getSequentialSchemeRegistry();
+
 const config: ControlPanelConfig = {
   controlPanelSections: [
-    sections.legacyRegularTime,
     {
       label: t('Map Configuration'),
       expanded: true,
@@ -39,10 +43,11 @@ const config: ControlPanelConfig = {
               label: t('Organisation Unit Column'),
               description: t('Column containing org unit identifiers'),
               mapStateToProps: (state: any) => ({
-                choices: state.datasource?.columns?.map((col: any) => [
-                  col.column_name,
-                  col.column_name,
-                ]) || [],
+                choices:
+                  state.datasource?.columns?.map((col: any) => [
+                    col.column_name,
+                    col.verbose_name || col.column_name,
+                  ]) || [],
               }),
               validators: [],
             },
@@ -60,19 +65,254 @@ const config: ControlPanelConfig = {
         ],
         [
           {
-            name: 'boundary_level',
+            name: 'aggregation_method',
             config: {
               type: 'SelectControl',
-              label: t('Boundary Level'),
-              description: t('Organisation unit level for boundaries'),
-              default: 2,
+              label: t('Aggregation Method'),
+              description: t(
+                'How to aggregate values when multiple rows exist per org unit (e.g., multiple periods)',
+              ),
+              default: 'sum',
               choices: [
-                [1, t('Level 1 (National)')],
-                [2, t('Level 2 (Region)')],
-                [3, t('Level 3 (District)')],
-                [4, t('Level 4 (Sub-county)')],
-                [5, t('Level 5 (Facility)')],
+                ['sum', t('Sum')],
+                ['average', t('Average')],
+                ['max', t('Maximum')],
+                ['min', t('Minimum')],
+                ['count', t('Count')],
+                ['latest', t('Latest Value')],
               ],
+            },
+          },
+        ],
+        [
+          {
+            name: 'granularity_sqla',
+            config: {
+              ...sharedControls.granularity_sqla,
+              label: t('Time Period Column'),
+              description: t(
+                'Select time period column for filtering (optional)',
+              ),
+            },
+          },
+        ],
+        [
+          {
+            name: 'boundary_levels',
+            config: {
+              type: 'SelectControl',
+              label: t('Boundary Levels'),
+              description: t(
+                'Select one or more organisation unit levels to display. Each level will have a distinct border color.',
+              ),
+              default: [2],
+              multi: true,
+              renderTrigger: true,
+              freeForm: false,
+              mapStateToProps: (state: any) => {
+                // Get database ID from datasource
+                const databaseId = state.datasource?.database?.id;
+
+                // Check if we have cached org unit levels in localStorage
+                const cacheKey = `dhis2_org_unit_levels_db${databaseId}`;
+                let cachedLevels: any[] = [];
+
+                try {
+                  const cached = localStorage.getItem(cacheKey);
+                  if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    // Cache valid for 1 hour
+                    if (Date.now() - timestamp < 3600000) {
+                      cachedLevels = data;
+                    }
+                  }
+                } catch (e) {
+                  // Ignore cache errors
+                }
+
+                // If we have cached levels, use them
+                if (cachedLevels.length > 0) {
+                  return {
+                    choices: cachedLevels.map((level: any) => [
+                      level.level,
+                      `Level ${level.level} (${level.displayName || level.name})`,
+                    ]),
+                  };
+                }
+
+                // If database ID is available, trigger async fetch
+                if (databaseId && typeof window !== 'undefined') {
+                  // Fetch org unit levels asynchronously and cache them
+                  // This runs in the background; next render will pick up cached data
+                  import('@superset-ui/core').then(({ SupersetClient }) => {
+                    SupersetClient.get({
+                      endpoint: `/api/v1/database/${databaseId}/dhis2_metadata/?type=organisationUnitLevels`,
+                    })
+                      .then(response => {
+                        if (response.json?.result) {
+                          const levels = response.json.result.sort(
+                            (a: any, b: any) => a.level - b.level,
+                          );
+                          // Cache the results
+                          localStorage.setItem(
+                            cacheKey,
+                            JSON.stringify({
+                              data: levels,
+                              timestamp: Date.now(),
+                            }),
+                          );
+                          // Trigger re-render by dispatching an action if available
+                          // The next interaction will pick up the cached levels
+                        }
+                      })
+                      .catch(() => {
+                        // Silently fail - fallback choices will be used
+                      });
+                  });
+                }
+
+                // Fallback to default choices while loading or if no database
+                return {
+                  choices: [
+                    [1, t('Level 1 (National)')],
+                    [2, t('Level 2 (Region)')],
+                    [3, t('Level 3 (District)')],
+                    [4, t('Level 4 (Sub-county)')],
+                    [5, t('Level 5 (Parish/Facility)')],
+                    [6, t('Level 6')],
+                  ],
+                };
+              },
+            },
+          },
+        ],
+        [
+          {
+            name: 'boundary_load_method',
+            config: {
+              type: 'SelectControl',
+              label: t('Boundary Load Method'),
+              description: t(
+                'Method to load geographic boundaries from DHIS2. ' +
+                  'geoFeatures: Uses the analytics geoFeatures API (recommended). ' +
+                  'geoJSON: Uses the organisationUnits.geojson endpoint.',
+              ),
+              default: 'geoFeatures',
+              choices: [
+                ['geoFeatures', t('geoFeatures (recommended)')],
+                ['geoJSON', t('GeoJSON')],
+              ],
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'level_1_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Level 1 Border Color'),
+              description: t('Border color for National level boundaries'),
+              default: { r: 0, g: 0, b: 0, a: 1 },
+              renderTrigger: true,
+              visibility: ({ form_data }: any) => {
+                const levels = form_data?.boundary_levels;
+                if (Array.isArray(levels)) {
+                  return levels.includes(1);
+                }
+                return false;
+              },
+            },
+          },
+          {
+            name: 'level_2_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Level 2 Border Color'),
+              description: t('Border color for Region level boundaries'),
+              default: { r: 220, g: 53, b: 69, a: 1 },
+              renderTrigger: true,
+              visibility: ({ form_data }: any) => {
+                const levels = form_data?.boundary_levels;
+                if (Array.isArray(levels)) {
+                  return levels.includes(2);
+                }
+                return false;
+              },
+            },
+          },
+        ],
+        [
+          {
+            name: 'level_3_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Level 3 Border Color'),
+              description: t('Border color for District level boundaries'),
+              default: { r: 40, g: 167, b: 69, a: 1 },
+              renderTrigger: true,
+              visibility: ({ form_data }: any) => {
+                const levels = form_data?.boundary_levels;
+                if (Array.isArray(levels)) {
+                  return levels.includes(3);
+                }
+                return false;
+              },
+            },
+          },
+          {
+            name: 'level_4_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Level 4 Border Color'),
+              description: t('Border color for Sub-county level boundaries'),
+              default: { r: 0, g: 123, b: 255, a: 1 },
+              renderTrigger: true,
+              visibility: ({ form_data }: any) => {
+                const levels = form_data?.boundary_levels;
+                if (Array.isArray(levels)) {
+                  return levels.includes(4);
+                }
+                return false;
+              },
+            },
+          },
+        ],
+        [
+          {
+            name: 'level_5_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Level 5 Border Color'),
+              description: t(
+                'Border color for Parish/Facility level boundaries',
+              ),
+              default: { r: 255, g: 193, b: 7, a: 1 },
+              renderTrigger: true,
+              visibility: ({ form_data }: any) => {
+                const levels = form_data?.boundary_levels;
+                if (Array.isArray(levels)) {
+                  return levels.includes(5);
+                }
+                return false;
+              },
+            },
+          },
+          {
+            name: 'level_6_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Level 6 Border Color'),
+              description: t('Border color for Level 6 boundaries'),
+              default: { r: 111, g: 66, b: 193, a: 1 },
+              renderTrigger: true,
+              visibility: ({ form_data }: any) => {
+                const levels = form_data?.boundary_levels;
+                if (Array.isArray(levels)) {
+                  return levels.includes(6);
+                }
+                return false;
+              },
             },
           },
         ],
@@ -95,14 +335,40 @@ const config: ControlPanelConfig = {
       label: t('Map Style'),
       expanded: true,
       controlSetRows: [
+        // Categorical color scheme - includes "Superset Colors" and all other categorical palettes
+        ['color_scheme'],
         [
           {
-            name: 'color_scheme',
+            name: 'linear_color_scheme',
             config: {
               type: 'ColorSchemeControl',
-              label: t('Color Scheme'),
-              description: t('Color scheme for choropleth'),
-              default: 'superset_seq_1',
+              label: t('Sequential Color Scheme'),
+              description: t(
+                'Gradient color scheme for choropleth maps. Select from available sequential palettes.',
+              ),
+              default: sequentialSchemeRegistry.getDefaultKey(),
+              choices: () =>
+                (sequentialSchemeRegistry.values() as SequentialScheme[]).map(
+                  value => [value.id, value.label],
+                ),
+              schemes: () => sequentialSchemeRegistry.getMap(),
+              isLinear: true,
+              clearable: false,
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'use_linear_color_scheme',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Use Sequential Colors'),
+              description: t(
+                'When checked, uses gradient colors (Sequential). When unchecked, uses the categorical Color Scheme above.',
+              ),
+              default: true,
+              renderTrigger: true,
             },
           },
         ],
@@ -112,10 +378,14 @@ const config: ControlPanelConfig = {
             config: {
               type: 'SliderControl',
               label: t('Fill Opacity'),
+              description: t(
+                'Transparency of filled regions (0 = transparent, 1 = solid)',
+              ),
               default: 0.7,
               min: 0,
               max: 1,
               step: 0.1,
+              renderTrigger: true,
             },
           },
         ],
@@ -125,7 +395,23 @@ const config: ControlPanelConfig = {
             config: {
               type: 'ColorPickerControl',
               label: t('Border Color'),
+              description: t('Default border color for boundaries'),
               default: { r: 255, g: 255, b: 255, a: 1 },
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'auto_theme_borders',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Auto Theme Borders'),
+              description: t(
+                'Automatically derive border colors from the color scheme (darker shade of fill color)',
+              ),
+              default: false,
+              renderTrigger: true,
             },
           },
         ],
@@ -135,10 +421,26 @@ const config: ControlPanelConfig = {
             config: {
               type: 'SliderControl',
               label: t('Border Width'),
+              description: t('Width of boundary borders in pixels'),
               default: 1,
               min: 0,
               max: 5,
               step: 0.5,
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'show_all_boundaries',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Show All Boundaries'),
+              description: t(
+                'Display boundary outlines for all areas, even those without data',
+              ),
+              default: true,
+              renderTrigger: true,
             },
           },
         ],
@@ -222,15 +524,94 @@ const config: ControlPanelConfig = {
         ],
         [
           {
+            name: 'legend_type',
+            config: {
+              type: 'SelectControl',
+              label: t('Legend Type'),
+              description: t(
+                'Auto calculates ranges from data. Manual allows custom break points and colors.',
+              ),
+              default: 'auto',
+              choices: [
+                ['auto', t('Auto (from data)')],
+                ['equal_interval', t('Equal Interval')],
+                ['quantile', t('Quantile')],
+                ['manual', t('Manual Breaks')],
+              ],
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
             name: 'legend_classes',
             config: {
               type: 'SliderControl',
               label: t('Number of Classes'),
-              description: t('Number of color classes in legend'),
+              description: t(
+                'Number of color classes/intervals in the legend (affects color distribution)',
+              ),
               default: 5,
-              min: 3,
+              min: 2,
               max: 9,
               step: 1,
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'manual_breaks',
+            config: {
+              type: 'TextControl',
+              label: t('Manual Break Points'),
+              description: t(
+                'Comma-separated break values for manual legend. E.g., "0,100,500,1000,5000" creates 4 intervals.',
+              ),
+              default: '',
+              renderTrigger: true,
+              visibility: ({ controls }: any) =>
+                controls?.legend_type?.value === 'manual',
+            },
+          },
+        ],
+        [
+          {
+            name: 'manual_colors',
+            config: {
+              type: 'TextControl',
+              label: t('Manual Colors'),
+              description: t(
+                'Comma-separated hex colors for each interval. E.g., "#ffffcc,#a1dab4,#41b6c4,#225ea8". Must match number of intervals.',
+              ),
+              default: '',
+              renderTrigger: true,
+              visibility: ({ controls }: any) =>
+                controls?.legend_type?.value === 'manual',
+            },
+          },
+        ],
+        [
+          {
+            name: 'legend_reverse_colors',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Reverse Color Scheme'),
+              description: t('Reverse the order of colors in the legend'),
+              default: false,
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'legend_no_data_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('No Data Color'),
+              description: t('Color for areas with no data'),
+              default: { r: 204, g: 204, b: 204, a: 1 },
+              renderTrigger: true,
             },
           },
         ],
@@ -249,10 +630,11 @@ const config: ControlPanelConfig = {
               description: t('Additional columns to show in tooltip'),
               multi: true,
               mapStateToProps: (state: any) => ({
-                choices: state.datasource?.columns?.map((col: any) => [
-                  col.column_name,
-                  col.column_name,
-                ]) || [],
+                choices:
+                  state.datasource?.columns?.map((col: any) => [
+                    col.column_name,
+                    col.column_name,
+                  ]) || [],
               }),
             },
           },

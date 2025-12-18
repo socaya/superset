@@ -127,6 +127,21 @@ const Select = forwardRef(
     const isSingleMode = mode === 'single';
     const shouldShowSearch = allowNewOptions ? true : showSearch;
     const [selectValue, setSelectValue] = useState(value);
+
+    const { dropdownStyle, styles: propsStyles } = props;
+    const styles = propsStyles || {};
+    const mergedStyles = dropdownStyle
+      ? {
+          ...styles,
+          popup: {
+            ...(styles.popup || {}),
+            root: {
+              ...(styles.popup?.root || {}),
+              ...dropdownStyle,
+            },
+          },
+        }
+      : styles;
     const [inputValue, setInputValue] = useState('');
     const [isDropdownVisible, setIsDropdownVisible] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
@@ -776,7 +791,11 @@ const Select = forwardRef(
           optionRender={option => <Space>{option.label || option.value}</Space>}
           oneLine={oneLine}
           css={props.css}
-          {...props}
+          // Exclude dropdownStyle and styles from props spread;
+          // they're explicitly handled via mergedStyles
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          {...(({ dropdownStyle, styles, ...rest }) => rest)(props)}
+          styles={mergedStyles}
           showSearch={shouldShowSearch}
           ref={ref}
         />

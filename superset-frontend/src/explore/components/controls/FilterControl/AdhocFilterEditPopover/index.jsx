@@ -27,7 +27,6 @@ import adhocMetricType from 'src/explore/components/controls/MetricControl/adhoc
 import AdhocFilter from 'src/explore/components/controls/FilterControl/AdhocFilter';
 import AdhocFilterEditPopoverSimpleTabContent from 'src/explore/components/controls/FilterControl/AdhocFilterEditPopoverSimpleTabContent';
 import AdhocFilterEditPopoverSqlTabContent from 'src/explore/components/controls/FilterControl/AdhocFilterEditPopoverSqlTabContent';
-import columnType from 'src/explore/components/controls/FilterControl/columnType';
 import {
   POPOVER_INITIAL_HEIGHT,
   POPOVER_INITIAL_WIDTH,
@@ -43,7 +42,10 @@ const propTypes = {
   onResize: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(
     PropTypes.oneOfType([
-      columnType,
+      PropTypes.shape({
+        column_name: PropTypes.string,
+        type: PropTypes.string,
+      }),
       PropTypes.shape({ saved_metric_name: PropTypes.string.isRequired }),
       adhocMetricType,
     ]),

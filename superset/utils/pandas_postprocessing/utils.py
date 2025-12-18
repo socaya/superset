@@ -149,6 +149,16 @@ def _get_aggregate_funcs(
     import re
     logger = logging.getLogger(__name__)
     
+    # DHIS2 datasets: Skip problematic aggregations
+    # DHIS2 API returns pre-aggregated data, so postprocessing aggregation is often incorrect
+    # Check if this is DHIS2 data (contains columns with DHIS2-style names and hierarchy columns)
+    is_dhis2_data = False
+    dhis2_hierarchy_patterns = ['National', 'Region', 'District', 'Sub_County', 'Health_Facility', 'Period']
+    if all(col in df.columns or col.replace('_', ' ') in df.columns for col in dhis2_hierarchy_patterns[:3]):
+        # Likely DHIS2 data if it has multiple hierarchy columns
+        is_dhis2_data = True
+        logger.warning("[POSTPROCESSING] Detected DHIS2 dataset - will skip problematic aggregations")
+    
     # Sanitize column names in aggregates for DHIS2 datasets if needed
     # This handles cases where formData contains unsanitized column names like "SUM(105-EP01a. Suspected fever)"
     try:
@@ -195,106 +205,112 @@ def _get_aggregate_funcs(
         logger.error(f"[POSTPROCESSING-DEBUG] Processing aggregate: name='{name}', column='{column}'")
         
         if column not in df:
-            # Try to find a matching column using various sanitization methods
-            found_column = None
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"[DHIS2] Column not found directly: '{column}'. Available columns: {list(df.columns)}")
-
-            # Method 0: Strip aggregate function wrapper (SUM(col), AVG(col), etc. - case insensitive)
-            # Chart formData may request "SUM(105_EP01b_Malaria_Total)" but DataFrame has "105_EP01b_Malaria_Total"
-            import re
-            agg_wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', column, re.IGNORECASE)
-            if agg_wrapper_match:
-                inner_column = agg_wrapper_match.group(2)
-                logger.warning(f"[DHIS2] Extracted inner column from aggregate wrapper: '{inner_column}'")
-                if inner_column in df:
-                    found_column = inner_column
-                else:
-                    # Use the inner column name for subsequent matching attempts
-                    column = inner_column
-            
-            # Also try the opposite: if column is not wrapped, try finding it wrapped with aggregate function
-            if not found_column and "(" not in column and ")" not in column:
-                # Try to find a column that is the aggregated version of this column
-                for df_col in df.columns:
-                    # Check if df_col looks like "AGG(column_name)" (case insensitive)
-                    wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', df_col, re.IGNORECASE)
-                    if wrapper_match:
-                        inner_from_df = wrapper_match.group(2)
-                        if inner_from_df == column:
-                            found_column = df_col
-                            logger.warning(f"[DHIS2] Found aggregated column: '{column}' -> '{df_col}'")
-                            break
-
-            # Method 1: Try DHIS2 sanitization
-            if not found_column:
-                try:
-                    from superset.db_engine_specs.dhis2_dialect import sanitize_dhis2_column_name
-                    sanitized_column = sanitize_dhis2_column_name(column)
-                    logger.warning(f"[DHIS2] Trying DHIS2 sanitization: '{column}' -> '{sanitized_column}'")
-                    if sanitized_column in df:
-                        found_column = sanitized_column
-                        logger.warning(f"[DHIS2] Found matching column after DHIS2 sanitization!")
-                except (ImportError, ModuleNotFoundError):
-                    pass
-
-            # Method 2: Try case-insensitive matching
-            if not found_column:
-                for df_col in df.columns:
-                    if df_col.lower() == column.lower():
-                        found_column = df_col
-                        logger.warning(f"[DHIS2] Found matching column with case-insensitive match: '{df_col}'")
-                        break
-
-            # Method 3: Try fuzzy matching with common transformations
-            if not found_column:
-                # Normalize both names for comparison
-                def normalize(s: str) -> str:
-                    s = s.lower()
-                    # Use the same sanitization as DHIS2 to ensure consistency
-                    s = re.sub(r'[^\w]', '_', s)
-                    s = re.sub(r'_+', '_', s)
-                    return s.strip('_')
-
-                normalized_column = normalize(column)
-                logger.error(f"[POSTPROCESSING] Trying fuzzy matching. Normalized query column: '{normalized_column}'")
-                logger.error(f"[POSTPROCESSING] Available DF columns (normalized): {[(df_col, normalize(df_col)) for df_col in df.columns]}")
-                for df_col in df.columns:
-                    # Try both direct column and wrapped version
-                    norm_df_col = normalize(df_col)
-                    
-                    # Check direct match
-                    if norm_df_col == normalized_column:
-                        found_column = df_col
-                        logger.error(f"[POSTPROCESSING] Found matching column with fuzzy matching: '{df_col}' (normalized: '{norm_df_col}')")
-                        break
-                    
-                    # Check if df_col is wrapped and inner matches (case insensitive)
-                    wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', df_col, re.IGNORECASE)
-                    if wrapper_match:
-                        inner_from_df = wrapper_match.group(2)
-                        norm_inner = normalize(inner_from_df)
-                        if norm_inner == normalized_column:
-                            found_column = df_col
-                            logger.error(f"[POSTPROCESSING] Found wrapped column with fuzzy matching: '{df_col}' (inner normalized: '{norm_inner}')")
-                            break
-
-            if found_column:
-                column = found_column
+            logger.error(f"[POSTPROCESSING-DEBUG] Column '{column}' not found directly. Checking if aggregate name '{name}' is in DataFrame...")
+            if name in df:
+                logger.error(f"[POSTPROCESSING-DEBUG] Found aggregate name '{name}' in DataFrame! Using name as column.")
+                column = name
             else:
-                logger.error(f"[POSTPROCESSING] CRITICAL: Could not find column '{column}' in dataframe")
-                logger.error(f"[POSTPROCESSING] Available columns in DataFrame: {list(df.columns)}")
-                logger.error(f"[POSTPROCESSING] DF shape: {df.shape}, dtypes: {df.dtypes.to_dict()}")
-                logger.error(f"[POSTPROCESSING] DataFrame head:\n{df.head()}")
-                raise InvalidPostProcessingError(
-                    _(
-                        "Column referenced by aggregate is undefined: %(column)s. "
-                        "Available columns: %(available)s",
-                        column=column,
-                        available=", ".join(str(c) for c in df.columns),
+                logger.error(f"[POSTPROCESSING-DEBUG] Aggregate name '{name}' not found either. Trying column matching strategies...")
+                # Try to find a matching column using various sanitization methods
+                found_column = None
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"[DHIS2] Column not found directly: '{column}'. Available columns: {list(df.columns)}")
+
+                # Method 0: Strip aggregate function wrapper (SUM(col), AVG(col), etc. - case insensitive)
+                # Chart formData may request "SUM(105_EP01b_Malaria_Total)" but DataFrame has "105_EP01b_Malaria_Total"
+                import re
+                agg_wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', column, re.IGNORECASE)
+                if agg_wrapper_match:
+                    inner_column = agg_wrapper_match.group(2)
+                    logger.warning(f"[DHIS2] Extracted inner column from aggregate wrapper: '{inner_column}'")
+                    if inner_column in df:
+                        found_column = inner_column
+                    else:
+                        # Use the inner column name for subsequent matching attempts
+                        column = inner_column
+                
+                # Also try the opposite: if column is not wrapped, try finding it wrapped with aggregate function
+                if not found_column and "(" not in column and ")" not in column:
+                    # Try to find a column that is the aggregated version of this column
+                    for df_col in df.columns:
+                        # Check if df_col looks like "AGG(column_name)" (case insensitive)
+                        wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', df_col, re.IGNORECASE)
+                        if wrapper_match:
+                            inner_from_df = wrapper_match.group(2)
+                            if inner_from_df == column:
+                                found_column = df_col
+                                logger.warning(f"[DHIS2] Found aggregated column: '{column}' -> '{df_col}'")
+                                break
+
+                # Method 1: Try DHIS2 sanitization
+                if not found_column:
+                    try:
+                        from superset.db_engine_specs.dhis2_dialect import sanitize_dhis2_column_name
+                        sanitized_column = sanitize_dhis2_column_name(column)
+                        logger.warning(f"[DHIS2] Trying DHIS2 sanitization: '{column}' -> '{sanitized_column}'")
+                        if sanitized_column in df:
+                            found_column = sanitized_column
+                            logger.warning(f"[DHIS2] Found matching column after DHIS2 sanitization!")
+                    except (ImportError, ModuleNotFoundError):
+                        pass
+
+                # Method 2: Try case-insensitive matching
+                if not found_column:
+                    for df_col in df.columns:
+                        if df_col.lower() == column.lower():
+                            found_column = df_col
+                            logger.warning(f"[DHIS2] Found matching column with case-insensitive match: '{df_col}'")
+                            break
+
+                # Method 3: Try fuzzy matching with common transformations
+                if not found_column:
+                    # Normalize both names for comparison
+                    def normalize(s: str) -> str:
+                        s = s.lower()
+                        # Use the same sanitization as DHIS2 to ensure consistency
+                        s = re.sub(r'[^\w]', '_', s)
+                        s = re.sub(r'_+', '_', s)
+                        return s.strip('_')
+
+                    normalized_column = normalize(column)
+                    logger.error(f"[POSTPROCESSING] Trying fuzzy matching. Normalized query column: '{normalized_column}'")
+                    logger.error(f"[POSTPROCESSING] Available DF columns (normalized): {[(df_col, normalize(df_col)) for df_col in df.columns]}")
+                    for df_col in df.columns:
+                        # Try both direct column and wrapped version
+                        norm_df_col = normalize(df_col)
+                        
+                        # Check direct match
+                        if norm_df_col == normalized_column:
+                            found_column = df_col
+                            logger.error(f"[POSTPROCESSING] Found matching column with fuzzy matching: '{df_col}' (normalized: '{norm_df_col}')")
+                            break
+                        
+                        # Check if df_col is wrapped and inner matches (case insensitive)
+                        wrapper_match = re.match(r'^(SUM|AVG|COUNT|MIN|MAX|MEDIAN|STDDEV|VAR)\((.+)\)$', df_col, re.IGNORECASE)
+                        if wrapper_match:
+                            inner_from_df = wrapper_match.group(2)
+                            norm_inner = normalize(inner_from_df)
+                            if norm_inner == normalized_column:
+                                found_column = df_col
+                                logger.error(f"[POSTPROCESSING] Found wrapped column with fuzzy matching: '{df_col}' (inner normalized: '{norm_inner}')")
+                                break
+
+                if found_column:
+                    column = found_column
+                else:
+                    logger.error(f"[POSTPROCESSING] CRITICAL: Could not find column '{column}' in dataframe")
+                    logger.error(f"[POSTPROCESSING] Available columns in DataFrame: {list(df.columns)}")
+                    logger.error(f"[POSTPROCESSING] DF shape: {df.shape}, dtypes: {df.dtypes.to_dict()}")
+                    logger.error(f"[POSTPROCESSING] DataFrame head:\n{df.head()}")
+                    raise InvalidPostProcessingError(
+                        _(
+                            "Column referenced by aggregate is undefined: %(column)s. "
+                            "Available columns: %(available)s",
+                            column=column,
+                            available=", ".join(str(c) for c in df.columns),
+                        )
                     )
-                )
         if "operator" not in agg_obj:
             raise InvalidPostProcessingError(
                 _(

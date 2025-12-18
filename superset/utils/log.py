@@ -367,7 +367,7 @@ def get_event_logger_from_cfg_value(cfg_value: Any) -> AbstractEventLogger:
 
 
 class DBEventLogger(AbstractEventLogger):
-    """Event logger that commits logs to Superset DB"""
+    """Event logger that commits logs to Superset DB with retry logic for database locks"""
 
     def log(  # pylint: disable=too-many-arguments,too-many-locals
         self,
@@ -383,6 +383,8 @@ class DBEventLogger(AbstractEventLogger):
         # pylint: disable=import-outside-toplevel
         from superset import db
         from superset.models.core import Log
+        import time
+        import sqlite3
 
         records = kwargs.get("records", [])
         logs = []
@@ -402,12 +404,41 @@ class DBEventLogger(AbstractEventLogger):
                 user_id=user_id,
             )
             logs.append(log)
-        try:
-            db.session.bulk_save_objects(logs)
-            db.session.commit()  # pylint: disable=consider-using-transaction
-        except SQLAlchemyError as ex:
-            logging.error("DBEventLogger failed to log event(s)")
-            logging.exception(ex)
+        
+        # Retry logic for database locks (especially SQLite)
+        max_retries = 3
+        retry_delay = 0.5  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                db.session.bulk_save_objects(logs)
+                db.session.commit()  # pylint: disable=consider-using-transaction
+                return  # Success, exit method
+            except (sqlite3.OperationalError, SQLAlchemyError) as ex:
+                db.session.rollback()  # Rollback failed transaction
+                error_str = str(ex).lower()
+                
+                # Check if it's a database lock error
+                if "database is locked" in error_str or "database" in error_str:
+                    if attempt < max_retries - 1:
+                        # Wait and retry
+                        logging.debug(f"Database lock, retrying logging attempt {attempt + 1}/{max_retries}")
+                        time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                        continue
+                    else:
+                        # Give up after max retries, but don't crash the app
+                        logging.warning(f"DBEventLogger failed after {max_retries} retries - database locked")
+                        return
+                else:
+                    # Other database errors
+                    logging.error("DBEventLogger failed to log event(s)")
+                    logging.exception(ex)
+                    return
+            except Exception as ex:  # pylint: disable=broad-except
+                # Unexpected error, log and continue (don't crash the app)
+                logging.error("DBEventLogger unexpected error")
+                logging.exception(ex)
+                return
 
 
 class StdOutEventLogger(AbstractEventLogger):

@@ -1709,6 +1709,7 @@ class SqlaTable(
                 """Find best matching column in DataFrame for expected column name.
                 Uses normalized name comparison for fuzzy matching.
                 Also handles aggregate function wrappers like SUM(), AVG(), COUNT().
+                Special handling for DHIS2 columns with special characters and spaces.
                 """
                 # Exact match first
                 if expected in df_columns:
@@ -1723,6 +1724,17 @@ class SqlaTable(
                     if inner_col in df_columns:
                         logger.debug(f"[COLUMN_TRACE] Matched aggregate '{expected}' -> '{inner_col}' (stripped wrapper)")
                         return inner_col
+                    
+                    # Try DHIS2 sanitization match (inner_col with special chars -> sanitized version)
+                    try:
+                        from superset.db_engine_specs.dhis2_dialect import sanitize_dhis2_column_name
+                        sanitized_inner = sanitize_dhis2_column_name(inner_col)
+                        if sanitized_inner in df_columns:
+                            logger.debug(f"[COLUMN_TRACE] Matched aggregate via DHIS2 sanitization: '{expected}' -> '{inner_col}' -> '{sanitized_inner}'")
+                            return sanitized_inner
+                    except (ImportError, ModuleNotFoundError):
+                        pass
+                    
                     # Try normalized match with inner column
                     inner_normalized = normalize_column_name(inner_col)
                     for col in df_columns:
@@ -1907,6 +1919,9 @@ class SqlaTable(
                     table=self,
                 )
                 new_column.is_dttm = new_column.is_temporal
+                # Set verbose_name from metadata if available (for display names in charts)
+                if col.get("verbose_name"):
+                    new_column.verbose_name = col["verbose_name"]
                 # Set description from comment field if available
                 if col.get("comment"):
                     new_column.description = col["comment"]
@@ -1917,6 +1932,9 @@ class SqlaTable(
                     results.modified.append(col["column_name"])
                 new_column.type = col["type"]
                 new_column.expression = ""
+                # Update verbose_name from metadata if available (for display names in charts)
+                if col.get("verbose_name"):
+                    new_column.verbose_name = col["verbose_name"]
                 # Set description from comment field if available
                 if col.get("comment"):
                     new_column.description = col["comment"]

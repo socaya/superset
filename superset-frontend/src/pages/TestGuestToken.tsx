@@ -38,7 +38,13 @@ export default function TestGuestToken() {
       {token && (
         <div style={{ marginTop: '20px' }}>
           <strong>Token:</strong>
-          <pre style={{ background: '#f5f5f5', padding: '10px', marginTop: '10px' }}>
+          <pre
+            style={{
+              background: '#f5f5f5',
+              padding: '10px',
+              marginTop: '10px',
+            }}
+          >
             {token}
           </pre>
         </div>

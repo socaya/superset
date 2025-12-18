@@ -32,7 +32,9 @@ export async function fetchGuestToken(dashboardId: string): Promise<string> {
   }
 
   try {
-    console.log('fetchGuestToken: Making POST request to /api/v1/security/guest_token_proxy/');
+    console.log(
+      'fetchGuestToken: Making POST request to /api/v1/security/guest_token_proxy/',
+    );
     // Always send what we have; backend will resolve to UUID when needed
     const isUuid = /^[0-9a-fA-F-]{36}$/.test(dashboardId);
     const payload = isUuid
@@ -46,7 +48,7 @@ export async function fetchGuestToken(dashboardId: string): Promise<string> {
 
     console.log('fetchGuestToken: Response received:', response);
     const data = response.json as GuestTokenResponse;
-    const token = data.token;
+    const { token } = data;
 
     if (!token) {
       throw new Error('No token in response');
@@ -60,16 +62,20 @@ export async function fetchGuestToken(dashboardId: string): Promise<string> {
     console.error('fetchGuestToken: ERROR on proxy:', error);
     // Fallback: if proxy route is unavailable (404), try the legacy public endpoint
     const isUuid = /^[0-9a-fA-F-]{36}$/.test(dashboardId);
-    const status = (error && (error.status || error.response?.status)) as number | undefined;
+    const status = (error && (error.status || error.response?.status)) as
+      | number
+      | undefined;
     if (status === 404 && !isUuid) {
       try {
-        console.log('fetchGuestToken: Falling back to /api/v1/security/public_guest_token/');
+        console.log(
+          'fetchGuestToken: Falling back to /api/v1/security/public_guest_token/',
+        );
         const fallback = await SupersetClient.post({
           endpoint: '/api/v1/security/public_guest_token/',
           jsonPayload: { dashboard_id: dashboardId },
         });
         const data = fallback.json as GuestTokenResponse;
-        const token = data.token;
+        const { token } = data;
         if (!token) throw new Error('No token in fallback response');
         tokenCache.set(dashboardId, token);
         return token;

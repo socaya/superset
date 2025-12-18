@@ -30,150 +30,149 @@ import type {
   OnClickHandler,
 } from './types';
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  props: ButtonProps,
-  ref,
-) {
-  const {
-    tooltip,
-    placement,
-    disabled = false,
-    buttonSize,
-    buttonStyle,
-    className,
-    cta,
-    children,
-    href,
-    showMarginRight = true,
-    icon,
-    ...restProps
-  } = props;
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(props: ButtonProps, ref) {
+    const {
+      tooltip,
+      placement,
+      disabled = false,
+      buttonSize,
+      buttonStyle,
+      className,
+      cta,
+      children,
+      href,
+      showMarginRight = true,
+      icon,
+      ...restProps
+    } = props;
 
-  const theme = useTheme();
-  const { fontSizeSM, fontWeightStrong } = theme;
+    const theme = useTheme();
+    const { fontSizeSM, fontWeightStrong } = theme;
 
-  let height = 32;
-  let padding = 18;
-  if (buttonSize === 'xsmall') {
-    height = 22;
-    padding = 5;
-  } else if (buttonSize === 'small') {
-    height = 30;
-    padding = 10;
-  }
-  if (buttonStyle === 'link') {
-    padding = 4;
-  }
+    let height = 32;
+    let padding = 18;
+    if (buttonSize === 'xsmall') {
+      height = 22;
+      padding = 5;
+    } else if (buttonSize === 'small') {
+      height = 30;
+      padding = 10;
+    }
+    if (buttonStyle === 'link') {
+      padding = 4;
+    }
 
-  let antdType: ButtonType = 'default';
-  let variant: ButtonVariantType = 'solid';
-  let color: ButtonColorType = 'primary';
+    let antdType: ButtonType = 'default';
+    let variant: ButtonVariantType = 'solid';
+    let color: ButtonColorType = 'primary';
 
-  if (!buttonStyle || buttonStyle === 'primary') {
-    variant = 'solid';
-    antdType = 'primary';
-  } else if (buttonStyle === 'secondary') {
-    variant = 'filled';
-    color = 'primary';
-  } else if (buttonStyle === 'tertiary') {
-    variant = 'outlined';
-    color = 'default';
-  } else if (buttonStyle === 'dashed') {
-    variant = 'dashed';
-    antdType = 'dashed';
-  } else if (buttonStyle === 'danger') {
-    color = 'danger';
-  } else if (buttonStyle === 'link') {
-    variant = 'link';
-  }
+    if (!buttonStyle || buttonStyle === 'primary') {
+      variant = 'solid';
+      antdType = 'primary';
+    } else if (buttonStyle === 'secondary') {
+      variant = 'filled';
+      color = 'primary';
+    } else if (buttonStyle === 'tertiary') {
+      variant = 'outlined';
+      color = 'default';
+    } else if (buttonStyle === 'dashed') {
+      variant = 'dashed';
+      antdType = 'dashed';
+    } else if (buttonStyle === 'danger') {
+      color = 'danger';
+    } else if (buttonStyle === 'link') {
+      variant = 'link';
+    }
 
-  const element = children as ReactElement;
+    const element = children as ReactElement;
 
-  let renderedChildren = [];
+    let renderedChildren = [];
 
-  if (element && element.type === Fragment) {
-    renderedChildren = Children.toArray(element.props.children);
-  } else {
-    renderedChildren = Children.toArray(children);
-  }
-  const firstChildMargin =
-    showMarginRight && renderedChildren.length > 1 ? theme.sizeUnit * 2 : 0;
+    if (element && element.type === Fragment) {
+      renderedChildren = Children.toArray(element.props.children);
+    } else {
+      renderedChildren = Children.toArray(children);
+    }
+    const firstChildMargin =
+      showMarginRight && renderedChildren.length > 1 ? theme.sizeUnit * 2 : 0;
 
-  const effectiveButtonStyle: ButtonStyle = buttonStyle ?? 'primary';
+    const effectiveButtonStyle: ButtonStyle = buttonStyle ?? 'primary';
 
-  const button = (
-    <AntdButton
-      ref={ref}
-      href={disabled ? undefined : href}
-      disabled={disabled}
-      type={antdType}
-      variant={variant}
-      danger={effectiveButtonStyle === 'danger'}
-      color={color}
-      className={cx(
-        className,
-        'superset-button',
-        // A static class name containing the button style is available to
-        // support customizing button styles in embedded dashboards.
-        `superset-button-${buttonStyle}`,
-        { cta: !!cta },
-      )}
-      css={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        lineHeight: 1,
-        fontSize: fontSizeSM,
-        fontWeight: fontWeightStrong,
-        height,
-        padding: `0px ${padding}px`,
-        minWidth: cta ? theme.sizeUnit * 36 : undefined,
-        minHeight: cta ? theme.sizeUnit * 8 : undefined,
-        marginLeft: 0,
-        '& + .superset-button': {
-          marginLeft: theme.sizeUnit * 2,
-        },
-        '& > span > :first-of-type': {
-          marginRight: firstChildMargin,
-        },
-        ':not(:hover)': effectiveButtonStyle === 'secondary' &&
-          !disabled && {
-            // NOTE: This is the best we can do contrast wise for the secondary button using antd tokens
-            // and abusing the semantics. Should be revisited when possible. https://github.com/apache/superset/pull/34253#issuecomment-3104834692
-            color: `${theme.colorPrimaryTextHover} !important`,
-          },
-      }}
-      icon={icon}
-      {...restProps}
-    >
-      {children}
-    </AntdButton>
-  );
-
-  if (tooltip) {
-    return (
-      <Tooltip placement={placement} title={tooltip}>
-        {/* wrap the button in a span so that the tooltip shows up
-        when the button is disabled. */}
-        {disabled ? (
-          <span
-            css={{
-              cursor: 'not-allowed',
-              '& > .superset-button': {
-                marginLeft: theme.sizeUnit * 2,
-              },
-            }}
-          >
-            {button}
-          </span>
-        ) : (
-          button
+    const button = (
+      <AntdButton
+        ref={ref}
+        href={disabled ? undefined : href}
+        disabled={disabled}
+        type={antdType}
+        variant={variant}
+        danger={effectiveButtonStyle === 'danger'}
+        color={color}
+        className={cx(
+          className,
+          'superset-button',
+          // A static class name containing the button style is available to
+          // support customizing button styles in embedded dashboards.
+          `superset-button-${buttonStyle}`,
+          { cta: !!cta },
         )}
-      </Tooltip>
+        css={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1,
+          fontSize: fontSizeSM,
+          fontWeight: fontWeightStrong,
+          height,
+          padding: `0px ${padding}px`,
+          minWidth: cta ? theme.sizeUnit * 36 : undefined,
+          minHeight: cta ? theme.sizeUnit * 8 : undefined,
+          marginLeft: 0,
+          '& + .superset-button': {
+            marginLeft: theme.sizeUnit * 2,
+          },
+          '& > span > :first-of-type': {
+            marginRight: firstChildMargin,
+          },
+          ':not(:hover)': effectiveButtonStyle === 'secondary' &&
+            !disabled && {
+              // NOTE: This is the best we can do contrast wise for the secondary button using antd tokens
+              // and abusing the semantics. Should be revisited when possible. https://github.com/apache/superset/pull/34253#issuecomment-3104834692
+              color: `${theme.colorPrimaryTextHover} !important`,
+            },
+        }}
+        icon={icon}
+        {...restProps}
+      >
+        {children}
+      </AntdButton>
     );
-  }
 
-  return button;
-});
+    if (tooltip) {
+      return (
+        <Tooltip placement={placement} title={tooltip}>
+          {/* wrap the button in a span so that the tooltip shows up
+        when the button is disabled. */}
+          {disabled ? (
+            <span
+              css={{
+                cursor: 'not-allowed',
+                '& > .superset-button': {
+                  marginLeft: theme.sizeUnit * 2,
+                },
+              }}
+            >
+              {button}
+            </span>
+          ) : (
+            button
+          )}
+        </Tooltip>
+      );
+    }
+
+    return button;
+  },
+);
 
 export type { ButtonProps, OnClickHandler };

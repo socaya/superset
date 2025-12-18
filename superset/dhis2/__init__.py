@@ -14,4 +14,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""DHIS2 integration package."""
+"""
+DHIS2 Module
+
+This module provides DHIS2-specific functionality for Superset:
+- Cache management API
+- Cache warming tasks
+- DHIS2 data adapter utilities
+"""
+

@@ -17,8 +17,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { embedDashboard } from '@superset-ui/embedded-sdk';
-import { fetchGuestToken } from '../../utils/guestToken';
 import { styled } from '@superset-ui/core';
+import { fetchGuestToken } from '../../utils/guestToken';
 
 const LoadingContainer = styled.div`
   display: flex;
@@ -80,7 +80,10 @@ export default function EmbeddedDashboard({
 
         console.log('EmbeddedDashboard: Fetching guest token...');
         const token = await fetchGuestToken(dashboardId);
-        console.log('EmbeddedDashboard: Guest token received:', token.substring(0, 20) + '...');
+        console.log(
+          'EmbeddedDashboard: Guest token received:',
+          `${token.substring(0, 20)}...`,
+        );
 
         console.log('EmbeddedDashboard: Calling embedDashboard SDK...');
         const dashboard = await embedDashboard({
@@ -172,9 +175,7 @@ export default function EmbeddedDashboard({
 
   return (
     <>
-      {isLoading && (
-        <LoadingContainer>Loading dashboard...</LoadingContainer>
-      )}
+      {isLoading && <LoadingContainer>Loading dashboard...</LoadingContainer>}
       <DashboardContainer
         ref={containerRef}
         style={{ display: isLoading ? 'none' : 'block' }}

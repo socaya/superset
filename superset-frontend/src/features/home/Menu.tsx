@@ -163,31 +163,31 @@ const { SubMenu } = MainNav;
 
 const StyledSubMenu = styled(SubMenu)`
   ${({ theme }) => css`
-    [data-icon="caret-down"] {
+    [data-icon='caret-down'] {
       color: rgba(255, 255, 255, 0.8);
       font-size: ${theme.fontSizeXS}px;
       margin-left: ${theme.sizeUnit}px;
     }
     &.ant-menu-submenu {
-        padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 4}px;
-        display: flex;
-        align-items: center;
-        height: 100%;
+      padding: ${theme.sizeUnit * 2}px ${theme.sizeUnit * 4}px;
+      display: flex;
+      align-items: center;
+      height: 100%;
 
+      .ant-menu-title-content {
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 500;
+      }
+
+      &:hover .ant-menu-title-content {
+        color: #ffffff;
+      }
+
+      &.ant-menu-submenu-active {
         .ant-menu-title-content {
-          color: rgba(255, 255, 255, 0.95);
-          font-weight: 500;
-        }
-
-        &:hover .ant-menu-title-content {
           color: #ffffff;
         }
-
-        &.ant-menu-submenu-active {
-          .ant-menu-title-content {
-            color: #ffffff;
-          }
-        }
+      }
     }
   `}
 `;
@@ -316,10 +316,9 @@ export function Menu({
       </StyledSubMenu>
     );
   };
-  const renderBrand = () => {
+  const renderBrand = () =>
     // Hide logo - only show text title
-    return null;
-  };
+    null;
   return (
     <StyledHeader className="top" id="main-menu" role="navigation">
       <Row>

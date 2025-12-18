@@ -1,24 +1,27 @@
 Loaded your LOCAL configuration at [/Users/stephocay/projects/hispuganda/superset/superset_config.py]
-2025-12-08 11:04:22,600:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
-2025-12-08 11:04:22,600:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
-2025-12-08 11:04:22,704:INFO:superset.app:Syncing configuration to database...
-2025-12-08 11:04:22,707:INFO:superset.app:Configuration sync to database completed successfully
+2025-12-17 15:36:12,988:INFO:superset.init_public_dashboards:[Embedded Dashboard] Initialization complete. Total dashboards processed: 1
+2025-12-17 15:36:12,989:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
+2025-12-17 15:36:12,989:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
+2025-12-17 15:36:13,257:INFO:superset.app:Pending database migrations: run 'superset db upgrade'
  * Serving Flask app 'superset'
  * Debug mode: on
-2025-12-08 11:04:22,990:INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+2025-12-17 15:36:13,931:INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on http://127.0.0.1:8088
-2025-12-08 11:04:22,990:INFO:werkzeug:[33mPress CTRL+C to quit[0m
-2025-12-08 11:04:23,055:INFO:werkzeug: * Restarting with watchdog (fsevents)
+2025-12-17 15:36:13,931:INFO:werkzeug:[33mPress CTRL+C to quit[0m
+2025-12-17 15:36:13,982:INFO:werkzeug: * Restarting with watchdog (fsevents)
 Loaded your LOCAL configuration at [/Users/stephocay/projects/hispuganda/superset/superset_config.py]
-2025-12-08 11:04:24,210:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
-2025-12-08 11:04:24,211:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
-2025-12-08 11:04:24,300:INFO:superset.app:Syncing configuration to database...
-2025-12-08 11:04:24,303:INFO:superset.app:Configuration sync to database completed successfully
-2025-12-08 11:04:24,564:WARNING:werkzeug: * Debugger is active!
-2025-12-08 11:04:24,571:INFO:werkzeug: * Debugger PIN: 114-810-287
-2025-12-08 11:04:24,650:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:24] "GET /health HTTP/1.1" 200 -
-2025-12-08 11:04:29,671:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:29] "GET /api/v1/me/ HTTP/1.1" 200 -
-2025-12-08 11:04:29,717:WARNING:superset.views.error_handling:HTTPException
+2025-12-17 15:36:17,099:INFO:superset.init_public_dashboards:[Embedded Dashboard] Initialization complete. Total dashboards processed: 1
+2025-12-17 15:36:17,100:INFO:alembic.runtime.migration:Context impl SQLiteImpl.
+2025-12-17 15:36:17,101:INFO:alembic.runtime.migration:Will assume non-transactional DDL.
+2025-12-17 15:36:17,252:INFO:superset.app:Pending database migrations: run 'superset db upgrade'
+2025-12-17 15:36:17,751:WARNING:werkzeug: * Debugger is active!
+2025-12-17 15:36:17,769:INFO:werkzeug: * Debugger PIN: 114-810-287
+2025-12-17 15:36:17,833:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:17] "GET /health HTTP/1.1" 200 -
+2025-12-17 15:36:45,648:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:45] "GET /sqllab/?dbid=2&sql=SELECT+*+FROM+analytics%0A/*+DHIS2:+table%3Danalytics%26dx%3DJhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX%26pe%3DLAST_5_YEARS%26ou%3DF1o6qBSx783;SUvODYOcaVf%26ouMode%3DDESCENDANTS+*/&name=analytics+20251217-3246&schema=dhis2&autorun=true&isDataset=true HTTP/1.1" 200 -
+2025-12-17 15:36:45,707:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:45] "GET /static/assets/theme.24c02b64.entry.js HTTP/1.1" 200 -
+2025-12-17 15:36:45,758:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:45] "GET /static/assets/packages_superset-ui-switchboard_src_index_ts-src_components_MessageToasts_ToastContainer_tsx-622036.646cb736.entry.js HTTP/1.1" 200 -
+2025-12-17 15:36:45,759:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:45] "GET /static/assets/spa.e0caf7f4.entry.js HTTP/1.1" 200 -
+2025-12-17 15:36:45,822:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -34,327 +37,213 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:04:29,722:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:29] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:04:30,678:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:30] "POST /superset/log/?explode=events&dashboard_id=1 HTTP/1.1" 200 -
-2025-12-08 11:04:31,858:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:31] "GET /superset/dashboard/1/?native_filters_key=CJZC3PTG67w HTTP/1.1" 200 -
-2025-12-08 11:04:31,979:WARNING:superset.views.error_handling:HTTPException
+2025-12-17 15:36:45,825:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:45] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:36:46,330:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "GET /api/v1/database/?q=(filters:!((col:allow_file_upload,opr:upload_is_enabled,value:!t))) HTTP/1.1" 200 -
+2025-12-17 15:36:46,348:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:neq,value:examples))) HTTP/1.1" 200 -
+/Users/stephocay/projects/hispuganda/superset/superset/models/sql_lab.py:537: SAWarning: Dialect sqlite+pysqlite does *not* support Decimal objects natively, and SQLAlchemy must convert from floating point - rounding errors and other issues may occur. Please consider storing Decimal numbers as strings or integers on this platform for lossless storage.
+  "latest_query": self.latest_query.to_dict() if self.latest_query else None,
+2025-12-17 15:36:46,367:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "GET /api/v1/sqllab/ HTTP/1.1" 200 -
+2025-12-17 15:36:46,748:WARNING:superset.views.error_handling:SupersetErrorException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
          ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:04:31,979:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:31] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:04:32,139:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/database/?q=(filters:!((col:allow_file_upload,opr:upload_is_enabled,value:!t))) HTTP/1.1" 200 -
-2025-12-08 11:04:32,155:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/1/charts HTTP/1.1" 200 -
-2025-12-08 11:04:32,171:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/1 HTTP/1.1" 200 -
-2025-12-08 11:04:32,181:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/1/filter_state/CJZC3PTG67w HTTP/1.1" 200 -
-2025-12-08 11:04:32,294:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
-2025-12-08 11:04:32,328:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dataset/1/drill_info/?q=(dashboard_id:1) HTTP/1.1" 200 -
-2025-12-08 11:04:32,341:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "POST /api/v1/chart/data?form_data={"slice_id":2}&dashboard_id=1 HTTP/1.1" 200 -
-2025-12-08 11:04:32,360:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:neq,value:examples))) HTTP/1.1" 200 -
-2025-12-08 11:04:32,365:INFO:superset.db_engine_specs.dhis2:[DHIS2] get_parameters_from_uri called
-2025-12-08 11:04:32,365:ERROR:superset.db_engine_specs.dhis2:[DHIS2] Failed to extract parameters from URI: 'URL' object has no attribute 'decode'
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/superset/db_engine_specs/dhis2.py", line 361, in get_parameters_from_uri
-    parsed = urlparse(uri)
-             ^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/urllib/parse.py", line 394, in urlparse
-    url, scheme, _coerce_result = _coerce_args(url, scheme)
-                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/urllib/parse.py", line 133, in _coerce_args
-    return _decode_args(args) + (_encode_result,)
-           ^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/urllib/parse.py", line 117, in _decode_args
-    return tuple(x.decode(encoding, errors) if x else '' for x in args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/urllib/parse.py", line 117, in <genexpr>
-    return tuple(x.decode(encoding, errors) if x else '' for x in args)
-                 ^^^^^^^^
-AttributeError: 'URL' object has no attribute 'decode'
-2025-12-08 11:04:32,371:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "GET /api/v1/dashboard/1/datasets HTTP/1.1" 200 -
-2025-12-08 11:04:32,393:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "POST /api/v1/chart/data HTTP/1.1" 200 -
-2025-12-08 11:04:32,397:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "POST /api/v1/chart/data HTTP/1.1" 200 -
-2025-12-08 11:04:32,810:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:32] "[35m[1mPOST /api/v1/dashboard/1/filter_state?tab_id=22 HTTP/1.1[0m" 201 -
-2025-12-08 11:04:33,153:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:04:33,155:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:33] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:04:33,356:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:33] "POST /superset/log/?explode=events HTTP/1.1" 200 -
-2025-12-08 11:04:35,269:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:04:35,271:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:35] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:04:39,384:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:04:39,386:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:39] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:04:47,462:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:04:47,464:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:47] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:04:52,338:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:52] "GET /api/v1/dataset/1?q=(columns:!(columns.column_name,columns.expression,columns.filterable,columns.is_dttm,columns.type,columns.verbose_name,database.id,database.database_name,datasource_type,filter_select_enabled,id,is_sqllab_view,main_dttm_col,metrics.metric_name,metrics.verbose_name,schema,sql,table_name)) HTTP/1.1" 200 -
-2025-12-08 11:04:52,338:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:04:52] "GET /api/v1/dataset/1?q=(columns:!(columns.column_name,columns.is_dttm,columns.type_generic,columns.filterable)) HTTP/1.1" 200 -
-2025-12-08 11:05:03,622:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:05:03,624:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:03] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:05:35,888:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:05:35,890:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:35] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:05:39,829:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:39] "GET /api/v1/dataset/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
-2025-12-08 11:05:39,829:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:39] "GET /api/v1/dataset/?q=(order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:25) HTTP/1.1" 200 -
-2025-12-08 11:05:40,725:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:40] "POST /superset/log/?explode=events HTTP/1.1" 200 -
-2025-12-08 11:05:41,683:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:41] "GET /static/assets/DatasetCreation.041d9ac9.chunk.js HTTP/1.1" 200 -
-2025-12-08 11:05:41,798:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:41] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:ct,value:'')),order_column:database_name,order_direction:asc,page:0,page_size:100) HTTP/1.1" 200 -
-2025-12-08 11:05:42,687:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:42] "POST /superset/log/?explode=events HTTP/1.1" 200 -
-2025-12-08 11:05:48,223:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:48,225:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:48] "GET /api/v1/database/2/schemas/?q=(force:!f) HTTP/1.1" 200 -
-2025-12-08 11:05:48,271:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:48,277:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:48,280:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:48,285:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:48,288:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:48] "GET /api/v1/dataset/?q=(filters:!((col:database,opr:rel_o_m,value:2),(col:schema,opr:eq,value:dhis2),(col:sql,opr:dataset_is_null_or_empty,value:!t)),page:0) HTTP/1.1" 200 -
-2025-12-08 11:05:48,290:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:48] "GET /api/v1/database/2/tables/?q=(force:!f,schema_name:dhis2) HTTP/1.1" 200 -
-2025-12-08 11:05:53,774:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/dhis2_metadata/?type=periods&periodType=YEARLY HTTP/1.1" 200 -
-2025-12-08 11:05:53,778:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,778:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,779:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Cached 2 column mappings for analytics
-2025-12-08 11:05:53,780:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,780:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,781:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/dhis2_metadata/?type=periods&periodType=MONTHLY HTTP/1.1" 200 -
-2025-12-08 11:05:53,781:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,781:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,782:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,782:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,783:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,783:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:05:53,784:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/dhis2_metadata/?type=periods&periodType=RELATIVE HTTP/1.1" 200 -
-2025-12-08 11:05:53,786:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/dhis2_metadata/?type=periods&periodType=QUARTERLY HTTP/1.1" 200 -
-2025-12-08 11:05:53,787:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:53] "GET /api/v1/database/2/table_metadata/?name=analytics&schema=dhis2 HTTP/1.1" 200 -
-2025-12-08 11:05:59,942:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/dataElements
-2025-12-08 11:05:59,942:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:05:59,953:INFO:superset.databases.api:[DHIS2 Metadata] Found 5668 dataElements
-2025-12-08 11:05:59,953:INFO:superset.databases.api:[DHIS2 Metadata] First item: 004-DN07. Age of deceased (yrs)
-2025-12-08 11:05:59,955:INFO:superset.databases.api:[DHIS2 Metadata] Returning 5000 items to frontend (total: 5668)
-2025-12-08 11:05:59,989:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:05:59] "GET /api/v1/database/2/dhis2_metadata/?type=dataElements&table=analytics HTTP/1.1" 200 -
-2025-12-08 11:06:01,920:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/indicators
-2025-12-08 11:06:01,921:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:06:01,924:INFO:superset.databases.api:[DHIS2 Metadata] Found 1867 indicators
-2025-12-08 11:06:01,924:INFO:superset.databases.api:[DHIS2 Metadata] First item: % Obstetric and Gynecological admission due abortions
-2025-12-08 11:06:01,924:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1867 items to frontend (total: 1867)
-2025-12-08 11:06:01,936:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:01] "GET /api/v1/database/2/dhis2_metadata/?type=indicators HTTP/1.1" 200 -
-2025-12-08 11:06:02,471:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/dataElements
-2025-12-08 11:06:02,471:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:06:02,476:INFO:superset.databases.api:[DHIS2 Metadata] Found 5668 dataElements
-2025-12-08 11:06:02,476:INFO:superset.databases.api:[DHIS2 Metadata] First item: 004-DN07. Age of deceased (yrs)
-2025-12-08 11:06:02,477:INFO:superset.databases.api:[DHIS2 Metadata] Returning 5000 items to frontend (total: 5668)
-2025-12-08 11:06:02,503:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:02] "GET /api/v1/database/2/dhis2_metadata/?type=dataElements&table=analytics HTTP/1.1" 200 -
-2025-12-08 11:06:02,740:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/organisationUnits
-2025-12-08 11:06:02,740:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:06:02,740:INFO:superset.databases.api:[DHIS2 Metadata] Found 1 organisationUnits
-2025-12-08 11:06:02,741:INFO:superset.databases.api:[DHIS2 Metadata] First item: MOH - Uganda
-2025-12-08 11:06:02,741:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1 items to frontend (total: 1)
-2025-12-08 11:06:02,746:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:02] "GET /api/v1/database/2/dhis2_metadata/?type=organisationUnits&level=1 HTTP/1.1" 200 -
-2025-12-08 11:06:04,031:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/indicators
-2025-12-08 11:06:04,031:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:06:04,033:INFO:superset.databases.api:[DHIS2 Metadata] Found 1867 indicators
-2025-12-08 11:06:04,033:INFO:superset.databases.api:[DHIS2 Metadata] First item: % Obstetric and Gynecological admission due abortions
-2025-12-08 11:06:04,033:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1867 items to frontend (total: 1867)
-2025-12-08 11:06:04,046:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:04] "GET /api/v1/database/2/dhis2_metadata/?type=indicators HTTP/1.1" 200 -
-2025-12-08 11:06:04,856:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/organisationUnits
-2025-12-08 11:06:04,857:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:06:04,857:INFO:superset.databases.api:[DHIS2 Metadata] Found 1 organisationUnits
-2025-12-08 11:06:04,857:INFO:superset.databases.api:[DHIS2 Metadata] First item: MOH - Uganda
-2025-12-08 11:06:04,857:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1 items to frontend (total: 1)
-2025-12-08 11:06:04,861:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:04] "GET /api/v1/database/2/dhis2_metadata/?type=organisationUnits&level=1 HTTP/1.1" 200 -
-2025-12-08 11:06:39,899:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:06:39,902:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:06:39] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:08:47,914:WARNING:superset.views.error_handling:HTTPException
-Traceback (most recent call last):
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
-    self.raise_routing_exception(req)
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
-    raise request.routing_exception  # type: ignore
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:08:47,917:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:08:47] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:08:56,621:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/dataElements
-2025-12-08 11:08:56,622:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:08:56,635:INFO:superset.databases.api:[DHIS2 Metadata] Found 7132 dataElements
-2025-12-08 11:08:56,636:INFO:superset.databases.api:[DHIS2 Metadata] First item: 004-DN02. Names of deceased
-2025-12-08 11:08:56,636:INFO:superset.databases.api:[DHIS2 Metadata] Returning 5000 items to frontend (total: 7132)
-2025-12-08 11:08:56,663:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:08:56] "GET /api/v1/database/2/dhis2_metadata/?type=dataElements HTTP/1.1" 200 -
-2025-12-08 11:08:58,316:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/indicators
-2025-12-08 11:08:58,316:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:08:58,319:INFO:superset.databases.api:[DHIS2 Metadata] Found 1867 indicators
-2025-12-08 11:08:58,319:INFO:superset.databases.api:[DHIS2 Metadata] First item: % Obstetric and Gynecological admission due abortions
-2025-12-08 11:08:58,319:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1867 items to frontend (total: 1867)
-2025-12-08 11:08:58,331:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:08:58] "GET /api/v1/database/2/dhis2_metadata/?type=indicators HTTP/1.1" 200 -
-2025-12-08 11:08:59,135:INFO:superset.databases.api:[DHIS2 Metadata] Request URL: https://tests.dhis2.hispuganda.org/hmis/api/organisationUnits
-2025-12-08 11:08:59,136:INFO:superset.databases.api:[DHIS2 Metadata] Response status: 200
-2025-12-08 11:08:59,136:INFO:superset.databases.api:[DHIS2 Metadata] Found 1 organisationUnits
-2025-12-08 11:08:59,136:INFO:superset.databases.api:[DHIS2 Metadata] First item: MOH - Uganda
-2025-12-08 11:08:59,136:INFO:superset.databases.api:[DHIS2 Metadata] Returning 1 items to frontend (total: 1)
-2025-12-08 11:08:59,141:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:08:59] "GET /api/v1/database/2/dhis2_metadata/?type=organisationUnits&level=1 HTTP/1.1" 200 -
-/Users/stephocay/projects/hispuganda/superset/superset/daos/base.py:369: SAWarning: Dialect sqlite+pysqlite does *not* support Decimal objects natively, and SQLAlchemy must convert from floating point - rounding errors and other issues may occur. Please consider storing Decimal numbers as strings or integers on this platform for lossless storage.
-  return query.filter_by(**filter_by).one_or_none()
-2025-12-08 11:12:30,895:INFO:superset.commands.sql_lab.execute:Triggering query_id: 17
-2025-12-08 11:12:30,907:INFO:superset.sql_lab:Query 17: Set query to 'running'
-2025-12-08 11:12:30,911:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:12:30,913:INFO:superset.sql_lab:Query 17: Running block 1 out of 1
-2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: /* DHIS2: dataElement=UIweaJe9T0L%2CbOEDRfF9XxR%2CDJzqHhU53B9&period=LAST_YEAR%2C2025%2C2024%2C2023%2C2022&orgUnit=USER_ORGUNIT */
-SELECT
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask_appbuilder/security/decorators.py", line 109, in wraps
+    return f(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/superset/views/base_api.py", line 120, in wraps
+    duration, response = time_function(f, self, *args, **kwargs)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/superset/utils/core.py", line 1499, in time_function
+    response = func(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask_appbuilder/api/__init__.py", line 202, in wraps
+    return f(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/superset/utils/log.py", line 304, in wrapper
+    value = f(*args, **kwargs)
+            ^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/superset/sqllab/api.py", line 340, in get_results
+    result = SqlExecutionResultsCommand(key=key, rows=rows).run()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/superset/commands/sql_lab/results.py", line 102, in run
+    self.validate()
+  File "/Users/stephocay/projects/hispuganda/superset/superset/commands/sql_lab/results.py", line 70, in validate
+    raise SupersetErrorException(
+superset.exceptions.SupersetErrorException: Data could not be retrieved from the results backend. You need to re-run the original query.
+2025-12-17 15:36:46,752:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:36:46,770:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:ct,value:''),(col:expose_in_sqllab,opr:eq,value:!t)),order_column:database_name,order_direction:asc,page:0,page_size:100) HTTP/1.1" 200 -
+2025-12-17 15:36:46,770:INFO:superset.commands.sql_lab.execute:Triggering query_id: 76
+2025-12-17 15:36:46,770:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "GET /api/v1/database/2/function_names/ HTTP/1.1" 200 -
+2025-12-17 15:36:46,775:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "[31m[1mGET /api/v1/sqllab/results/?q=(key:'7ed924fb-1a48-497d-8c36-36557f5e071f',rows:10000) HTTP/1.1[0m" 410 -
+2025-12-17 15:36:46,778:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "GET /api/v1/database/2/schemas/?q=(force:!f) HTTP/1.1" 200 -
+2025-12-17 15:36:46,795:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:ct,value:''),(col:expose_in_sqllab,opr:eq,value:!t)),order_column:database_name,order_direction:asc,page:0,page_size:100) HTTP/1.1" 200 -
+2025-12-17 15:36:46,801:INFO:superset.sql_lab:Query 76: Set query to 'running'
+2025-12-17 15:36:46,808:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:36:46,809:INFO:superset.sql_lab:Query 76: Running block 1 out of 1
+2025-12-17 15:36:46,814:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
   *
-FROM dataValueSets
-LIMIT 51
-2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: dataValueSets
-2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
-2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'dataElement': 'UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9', 'period': 'LAST_YEAR,2025,2024,2023,2022', 'orgUnit': 'USER_ORGUNIT'}
-2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-08', 'endDate': '2025-12-08', 'dataElement': 'UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9', 'period': 'LAST_YEAR,2025,2024,2023,2022', 'orgUnit': 'USER_ORGUNIT'}
-2025-12-08 11:12:30,918:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request: https://tests.dhis2.hispuganda.org/hmis/api/dataValueSets?startDate=2024-12-08&endDate=2025-12-08&dataElement=UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9&period=LAST_YEAR,2025,2024,2023,2022&orgUnit=USER_ORGUNIT
-2025-12-08 11:12:31,756:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for dataValueSets - At least one organisation unit or organisation unit group must be specified
-2025-12-08 11:12:31,757:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
-2025-12-08 11:12:31,772:INFO:superset.sql_lab:Query 17: Storing results in results backend, key: 85cc2181-5e62-41dc-8f0c-f6d1545320e4
-2025-12-08 11:12:31,776:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
-2025-12-08 11:12:31,777:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
-2025-12-08 11:12:31,777:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
-2025-12-08 11:12:31,777:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
-2025-12-08 11:12:31,781:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:12:31] "POST /api/v1/sqllab/execute/ HTTP/1.1" 200 -
-2025-12-08 11:12:54,764:INFO:superset.commands.sql_lab.execute:Triggering query_id: 18
-2025-12-08 11:12:54,767:INFO:superset.sql_lab:Query 18: Set query to 'running'
-2025-12-08 11:12:54,770:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
-2025-12-08 11:12:54,770:INFO:superset.sql_lab:Query 18: Running block 1 out of 1
-2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: /* DHIS2: dataElement=UIweaJe9T0L%2CbOEDRfF9XxR%2CDJzqHhU53B9&period=LAST_YEAR%2C2025%2C2024%2C2023%2C2022&orgUnit=USER_ORGUNIT */
-SELECT
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 1001
+2025-12-17 15:36:46,814:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
+2025-12-17 15:36:46,814:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
+2025-12-17 15:36:46,814:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:36:46,814:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:36:46,814:INFO:superset.db_engine_specs.dhis2_cache:[DHIS2 Cache] FileSystem backend initialized: /Users/stephocay/projects/hispuganda/superset/superset_home/dhis2_cache
+2025-12-17 15:36:46,814:INFO:superset.db_engine_specs.dhis2_cache:[DHIS2 Cache] Using FileSystem backend
+2025-12-17 15:36:46,814:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request (cache miss): https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+2025-12-17 15:36:46,927:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:36:46,928:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:36:46,928:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:36:46,929:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:36:46,932:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:46] "GET /api/v1/database/2/tables/?q=(force:!f,schema_name:dhis2) HTTP/1.1" 200 -
+2025-12-17 15:36:47,611:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for analytics - At least one dimension must be specified
+2025-12-17 15:36:47,613:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
+2025-12-17 15:36:47,650:INFO:superset.sql_lab:Query 76: Storing results in results backend, key: a3bdfa58-ca14-4758-a0a4-8858d2c8bc0f
+2025-12-17 15:36:47,663:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
+2025-12-17 15:36:47,663:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
+2025-12-17 15:36:47,664:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:36:47,664:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:36:47,677:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:47] "POST /api/v1/sqllab/execute/?isDataset=true HTTP/1.1" 200 -
+2025-12-17 15:36:47,767:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:47] "GET /api/v1/sqllab/results/?q=(key:a3bdfa58-ca14-4758-a0a4-8858d2c8bc0f,rows:10000) HTTP/1.1" 200 -
+2025-12-17 15:36:47,882:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:47] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-17 15:36:48,397:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:36:48,398:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:48] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:36:51,473:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:51] "POST /tabstateview/ HTTP/1.1" 200 -
+2025-12-17 15:36:51,895:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:51] "PUT /tabstateview/3 HTTP/1.1" 200 -
+2025-12-17 15:36:56,462:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:56] "POST /tabstateview/3/activate HTTP/1.1" 200 -
+2025-12-17 15:36:56,555:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:36:56,556:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:36:56] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:37:04,859:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:04] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-17 15:37:04,991:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:04] "GET /superset/welcome/ HTTP/1.1" 200 -
+2025-12-17 15:37:05,246:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:37:05,251:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:05] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:37:07,877:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:07] "GET /api/v1/database/?q=(filters:!((col:allow_file_upload,opr:upload_is_enabled,value:!t))) HTTP/1.1" 200 -
+2025-12-17 15:37:07,877:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:07] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:neq,value:examples))) HTTP/1.1" 200 -
+2025-12-17 15:37:07,878:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:07] "GET /api/v1/dashboard/?q=(filters:!((col:owners,opr:rel_m_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-17 15:37:07,879:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:07] "GET /api/v1/saved_query/?q=(filters:!((col:created_by,opr:rel_o_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-17 15:37:07,905:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:07] "GET /api/v1/chart/?q=(filters:!((col:owners,opr:rel_m_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-17 15:37:07,907:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:07] "GET /static/assets/DatasetList.c49f1615.chunk.js HTTP/1.1" 200 -
+2025-12-17 15:37:07,914:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:07] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-17 15:37:07,932:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:07] "GET /api/v1/log/recent_activity/?q=(distinct:!f,page_size:24) HTTP/1.1" 200 -
+2025-12-17 15:37:08,171:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:08] "GET /api/v1/dataset/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
+2025-12-17 15:37:08,175:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:08] "GET /api/v1/dataset/?q=(order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:25) HTTP/1.1" 200 -
+2025-12-17 15:37:08,219:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:08] "GET /api/v1/dashboard/?q=(filters:!(),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-17 15:37:08,228:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:08] "GET /api/v1/chart/?q=(filters:!(),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
+2025-12-17 15:37:08,794:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:08] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-17 15:37:10,467:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:10] "PUT /tabstateview/3 HTTP/1.1" 200 -
+2025-12-17 15:37:13,983:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:13] "GET /api/v1/dataset/4 HTTP/1.1" 200 -
+2025-12-17 15:37:14,491:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 502, in <lambda>
+    view_func=lambda **kw: self_ref().send_static_file(**kw),  # type: ignore # noqa: B950
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/superset/app.py", line 107, in send_static_file
+    return super().send_static_file(filename)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/scaffold.py", line 317, in send_static_file
+    return send_from_directory(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/helpers.py", line 557, in send_from_directory
+    return werkzeug.utils.send_from_directory(  # type: ignore[return-value]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/utils.py", line 575, in send_from_directory
+    raise NotFound()
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:37:14,521:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:14,554:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:14] "[33mGET /static/assets/theme-[object%20Object].js HTTP/1.1[0m" 404 -
+2025-12-17 15:37:14,596:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:14] "GET /api/v1/database/2/schemas/?q=(force:!f) HTTP/1.1" 200 -
+2025-12-17 15:37:14,615:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:14] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:ct,value:'')),order_column:database_name,order_direction:asc,page:0,page_size:100) HTTP/1.1" 200 -
+2025-12-17 15:37:14,625:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:14] "GET /api/v1/chart/?q=(columns:!(slice_name,url,certified_by,certification_details,description,owners.first_name,owners.last_name,owners.id,changed_on_delta_humanized,changed_on,changed_by.first_name,changed_by.last_name,changed_by.id,dashboards.id,dashboards.dashboard_title,dashboards.url),filters:!((col:datasource_id,opr:eq,value:4)),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:25) HTTP/1.1" 200 -
+2025-12-17 15:37:17,122:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:17] "[32mPOST /api/v1/sqllab/execute HTTP/1.1[0m" 308 -
+2025-12-17 15:37:17,239:INFO:superset.commands.sql_lab.execute:Triggering query_id: 77
+2025-12-17 15:37:17,250:INFO:superset.sql_lab:Query 77: Set query to 'running'
+2025-12-17 15:37:17,257:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:17,258:INFO:superset.sql_lab:Query 77: Running block 1 out of 1
+2025-12-17 15:37:17,266:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
   *
-FROM dataValueSets
-LIMIT 51
-2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: dataValueSets
-2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
-2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'dataElement': 'UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9', 'period': 'LAST_YEAR,2025,2024,2023,2022', 'orgUnit': 'USER_ORGUNIT'}
-2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-08', 'endDate': '2025-12-08', 'dataElement': 'UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9', 'period': 'LAST_YEAR,2025,2024,2023,2022', 'orgUnit': 'USER_ORGUNIT'}
-2025-12-08 11:12:54,775:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request: https://tests.dhis2.hispuganda.org/hmis/api/dataValueSets?startDate=2024-12-08&endDate=2025-12-08&dataElement=UIweaJe9T0L,bOEDRfF9XxR,DJzqHhU53B9&period=LAST_YEAR,2025,2024,2023,2022&orgUnit=USER_ORGUNIT
-2025-12-08 11:12:55,544:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for dataValueSets - At least one organisation unit or organisation unit group must be specified
-2025-12-08 11:12:55,547:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
-2025-12-08 11:12:55,559:INFO:superset.sql_lab:Query 18: Storing results in results backend, key: ef3ac881-eab4-4390-868a-bdb99072a420
-2025-12-08 11:12:55,562:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
-2025-12-08 11:12:55,562:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
-2025-12-08 11:12:55,562:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
-2025-12-08 11:12:55,562:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
-2025-12-08 11:12:55,567:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:12:55] "POST /api/v1/sqllab/execute/ HTTP/1.1" 200 -
-2025-12-08 11:13:03,989:WARNING:superset.views.error_handling:HTTPException
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 26
+2025-12-17 15:37:17,267:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
+2025-12-17 15:37:17,267:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
+2025-12-17 15:37:17,267:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:37:17,267:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:37:17,267:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request (cache miss): https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+2025-12-17 15:37:18,164:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for analytics - At least one dimension must be specified
+2025-12-17 15:37:18,165:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
+2025-12-17 15:37:18,182:INFO:superset.sql_lab:Query 77: Storing results in results backend, key: ef4a51f7-90a8-4893-bfef-ccf98e52a46b
+2025-12-17 15:37:18,191:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
+2025-12-17 15:37:18,191:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
+2025-12-17 15:37:18,192:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:37:18,192:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:37:18,204:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:18] "POST /api/v1/sqllab/execute/ HTTP/1.1" 200 -
+2025-12-17 15:37:19,201:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:19] "[35m[1mGET /static/assets/theme.231b206175755fdbb853.hot-update.json HTTP/1.1[0m" 204 -
+2025-12-17 15:37:19,202:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:19] "[35m[1mGET /static/assets/spa.231b206175755fdbb853.hot-update.json HTTP/1.1[0m" 204 -
+2025-12-17 15:37:19,235:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:19] "[35m[1mGET /static/assets/theme.231b206175755fdbb853.hot-update.json HTTP/1.1[0m" 204 -
+2025-12-17 15:37:19,235:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:19] "[35m[1mGET /static/assets/spa.231b206175755fdbb853.hot-update.json HTTP/1.1[0m" 204 -
+2025-12-17 15:37:28,171:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "GET /sqllab/?dbid=2&sql=SELECT+*+FROM+analytics%0A/*+DHIS2:+table%3Danalytics%26dx%3DJhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX%26pe%3DLAST_5_YEARS%26ou%3DF1o6qBSx783;SUvODYOcaVf%26ouMode%3DDESCENDANTS+*/&name=analytics+20251217-3246&schema=dhis2&autorun=true&isDataset=true HTTP/1.1" 200 -
+2025-12-17 15:37:28,301:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "GET /static/assets/theme.0f763500.entry.js HTTP/1.1" 200 -
+2025-12-17 15:37:28,337:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "GET /static/assets/packages_superset-ui-core_src_ui-overrides_ExtensionsRegistry_ts-src_components_UiConfigConte-27f319.cc9c7230.entry.js HTTP/1.1" 200 -
+2025-12-17 15:37:28,358:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "GET /static/assets/spa.8b726371.entry.js HTTP/1.1" 200 -
+2025-12-17 15:37:28,391:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "GET /static/assets/packages_superset-ui-switchboard_src_index_ts-src_components_MessageToasts_ToastContainer_tsx-622036.6e7a33c3.entry.js HTTP/1.1" 200 -
+2025-12-17 15:37:28,491:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "GET /static/assets/vendors-node_modules_ace-builds_src-min-noconflict_mode-css_js-node_modules_ace-builds_src-mi-d19787.031e54cb.entry.js HTTP/1.1" 200 -
+2025-12-17 15:37:28,565:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "GET /static/assets/vendors-node_modules_reduxjs_toolkit_dist_query_react_rtk-query-react_esm_js-node_modules_day-c0719a.6e943c75.entry.js HTTP/1.1" 200 -
+2025-12-17 15:37:28,812:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "GET /static/assets/vendors.8d8abe7f.entry.js HTTP/1.1" 200 -
+2025-12-17 15:37:28,962:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -370,24 +259,12 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:13:03,992:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:03] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:13:09,738:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/saved_query/?q=(filters:!((col:created_by,opr:rel_o_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 11:13:09,741:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/log/recent_activity/?q=(distinct:!f,page_size:24) HTTP/1.1" 200 -
-2025-12-08 11:13:09,749:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/dashboard/?q=(filters:!((col:owners,opr:rel_m_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 11:13:09,753:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/chart/?q=(filters:!((col:owners,opr:rel_m_m,value:'1')),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 11:13:09,795:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/dashboard/?q=(filters:!(),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 11:13:09,800:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/chart/?q=(filters:!(),order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:5) HTTP/1.1" 200 -
-2025-12-08 11:13:09,884:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/chart/favorite_status/?q=!(2,1) HTTP/1.1" 200 -
-2025-12-08 11:13:09,886:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/dashboard/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
-2025-12-08 11:13:09,888:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
-2025-12-08 11:13:09,895:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:09] "GET /api/v1/chart/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
-2025-12-08 11:13:10,606:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:10] "POST /superset/log/?explode=events HTTP/1.1" 200 -
-2025-12-08 11:13:29,473:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:29] "GET /api/v1/dashboard/?q=(order_column:changed_on_delta_humanized,order_direction:desc,page:0,page_size:25,select_columns:!(id,dashboard_title,published,url,slug,changed_by,changed_by.id,changed_by.first_name,changed_by.last_name,changed_on_delta_humanized,owners,owners.id,owners.first_name,owners.last_name,tags.id,tags.name,tags.type,status,certified_by,certification_details,changed_on)) HTTP/1.1" 200 -
-2025-12-08 11:13:29,474:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:29] "GET /api/v1/dashboard/_info?q=(keys:!(permissions)) HTTP/1.1" 200 -
-2025-12-08 11:13:29,555:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:29] "GET /api/v1/dashboard/favorite_status/?q=!(1) HTTP/1.1" 200 -
-2025-12-08 11:13:30,346:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:13:30] "POST /superset/log/?explode=events&dashboard_id=1 HTTP/1.1" 200 -
-2025-12-08 11:17:15,014:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:17:15] "GET /api/v1/me/ HTTP/1.1" 200 -
-2025-12-08 11:21:36,658:WARNING:superset.views.error_handling:HTTPException
+2025-12-17 15:37:28,970:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:28] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:37:29,943:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:29] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:neq,value:examples))) HTTP/1.1" 200 -
+2025-12-17 15:37:29,944:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:29] "GET /api/v1/sqllab/ HTTP/1.1" 200 -
+2025-12-17 15:37:29,981:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:29] "GET /api/v1/database/?q=(filters:!((col:allow_file_upload,opr:upload_is_enabled,value:!t))) HTTP/1.1" 200 -
+2025-12-17 15:37:30,636:INFO:superset.commands.sql_lab.execute:Triggering query_id: 78
+2025-12-17 15:37:30,643:WARNING:superset.views.error_handling:HTTPException
 Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
     rv = self.dispatch_request()
@@ -403,5 +280,317 @@ Traceback (most recent call last):
   File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-12-08 11:21:36,660:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:21:36] "[33mGET /ws HTTP/1.1[0m" 404 -
-2025-12-08 11:22:23,004:INFO:werkzeug:127.0.0.1 - - [08/Dec/2025 11:22:22] "GET /api/v1/me/ HTTP/1.1" 200 -
+2025-12-17 15:37:30,655:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:30] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:37:30,663:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:30] "GET /api/v1/database/2/function_names/ HTTP/1.1" 200 -
+2025-12-17 15:37:30,675:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:30] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:ct,value:''),(col:expose_in_sqllab,opr:eq,value:!t)),order_column:database_name,order_direction:asc,page:0,page_size:100) HTTP/1.1" 200 -
+2025-12-17 15:37:30,696:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:30,699:INFO:superset.sql_lab:Query 78: Set query to 'running'
+2025-12-17 15:37:30,701:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:30] "GET /api/v1/sqllab/results/?q=(key:a3bdfa58-ca14-4758-a0a4-8858d2c8bc0f,rows:10000) HTTP/1.1" 200 -
+2025-12-17 15:37:30,702:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:30] "GET /api/v1/database/2/schemas/?q=(force:!f) HTTP/1.1" 200 -
+2025-12-17 15:37:30,713:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:30,716:INFO:superset.sql_lab:Query 78: Running block 1 out of 1
+2025-12-17 15:37:30,719:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:30] "GET /api/v1/database/?q=(filters:!((col:database_name,opr:ct,value:''),(col:expose_in_sqllab,opr:eq,value:!t)),order_column:database_name,order_direction:asc,page:0,page_size:100) HTTP/1.1" 200 -
+2025-12-17 15:37:30,728:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
+  *
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 1001
+2025-12-17 15:37:30,728:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
+2025-12-17 15:37:30,728:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
+2025-12-17 15:37:30,728:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:37:30,728:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:37:30,729:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request (cache miss): https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+2025-12-17 15:37:30,857:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:30,859:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:30,859:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:30,860:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:30,869:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:30] "GET /api/v1/database/2/tables/?q=(force:!f,schema_name:dhis2) HTTP/1.1" 200 -
+2025-12-17 15:37:31,269:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:31] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-17 15:37:31,580:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for analytics - At least one dimension must be specified
+2025-12-17 15:37:31,604:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
+2025-12-17 15:37:31,707:INFO:superset.sql_lab:Query 78: Storing results in results backend, key: d99b2e92-d82d-4a4a-bdac-c30a43b74a37
+2025-12-17 15:37:31,776:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
+2025-12-17 15:37:31,777:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
+2025-12-17 15:37:31,781:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:37:31,782:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:37:31,824:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:31] "POST /api/v1/sqllab/execute/?isDataset=true HTTP/1.1" 200 -
+2025-12-17 15:37:32,127:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:32] "GET /api/v1/sqllab/results/?q=(key:d99b2e92-d82d-4a4a-bdac-c30a43b74a37,rows:10000) HTTP/1.1" 200 -
+2025-12-17 15:37:32,140:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:32] "GET /api/v1/query/updated_since?q=(last_updated_ms:1765975044958) HTTP/1.1" 200 -
+2025-12-17 15:37:32,752:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:37:32,883:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:32] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:37:36,076:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:36] "POST /tabstateview/ HTTP/1.1" 200 -
+2025-12-17 15:37:36,945:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:37:36,961:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:36] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:37:40,352:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:40] "POST /tabstateview/4/activate HTTP/1.1" 200 -
+2025-12-17 15:37:40,366:INFO:superset.commands.sql_lab.execute:Triggering query_id: 79
+2025-12-17 15:37:40,403:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:40] "GET /api/v1/query/updated_since?q=(last_updated_ms:1765975046761) HTTP/1.1" 200 -
+2025-12-17 15:37:40,451:INFO:superset.sql_lab:Query 79: Set query to 'running'
+2025-12-17 15:37:40,522:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:37:40,530:INFO:superset.sql_lab:Query 79: Running block 1 out of 1
+2025-12-17 15:37:40,727:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
+  *
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 1001
+2025-12-17 15:37:40,730:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
+2025-12-17 15:37:40,733:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
+2025-12-17 15:37:40,733:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:37:40,733:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:37:40,744:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request (cache miss): https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+2025-12-17 15:37:40,937:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:40] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-17 15:37:41,804:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for analytics - At least one dimension must be specified
+2025-12-17 15:37:41,860:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
+2025-12-17 15:37:42,081:INFO:superset.sql_lab:Query 79: Storing results in results backend, key: ea47d5e2-a4f3-43b7-897a-a7c3c8b14dea
+2025-12-17 15:37:42,209:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
+2025-12-17 15:37:42,217:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
+2025-12-17 15:37:42,285:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:37:42,286:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:37:42,342:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:42] "POST /api/v1/sqllab/execute/?isDataset=true HTTP/1.1" 200 -
+2025-12-17 15:37:42,782:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:42] "GET /api/v1/query/updated_since?q=(last_updated_ms:1765975046761) HTTP/1.1" 200 -
+2025-12-17 15:37:43,058:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:43] "GET /api/v1/sqllab/results/?q=(key:ea47d5e2-a4f3-43b7-897a-a7c3c8b14dea,rows:10000) HTTP/1.1" 200 -
+2025-12-17 15:37:44,979:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:44] "PUT /tabstateview/4 HTTP/1.1" 200 -
+2025-12-17 15:37:45,037:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:37:45,040:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:45] "[33mGET /ws HTTP/1.1[0m" 404 -
+2025-12-17 15:37:47,016:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:37:47,024:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:37:47] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-17 15:40:36,894:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:40:36] "GET /api/v1/me/ HTTP/1.1" 200 -
+2025-12-17 15:40:40,931:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:40:40,935:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:40:40] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-17 15:41:34,249:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:41:34] "GET /static/assets/theme.172611c04027285cefb8.hot-update.json HTTP/1.1" 200 -
+2025-12-17 15:41:34,250:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:41:34] "GET /static/assets/spa.172611c04027285cefb8.hot-update.json HTTP/1.1" 200 -
+2025-12-17 15:41:34,289:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:41:34] "GET /static/assets/theme.172611c04027285cefb8.hot-update.js HTTP/1.1" 200 -
+2025-12-17 15:41:34,314:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:41:34] "GET /static/assets/spa.172611c04027285cefb8.hot-update.js HTTP/1.1" 200 -
+2025-12-17 15:41:34,316:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:41:34] "GET /static/assets/packages_superset-ui-switchboard_src_index_ts-src_components_MessageToasts_ToastContainer_tsx-622036.172611c04027285cefb8.hot-update.js HTTP/1.1" 200 -
+2025-12-17 15:41:41,092:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:41:41] "GET /static/assets/spa.bedecabdf78772f4799c.hot-update.json HTTP/1.1" 200 -
+2025-12-17 15:41:41,239:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:41:41] "GET /static/assets/spa.bedecabdf78772f4799c.hot-update.js HTTP/1.1" 200 -
+2025-12-17 15:41:41,242:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:41:41] "GET /static/assets/packages_superset-ui-switchboard_src_index_ts-src_components_MessageToasts_ToastContainer_tsx-622036.bedecabdf78772f4799c.hot-update.js HTTP/1.1" 200 -
+2025-12-17 15:42:16,409:INFO:superset.commands.sql_lab.execute:Triggering query_id: 80
+2025-12-17 15:42:16,531:INFO:superset.sql_lab:Query 80: Set query to 'running'
+2025-12-17 15:42:16,654:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:42:16,667:INFO:superset.sql_lab:Query 80: Running block 1 out of 1
+2025-12-17 15:42:16,688:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:42:16] "GET /api/v1/query/updated_since?q=(last_updated_ms:1765975001369) HTTP/1.1" 200 -
+2025-12-17 15:42:16,695:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
+  *
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 1001
+2025-12-17 15:42:16,699:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
+2025-12-17 15:42:16,703:INFO:superset.db_engine_specs.dhis2_dialect:Using parameters from SQL comments (live/current)
+2025-12-17 15:42:16,703:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:42:16,704:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+2025-12-17 15:42:16,717:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request (cache miss): https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+2025-12-17 15:42:16,979:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:42:16] "POST /superset/log/?explode=events HTTP/1.1" 200 -
+2025-12-17 15:42:17,621:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for analytics - At least one dimension must be specified
+2025-12-17 15:42:17,623:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
+2025-12-17 15:42:17,644:INFO:superset.sql_lab:Query 80: Storing results in results backend, key: 2ba0496e-d8d9-478d-8289-a48618dca9f7
+2025-12-17 15:42:17,670:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
+2025-12-17 15:42:17,671:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
+2025-12-17 15:42:17,679:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:42:17,680:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:42:17,693:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:42:17] "POST /api/v1/sqllab/execute/?isDataset=true HTTP/1.1" 200 -
+2025-12-17 15:42:17,880:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:42:17] "GET /api/v1/sqllab/results/?q=(key:'2ba0496e-d8d9-478d-8289-a48618dca9f7',rows:10000) HTTP/1.1" 200 -
+2025-12-17 15:42:21,003:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:42:21] "PUT /tabstateview/3 HTTP/1.1" 200 -
+2025-12-17 15:42:32,155:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:42:32] "[31m[1mGET /api/v1/sqllab/results/?q=(key:'2ba0496e-d8d9-478d-8289-a48618dca9f7',rows HTTP/1.1[0m" 400 -
+2025-12-17 15:42:32,221:WARNING:superset.views.error_handling:HTTPException
+Traceback (most recent call last):
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/flask/ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/stephocay/projects/hispuganda/superset/.venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-17 15:42:32,235:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:42:32] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-12-17 15:43:10,063:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:43:10] "GET /api/v1/me/ HTTP/1.1" 200 -
+2025-12-17 15:45:11,715:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:45:11] "GET /api/v1/database/2/function_names/ HTTP/1.1" 200 -
+2025-12-17 15:45:16,626:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:45:16] "PUT /tabstateview/3 HTTP/1.1" 200 -
+2025-12-17 15:45:31,997:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:31,999:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:45:31] "GET /api/v1/database/2/table_metadata/extra/?name=analytics&schema=dhis2 HTTP/1.1" 200 -
+2025-12-17 15:45:32,000:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,005:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] Cached 2 column mappings for analytics
+2025-12-17 15:45:32,008:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,008:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,015:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,015:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,017:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,019:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,020:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,021:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:32,024:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:45:32] "GET /api/v1/database/2/table_metadata/?name=analytics&schema=dhis2 HTTP/1.1" 200 -
+2025-12-17 15:45:32,256:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:45:32] "POST /tableschemaview/ HTTP/1.1" 200 -
+2025-12-17 15:45:42,260:INFO:superset.commands.sql_lab.execute:Triggering query_id: 81
+2025-12-17 15:45:42,352:INFO:superset.sql_lab:Query 81: Set query to 'running'
+2025-12-17 15:45:42,363:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 connection initialized: https://tests.dhis2.hispuganda.org/hmis/api
+2025-12-17 15:45:42,369:INFO:superset.sql_lab:Query 81: Running block 1 out of 1
+2025-12-17 15:45:42,410:INFO:superset.db_engine_specs.dhis2_dialect:Executing DHIS2 query: SELECT
+  *
+FROM analytics
+LIMIT 101
+2025-12-17 15:45:42,412:INFO:superset.db_engine_specs.dhis2_dialect:Parsed endpoint: analytics
+2025-12-17 15:45:42,418:INFO:superset.db_engine_specs.dhis2_dialect:Query params: {}
+2025-12-17 15:45:42,419:INFO:superset.db_engine_specs.dhis2_dialect:Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME'}
+2025-12-17 15:45:42,423:INFO:superset.db_engine_specs.dhis2_dialect:DHIS2 API request (cache miss): https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME
+2025-12-17 15:45:42,493:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:45:42] "GET /api/v1/query/updated_since?q=(last_updated_ms:1765975331537) HTTP/1.1" 200 -
+[DHIS2] Executing query: SELECT
+  *
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 1001
+[DHIS2] Parsed endpoint: analytics
+[DHIS2] Using parameters from SQL comments: ['table', 'dx', 'pe', 'ou', 'ouMode']
+[DHIS2] Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] 🔄 CACHE MISS - API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+[DHIS2] 409 Error from API: At least one dimension must be specified
+[DHIS2] _set_description: original=['id', 'name', 'value'], sanitized=['id', 'name', 'value'], types=['String', 'String', 'Float']
+[DHIS2] Fetched 0 rows
+[DHIS2] fetchall() called - returning 0 rows
+[DHIS2] Executing query: SELECT
+  *
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 26
+[DHIS2] Parsed endpoint: analytics
+[DHIS2] Using parameters from SQL comments: ['table', 'dx', 'pe', 'ou', 'ouMode']
+[DHIS2] Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] 🔄 CACHE MISS - API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+[DHIS2] 409 Error from API: At least one dimension must be specified
+[DHIS2] _set_description: original=['id', 'name', 'value'], sanitized=['id', 'name', 'value'], types=['String', 'String', 'Float']
+[DHIS2] Fetched 0 rows
+[DHIS2] fetchall() called - returning 0 rows
+[DHIS2] Executing query: SELECT
+  *
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 1001
+[DHIS2] Parsed endpoint: analytics
+[DHIS2] Using parameters from SQL comments: ['table', 'dx', 'pe', 'ou', 'ouMode']
+[DHIS2] Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] 🔄 CACHE MISS - API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+[DHIS2] 409 Error from API: At least one dimension must be specified
+[DHIS2] _set_description: original=['id', 'name', 'value'], sanitized=['id', 'name', 'value'], types=['String', 'String', 'Float']
+[DHIS2] Fetched 0 rows
+[DHIS2] fetchall() called - returning 0 rows
+[DHIS2] Executing query: SELECT
+  *
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 1001
+[DHIS2] Parsed endpoint: analytics
+[DHIS2] Using parameters from SQL comments: ['table', 'dx', 'pe', 'ou', 'ouMode']
+[DHIS2] Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] 🔄 CACHE MISS - API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+[DHIS2] 409 Error from API: At least one dimension must be specified
+[DHIS2] _set_description: original=['id', 'name', 'value'], sanitized=['id', 'name', 'value'], types=['String', 'String', 'Float']
+[DHIS2] Fetched 0 rows
+[DHIS2] fetchall() called - returning 0 rows
+[DHIS2] Executing query: SELECT
+  *
+FROM analytics /* DHIS2: table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS */
+LIMIT 1001
+[DHIS2] Parsed endpoint: analytics
+[DHIS2] Using parameters from SQL comments: ['table', 'dx', 'pe', 'ou', 'ouMode']
+[DHIS2] Query params: {'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME', 'table': 'analytics', 'dx': 'JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX', 'pe': 'LAST_5_YEARS', 'ou': 'F1o6qBSx783;SUvODYOcaVf', 'ouMode': 'DESCENDANTS'}
+[DHIS2] 🔄 CACHE MISS - API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME&table=analytics&dx=JhvC7ZR9hUe;D9A0afrTYPw;wUDxFVBapIc;QHnwKs2OUZv;BWZFz9RJRPI;AuAOIfCuBUp;pRZrTLDN7Ge;gHjJrtw9vQX&pe=LAST_5_YEARS&ou=F1o6qBSx783;SUvODYOcaVf&ouMode=DESCENDANTS
+[DHIS2] 409 Error from API: At least one dimension must be specified
+[DHIS2] _set_description: original=['id', 'name', 'value'], sanitized=['id', 'name', 'value'], types=['String', 'String', 'Float']
+[DHIS2] Fetched 0 rows
+[DHIS2] fetchall() called - returning 0 rows
+[DHIS2] Executing query: SELECT
+  *
+FROM analytics
+LIMIT 101
+[DHIS2] Parsed endpoint: analytics
+[DHIS2] Query params: {}
+[DHIS2] Merged params: {'startDate': '2024-12-17', 'endDate': '2025-12-17', 'skipMeta': 'false', 'displayProperty': 'NAME'}
+[DHIS2] 🔄 CACHE MISS - API request URL: https://tests.dhis2.hispuganda.org/hmis/api/analytics?startDate=2024-12-17&endDate=2025-12-17&skipMeta=false&displayProperty=NAME
+[DHIS2] 409 Error from API: At least one dimension must be specified2025-12-17 15:45:43,343:WARNING:superset.db_engine_specs.dhis2_dialect:DHIS2 API 409 for analytics - At least one dimension must be specified
+2025-12-17 15:45:43,350:INFO:superset.db_engine_specs.dhis2_dialect:[DHIS2] fetchall() - Row count: 0
+2025-12-17 15:45:43,380:INFO:superset.sql_lab:Query 81: Storing results in results backend, key: e6aaa782-52f2-4df8-996e-e6e2b263c654
+2025-12-17 15:45:43,404:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: DataFrame created with 0 rows, 3 columns
+2025-12-17 15:45:43,405:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Columns: ['id', 'name', 'value']
+2025-12-17 15:45:43,409:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes BEFORE fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:45:43,409:INFO:superset.db_engine_specs.dhis2:[DHIS2] convert_table_to_df: Dtypes AFTER fix: {'id': dtype('O'), 'name': dtype('O'), 'value': dtype('O')}
+2025-12-17 15:45:43,424:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:45:43] "POST /api/v1/sqllab/execute/?isDataset=true HTTP/1.1" 200 -
+2025-12-17 15:45:43,600:INFO:werkzeug:127.0.0.1 - - [17/Dec/2025 15:45:43] "GET /api/v1/sqllab/results/?q=(key:e6aaa782-52f2-4df8-996e-e6e2b263c654,rows:100) HTTP/1.1" 200 -
+/opt/homebrew/Cellar/python@3.11/3.11.14_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

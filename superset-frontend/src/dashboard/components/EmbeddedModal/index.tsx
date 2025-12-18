@@ -153,9 +153,7 @@ export const DashboardEmbedControls = ({ dashboardId, onHide }: Props) => {
           },
           err => {
             console.error(err);
-            addDangerToast(
-              t('Sorry, something went wrong. Please try again.'),
-            );
+            addDangerToast(t('Sorry, something went wrong. Please try again.'));
           },
         )
         .finally(() => {

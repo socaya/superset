@@ -26,6 +26,7 @@ import {
 } from '@superset-ui/core';
 import { FunctionComponent, useState, useMemo, useCallback, Key } from 'react';
 import { Link, useHistory } from 'react-router-dom';
+import { dhis2DataPreloader } from 'src/utils/dhis2DataPreloader';
 import rison from 'rison';
 import {
   createFetchRelated,
@@ -70,6 +71,7 @@ import {
   CONFIRM_OVERWRITE_MESSAGE,
 } from 'src/features/datasets/constants';
 import DuplicateDatasetModal from 'src/features/datasets/DuplicateDatasetModal';
+import { DatasetPreviewModal } from 'src/features/datasets/DatasetPreviewModal';
 import { useSelector } from 'react-redux';
 import { QueryObjectColumns } from 'src/views/CRUD/types';
 import { WIDER_DROPDOWN_WIDTH } from 'src/components/ListView/utils';
@@ -180,6 +182,9 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
 
   const [datasetCurrentlyDuplicating, setDatasetCurrentlyDuplicating] =
     useState<VirtualDataset | null>(null);
+
+  const [datasetCurrentlyPreviewing, setDatasetCurrentlyPreviewing] =
+    useState<Dataset | null>(null);
 
   const [importingDataset, showImportModal] = useState<boolean>(false);
   const [passwordFields, setPasswordFields] = useState<string[]>([]);
@@ -312,21 +317,35 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
               table_name: datasetTitle,
               description,
               explore_url: exploreURL,
+              id: datasetId,
+              database,
+              sql,
             },
           },
         }: any) => {
+          const handleDatasetClick = () => {
+            if (
+              datasetId &&
+              database?.id &&
+              sql &&
+              /\/\*\s*DHIS2:\s*(.+?)\s*\*\//i.test(sql)
+            ) {
+              dhis2DataPreloader.preloadDataset(datasetId, database.id, sql);
+            }
+          };
+
           let titleLink: JSX.Element;
           if (PREVENT_UNSAFE_DEFAULT_URLS_ON_DATASET) {
             titleLink = (
-              <Link data-test="internal-link" to={exploreURL}>
+              <Link data-test="internal-link" to={exploreURL} onClick={handleDatasetClick}>
                 {datasetTitle}
               </Link>
             );
           } else {
             titleLink = (
-              // exploreUrl can be a link to Explore or an external link
-              // in the first case use SPA routing, else use HTML anchor
-              <GenericLink to={exploreURL}>{datasetTitle}</GenericLink>
+              <GenericLink to={exploreURL} onClick={handleDatasetClick}>
+                {datasetTitle}
+              </GenericLink>
             );
           }
           try {
@@ -430,6 +449,23 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
           const handleDelete = () => openDatasetDeleteModal(original);
           const handleExport = () => handleBulkDatasetExport([original]);
           const handleDuplicate = () => openDatasetDuplicateModal(original);
+
+          const handleRefresh = async () => {
+            try {
+              await SupersetClient.put({
+                endpoint: `/api/v1/dataset/${original.id}/refresh`,
+              });
+              addSuccessToast(t('Dataset refreshed successfully'));
+              refreshData();
+            } catch (error) {
+              addDangerToast(t('Failed to refresh dataset'));
+            }
+          };
+
+          const handlePreview = () => {
+            setDatasetCurrentlyPreviewing(original);
+          };
+
           if (!canEdit && !canDelete && !canExport && !canDuplicate) {
             return null;
           }
@@ -467,6 +503,34 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
                   </span>
                 </Tooltip>
               )}
+              <Tooltip
+                id="preview-action-tooltip"
+                title={t('Preview Data')}
+                placement="bottom"
+              >
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="action-button"
+                  onClick={handlePreview}
+                >
+                  <Icons.EyeOutlined iconSize="l" />
+                </span>
+              </Tooltip>
+              <Tooltip
+                id="refresh-action-tooltip"
+                title={t('Refresh Data')}
+                placement="bottom"
+              >
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="action-button"
+                  onClick={handleRefresh}
+                >
+                  <Icons.ReloadOutlined iconSize="l" />
+                </span>
+              </Tooltip>
               {canEdit && (
                 <Tooltip
                   id="edit-action-tooltip"
@@ -696,6 +760,10 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
     setDatasetCurrentlyDuplicating(null);
   };
 
+  const closeDatasetPreviewModal = () => {
+    setDatasetCurrentlyPreviewing(null);
+  };
+
   const handleDatasetDelete = ({ id, table_name: tableName }: Dataset) => {
     SupersetClient.delete({
       endpoint: `/api/v1/dataset/${id}`,
@@ -884,6 +952,10 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
         dataset={datasetCurrentlyDuplicating}
         onHide={closeDatasetDuplicateModal}
         onDuplicate={handleDatasetDuplicate}
+      />
+      <DatasetPreviewModal
+        dataset={datasetCurrentlyPreviewing}
+        onClose={closeDatasetPreviewModal}
       />
       <ConfirmStatusChange
         title={t('Please confirm')}

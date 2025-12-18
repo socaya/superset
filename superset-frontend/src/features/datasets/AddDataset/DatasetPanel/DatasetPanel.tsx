@@ -286,6 +286,7 @@ const DatasetPanel = ({
                   size={TableSize.Small}
                   columns={tableColumnDefinition}
                   data={columnList}
+                  rowKey="name"
                   pageSizeOptions={pageSizeOptions}
                   defaultPageSize={DEFAULT_PAGE_SIZE}
                 />
@@ -299,6 +300,7 @@ const DatasetPanel = ({
                   size={TableSize.Small}
                   columns={tableColumnDefinition}
                   data={columnList}
+                  rowKey="name"
                   pageSizeOptions={pageSizeOptions}
                   defaultPageSize={DEFAULT_PAGE_SIZE}
                 />

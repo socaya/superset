@@ -28,6 +28,7 @@ import {
   VizType,
   isFeatureEnabled,
   FeatureFlag,
+  SupersetClient,
 } from '@superset-ui/core';
 import { Logger, LOG_ACTIONS_RENDER_CHART } from 'src/logger/LogUtils';
 import { EmptyState } from '@superset-ui/core/components';
@@ -96,8 +97,12 @@ class ChartRenderer extends Component {
       inContextMenu: false,
       legendState: undefined,
       legendIndex: 0,
+      dhis2Data: null,
+      dhis2DataLoading: false,
+      dhis2Error: null,
     };
     this.hasQueryResponseChange = false;
+    this.dhis2FetchAborted = false;
 
     this.contextMenuRef = createRef();
 

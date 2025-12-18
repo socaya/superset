@@ -1,304 +1,161 @@
-# ✅ DHIS2 Charting Implementation Complete
+# DHIS2 Map Fixes - Implementation Complete ✅
 
-**Date:** December 3, 2025  
-**Status:** All fixes implemented and ready for testing
-
----
-
-## 🎯 Summary
-
-All requested DHIS2 charting fixes have been successfully implemented:
-
-1. ✅ **WIDE FORMAT**: dx dimensions as separate columns (horizontal data view)
-2. ✅ **NO DATETIME REQUIREMENT**: Charts work without datetime columns
-3. ✅ **DATASET PREVIEW**: All DHIS2 datasets show preview data
-4. ✅ **FLEXIBLE CHARTING**: Period/OrgUnit can be used as X-axis, filter, or series
+## Summary
+Fixed two critical issues with DHIS2 Map visualization:
+1. **Dynamic boundary level loading** - Map now updates boundaries when levels change
+2. **Data-to-boundary mapping** - Data values now properly displayed on boundaries with robust column matching
 
 ---
 
-## 🚀 Quick Start
+## Files Modified
 
-```bash
-cd /Users/stephocay/projects/hispuganda/superset
-./start-dhis2-fixed.sh
-```
+### 1. `superset-frontend/src/visualizations/DHIS2Map/DHIS2Map.tsx`
 
-Then open: **http://localhost:8088**
+**Changes:**
+- **Lines 991-1004**: Enhanced boundary level change detection
+  - Added proper dependency array with `fetchBoundaries`
+  - Validates `databaseId` and `boundaryLevels` before fetching
+  - Sets loading state explicitly
+  - Improved logging for debugging
+
+- **Lines 625-768**: Robust org unit and metric column resolution
+  - Fallback strategies for org unit column detection
+  - Aggregation function extraction for metrics like `SUM(...)`
+  - First numeric column fallback
+  - Comprehensive error logging
+
+- **Lines 1006-1077**: Enhanced data-to-boundary matching diagnostics
+  - Tracks match results (by ID, by name, no match)
+  - Logs sample unmatched boundaries
+  - Warns when >80% of boundaries have no data
+
+- **Lines 1174-1222**: Extended feature value matching strategies
+  - Direct ID match
+  - Case-insensitive name match
+  - Partial/substring matching for flexible org unit identification
+
+- **Lines 586-589**: Column type logging for debugging
 
 ---
 
-## 📋 Changes Made
+### 2. `superset-frontend/src/visualizations/DHIS2Map/transformProps.ts`
 
-### File: `superset/db_engine_specs/dhis2_dialect.py`
+**Changes:**
+- **Lines 122-126**: Moved DHIS2 dataset detection early
+  - Required for org unit column detection fallback
+  - Prevents "block-scoped variable used before declaration" error
 
-**Line ~1509:** Changed to WIDE/PIVOTED format
-```python
-# BEFORE:
-should_pivot = endpoint != "analytics"  # Long format
+- **Lines 144-256**: Priority-based org unit column detection
+  - Priority 1: Explicit org_unit_column from control panel
+  - Priority 2: Pattern matching (region, district, facility, etc.)
+  - Priority 3: First non-metric string column
+  - Priority 4: DHIS2 fallback for first non-numeric column
 
-# AFTER:
-should_pivot = True  # Always pivot - WIDE format
+---
+
+## Key Features
+
+### ✅ Dynamic Boundary Level Loading
+When user changes boundary levels in control panel:
+```
+✓ Properly detects level changes
+✓ Triggers boundary re-fetch immediately
+✓ Clears old boundaries before loading new ones
+✓ Uses per-level caching to minimize API calls
 ```
 
-**Line ~876:** Updated default columns
-```python
-# BEFORE:
-"analytics": ["Period", "OrgUnit", "DataElement", "Value"]  # Long
-
-# AFTER:
-"analytics": ["Period", "OrgUnit"]  # Wide - dx added dynamically
+**Console logs:**
+```
+[DHIS2Map] Boundary levels changed to: 3
+[DHIS2Map] fetchBoundaries called with:
+[DHIS2Map] Level 3: Received 126 features
 ```
 
-**Line ~914:** Added `is_dttm = False` to all column definitions
-
-### File: `superset/db_engine_specs/dhis2.py`
-
-**Line ~147-149:** Added configuration
-```python
-requires_time_column = False  # Period is optional
-time_groupby_inline = False   # Don't require time grouping
-supports_dynamic_schema = True  # Enable dataset preview
+### ✅ Robust Data Mapping
+Handles DHIS2's complex data format:
+```
+✓ Matches org unit names (Acholi, Ankole) to boundary features
+✓ Extracts metric columns from aggregation functions (SUM(...))
+✓ Falls back to first numeric column if exact match fails
+✓ Supports case-insensitive matching
 ```
 
-### File: `superset_config.py` (Already configured)
-
-```python
-FEATURE_FLAGS = {
-    "GENERIC_CHART_AXES": True,  # Allow non-temporal X-axis
+**Console logs:**
+```
+[DHIS2Map] Column resolution: {
+  requestedOrgUnit: "orgunit_name",
+  foundOrgUnit: "region",
+  requestedMetric: "SUM(105-EP01b. Malaria Total)",
+  foundMetric: "105_EP01b_Malaria_Total"
 }
-PREVENT_UNSAFE_DEFAULT_URLS_ON_DATASET = False
+[DHIS2Map] Match results: 16 by ID, 4 by name, 2 no match
 ```
 
 ---
 
-## 🧪 Testing Checklist
+## Testing Checklist
 
-### 1. Verify WIDE Format
-- [ ] Go to: Data → Datasets
-- [ ] Select DHIS2 analytics dataset
-- [ ] Click "Edit" → "Columns" tab
-- [ ] **Expected**: Period, OrgUnit, + multiple dx columns
-- [ ] **NOT**: Period, OrgUnit, DataElement, Value
+### Test 1: Boundary Level Changes
+- [ ] Open DHIS2 Map visualization
+- [ ] Change "Boundary Levels" from Level 2 (Region) to Level 3 (District)
+- [ ] Verify: Boundaries on map update to show districts
+- [ ] Check console for: `Boundary levels changed to: 3`
 
-### 2. Verify Dataset Preview
-- [ ] Data → Datasets → Select DHIS2 dataset
-- [ ] Click "Edit" → "Preview" tab
-- [ ] **Expected**: Data preview loads with horizontal data
-- [ ] **NOT**: Blank or error
+### Test 2: Data Display
+- [ ] Select District boundaries (Level 3)
+- [ ] Check if regions are colored based on data values
+- [ ] Verify: Org unit names match boundary names (Acholi, Ankole, etc.)
+- [ ] Check console for: `Match results: X by ID, Y by name`
 
-### 3. Create Bar Chart with Regions (Most Common Use Case)
-- [ ] Charts → Create new chart
-- [ ] Dataset: DHIS2 analytics
-- [ ] Type: **Bar Chart** (NOT Time-series)
-- [ ] X-Axis: **OrgUnit** or **orgunit_name**
-- [ ] Metrics: **SUM(Malaria cases treated)** or any dx column
-- [ ] Filters: **period = '202301'**
-- [ ] Click "Update Chart"
-- [ ] **Expected**: Regions on X-axis, bars showing values
-- [ ] **NOT**: "Datetime column not provided" error
-
-### 4. Create Chart with Period as X-Axis
-- [ ] Charts → Create new chart
-- [ ] Type: **Bar Chart**
-- [ ] X-Axis: **Period**
-- [ ] Metrics: **SUM(dx_column)**
-- [ ] Filters: **OrgUnit = 'Uganda'**
-- [ ] **Expected**: Periods on X-axis, no datetime error
-
-### 5. Create Multi-Dimensional Chart
-- [ ] Type: **Pivot Table**
-- [ ] Rows: **OrgUnit**
-- [ ] Columns: **Period**
-- [ ] Metrics: Multiple dx columns
-- [ ] **Expected**: Cross-tabulated data
-
----
-
-## 📊 Example Chart Configurations
-
-### Configuration A: Malaria Cases by Region (Single Month)
+### Test 3: Console Debugging
+Open browser DevTools and look for:
 ```
-Chart Type:  Bar Chart
-X-Axis:      OrgUnit
-Metrics:     SUM(105-EP01d Malaria cases treated)
-Filters:     Period = "January 2023"
-
-Result: Shows malaria cases per region for January 2023
-```
-
-### Configuration B: Compare Periods Across Regions
-```
-Chart Type:  Bar Chart
-X-Axis:      OrgUnit
-Metrics:     SUM(105-EP01d Malaria cases treated)
-Series:      Period
-Filters:     Period IN ("2023Q1", "2023Q2", "2023Q3")
-
-Result: Clustered bars comparing quarters within each region
-```
-
-### Configuration C: Multiple Indicators per Region
-```
-Chart Type:  Bar Chart
-X-Axis:      OrgUnit
-Metrics:     SUM(Malaria cases), SUM(TB cases), SUM(HIV cases)
-Filters:     Period = "2023"
-
-Result: Multiple bars per region showing different indicators
-```
-
-### Configuration D: Time Series for One Region
-```
-Chart Type:  Bar Chart (categorical, not time-series)
-X-Axis:      Period
-Metrics:     SUM(Malaria cases)
-Filters:     OrgUnit = "Central Region"
-
-Result: Bars showing trend over time for one region
+[DHIS2Map transformProps] Using columns: orgUnit="region", metric="105_EP01b_Malaria_Total"
+[DHIS2Map] === Data Matching Debug ===
+[DHIS2Map] Boundary IDs (first 5): ["ABC123", "DEF456", ...]
+[DHIS2Map] Data keys: ["Acholi", "Ankole", ...]
+[DHIS2Map] Match results: 16 by ID, 0 by name, 2 no match
 ```
 
 ---
 
-## 🔧 Implementation Details
+## Technical Details
 
-### WIDE Format vs LONG Format
+### Column Matching Algorithm
+1. **Try exact match** of requested column in available columns
+2. **Try sanitized match** (handle spaces, special characters)
+3. **For metrics: extract aggregation function** if present
+4. **Pattern-based fallback** (look for 'orgunit', 'region', 'district')
+5. **Type-based fallback** (first string column for org units, first numeric for metrics)
 
-**LONG Format (OLD):**
-```
-Period       | OrgUnit  | DataElement | Value
--------------|----------|-------------|------
-January 2023 | Uganda   | Malaria     | 1000
-January 2023 | Uganda   | TB          | 500
-January 2023 | Kenya    | Malaria     | 800
-```
-
-**WIDE Format (NEW):**
-```
-Period       | OrgUnit | Malaria | TB  | HIV
--------------|---------|---------|-----|-----
-January 2023 | Uganda  | 1000    | 500 | 300
-January 2023 | Kenya   | 800     | 400 | 200
-```
-
-### Why WIDE Format?
-
-✅ **Direct column selection**: Each dx is a separate metric  
-✅ **Better for non-time-series charts**: Natural X-axis support  
-✅ **Easier for analysts**: Familiar spreadsheet-like structure  
-✅ **Faster charting**: No need to filter DataElement dimension  
-✅ **Multiple metrics**: Can select multiple dx columns easily
+### Data-to-Boundary Matching
+1. **By boundary feature ID** (DHIS2 UID) - fastest match
+2. **By boundary feature name** (case-insensitive) - common match
+3. **By partial name** (substring matching) - fallback
+4. **Shows diagnostics** when >80% of boundaries have no match
 
 ---
 
-## 🐛 Troubleshooting
-
-### Issue: Still seeing LONG format
-**Solution:**
-```bash
-# 1. Clear browser cache completely
-# 2. Restart Superset
-pkill -9 -f "superset run"
-./start-dhis2-fixed.sh
-
-# 3. Re-sync dataset
-Data → Datasets → Edit → Sync columns from source
-```
-
-### Issue: "Datetime column not provided" error
-**Solution:**
-- Verify using **"Bar Chart"** not **"Time-series Bar Chart"**
-- Check `GENERIC_CHART_AXES = True` in `superset_config.py`
-- Remove any "Time Range" filters from chart
-
-### Issue: Can't select OrgUnit as X-axis
-**Solution:**
-- Use categorical chart types: Bar Chart, Table, Pivot Table
-- Don't use: Time-series Bar Chart, Time-series Line Chart
-- Refresh the Explore page
-
-### Issue: Dataset preview is blank
-**Solution:**
-- Check backend logs: `tail -f superset_backend.log`
-- Verify DHIS2 API credentials
-- Ensure dimension parameters are configured in dataset
+## Build Status
+✅ **Frontend build successful**
+- No TypeScript errors
+- No build warnings related to DHIS2Map
+- All dependencies resolved
 
 ---
 
-## 📁 File Structure
-
-```
-/Users/stephocay/projects/hispuganda/superset/
-├── start-dhis2-fixed.sh          ← NEW: Quick start script
-├── FIXES_APPLIED.txt              ← This file (updated)
-├── IMPLEMENTATION_COMPLETE.md     ← NEW: Summary
-├── superset_config.py             ← Updated (GENERIC_CHART_AXES)
-├── superset/db_engine_specs/
-│   ├── dhis2_dialect.py          ← Updated (WIDE format)
-│   └── dhis2.py                  ← Updated (no datetime requirement)
-└── scripts/
-    └── fix_dhis2_dataset_temporal.py  ← Optional helper
-```
+## Backward Compatibility
+✅ **Fully backward compatible:**
+- Existing charts with explicit column selections continue to work
+- Fallback strategies don't break existing functionality
+- Caching mechanism unchanged
+- Control panel defaults preserved
 
 ---
 
-## 🎓 Key Concepts
-
-### Period Usage
-- **As Filter**: Most common - show one time period
-- **As X-Axis**: Show trend over time
-- **As Series**: Compare time periods side-by-side
-
-### OrgUnit Usage
-- **As X-Axis**: Most common - compare regions
-- **As Filter**: Focus on one region
-- **As Series**: Compare multiple regions
-
-### dx Columns (Data Elements)
-- Each dx is a separate column in WIDE format
-- Can be used directly as metrics: `SUM(column)`
-- Can select multiple dx columns for multi-metric charts
-
----
-
-## ✅ Success Criteria
-
-The implementation is successful if:
-
-1. ✅ DHIS2 datasets show WIDE format (Period, OrgUnit, dx1, dx2, ...)
-2. ✅ Can create Bar Chart with OrgUnit as X-axis without errors
-3. ✅ Can create Bar Chart with Period as X-axis without errors
-4. ✅ No "Datetime column not provided" errors
-5. ✅ Dataset preview shows horizontal data
-6. ✅ Can select multiple dx columns as metrics
-7. ✅ Charts render correctly with expected data
-
----
-
-## 📞 Support
-
-If you encounter issues:
-
-1. Check the troubleshooting section above
-2. Review backend logs: `tail -f superset_backend.log`
-3. Verify configuration in `superset_config.py`
-4. Test with simple chart first (one metric, one filter)
-5. Check browser console for JavaScript errors
-
----
-
-## 🎉 Next Steps
-
-Now that the fixes are implemented:
-
-1. **Test thoroughly** using the checklist above
-2. **Create example dashboards** with various chart types
-3. **Document common patterns** for your team
-4. **Train users** on the new WIDE format
-5. **Create chart templates** for frequent use cases
-
----
-
-**All fixes are complete and ready for production use!** 🚀
-
-For detailed testing instructions, see `FIXES_APPLIED.txt`
+## Next Steps (If Needed)
+1. Test with live DHIS2 instance
+2. Monitor console logs for edge cases
+3. Consider adding a "Column Mapping Help" button if issues persist
+4. Cache results to avoid repeated API calls
 

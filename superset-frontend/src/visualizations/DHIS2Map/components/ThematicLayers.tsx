@@ -26,27 +26,27 @@ interface ThematicLayersProps {
   dataMap: Map<string, Record<string, number>>;
 }
 
-const ThematicLayers: React.FC<ThematicLayersProps> = ({ layers, dataMap }) => {
-  return (
-    <>
-      {layers.map((layer, index) => (
-        <GeoJSON
-          key={`thematic-${index}`}
-          data={layer.boundaries as any}
-          style={(feature: any) => {
+const ThematicLayers: React.FC<ThematicLayersProps> = ({ layers, dataMap }) => (
+  <>
+    {layers.map((layer, index) => (
+      <GeoJSON
+        key={`thematic-${index}`}
+        data={layer.boundaries as any}
+        style={
+          ((feature: any) => {
             const values = dataMap.get(feature?.id);
-            const value = values?.[layer.metric];
+            const value = values?.[layer.metric] ?? 0;
             return {
               fillColor: layer.colorScale(value),
               fillOpacity: layer.opacity,
               color: layer.strokeColor,
               weight: layer.strokeWidth,
             };
-          }}
-        />
-      ))}
-    </>
-  );
-};
+          }) as any
+        }
+      />
+    ))}
+  </>
+);
 
 export default ThematicLayers;

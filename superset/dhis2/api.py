@@ -254,7 +254,6 @@ class DHIS2RestApi(BaseApi):
         data_source = data.get('data_source', 'analytics')
         data_element_ids = data.get('data_element_ids', [])
         periods = data.get('periods', [])
-        org_units = data.get('org_units', [])
 
         if not data_element_ids:
             return self.response_400(message="At least one data element must be selected")
@@ -265,7 +264,7 @@ class DHIS2RestApi(BaseApi):
             dimension_params.append(f"dx:{';'.join(data_element_ids)}")
         if periods:
             dimension_params.append(f"pe:{';'.join(periods)}")
-        if org_units:
+        if (org_units := data.get('org_units', [])):
             dimension_params.append(f"ou:{';'.join(org_units)}")
 
         dimension_str = '&dimension='.join(dimension_params) if dimension_params else ''
@@ -294,3 +293,433 @@ class DHIS2RestApi(BaseApi):
             return self.response_400(message=f"Unsupported data source: {data_source}")
 
         return self.response(200, sql=sql_query, comment=sql_comment)
+
+
+class DHIS2CacheApi(BaseApi):
+    """
+    REST API for DHIS2 cache management.
+
+    Provides endpoints to:
+    - View cache statistics (hit rate, total requests)
+    - Invalidate cache entries
+    - Trigger cache warming
+    - Toggle caching on/off
+    """
+
+    resource_name = "dhis2_cache"
+    allow_browser_login = True
+    openapi_spec_tag = "DHIS2 Cache"
+
+    @expose("/stats", methods=["GET"])
+    @safe
+    @protect()
+    @permission_name("read")
+    def get_stats(self) -> Response:
+        """
+        Get DHIS2 cache statistics.
+
+        ---
+        get:
+          summary: Get DHIS2 cache statistics
+          responses:
+            200:
+              description: Cache statistics
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      hits:
+                        type: integer
+                      misses:
+                        type: integer
+                      hit_rate_percent:
+                        type: number
+                      total_requests:
+                        type: integer
+        """
+        try:
+            from superset.db_engine_specs.dhis2_cache import DHIS2CacheService
+
+            cache = DHIS2CacheService.get_instance()
+            stats = cache.get_stats()
+
+            return self.response(200, result=stats)
+        except Exception as e:
+            logger.error(f"Failed to get DHIS2 cache stats: {e}")
+            return self.response_500(message=str(e))
+
+    @expose("/invalidate", methods=["POST"])
+    @safe
+    @protect()
+    @permission_name("write")
+    def invalidate(self) -> Response:
+        """
+        Invalidate DHIS2 cache entries.
+
+        ---
+        post:
+          summary: Invalidate DHIS2 cache
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    endpoint:
+                      type: string
+                      description: Specific endpoint to invalidate (or null for all)
+          responses:
+            200:
+              description: Invalidation result
+        """
+        try:
+            from superset.db_engine_specs.dhis2_cache import DHIS2CacheService
+
+            data = request.get_json() or {}
+            endpoint = data.get("endpoint")
+
+            cache = DHIS2CacheService.get_instance()
+            count = cache.invalidate(endpoint)
+
+            logger.info(f"DHIS2 cache invalidated: {count} entries for endpoint={endpoint}")
+
+            return self.response(200, result={
+                "invalidated_count": count,
+                "endpoint": endpoint,
+            })
+        except Exception as e:
+            logger.error(f"Failed to invalidate DHIS2 cache: {e}")
+            return self.response_500(message=str(e))
+
+    @expose("/warm", methods=["POST"])
+    @safe
+    @protect()
+    @permission_name("write")
+    def warm(self) -> Response:
+        """
+        Trigger DHIS2 cache warming.
+
+        ---
+        post:
+          summary: Trigger cache warming for DHIS2 datasets
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    database_id:
+                      type: integer
+                      description: DHIS2 database ID
+                    async:
+                      type: boolean
+                      description: Run warming asynchronously via Celery
+                      default: true
+          responses:
+            200:
+              description: Warming triggered
+        """
+        try:
+            data = request.get_json() or {}
+            database_id = data.get("database_id")
+            run_async = data.get("async", True)
+
+            if not database_id:
+                return self.response_400(message="database_id is required")
+
+            if run_async:
+                try:
+                    from superset.tasks.dhis2_cache import warm_dhis2_cache
+                    task = warm_dhis2_cache.delay(database_id)
+
+                    return self.response(200, result={
+                        "status": "started",
+                        "task_id": task.id,
+                        "message": "Cache warming started asynchronously",
+                    })
+                except Exception as e:
+                    logger.warning(f"Celery not available, falling back to sync: {e}")
+                    run_async = False
+
+            if not run_async:
+                from superset.tasks.dhis2_cache import warm_dhis2_cache
+                result = warm_dhis2_cache(database_id)
+
+                return self.response(200, result={
+                    "status": "completed",
+                    **result,
+                })
+
+        except Exception as e:
+            logger.error(f"Failed to trigger DHIS2 cache warming: {e}")
+            return self.response_500(message=str(e))
+
+    @expose("/toggle", methods=["POST"])
+    @safe
+    @protect()
+    @permission_name("write")
+    def toggle(self) -> Response:
+        """
+        Enable or disable DHIS2 caching.
+
+        ---
+        post:
+          summary: Toggle DHIS2 caching on/off
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      description: Whether to enable caching
+          responses:
+            200:
+              description: Toggle result
+        """
+        try:
+            from superset.db_engine_specs.dhis2_cache import DHIS2CacheService
+
+            data = request.get_json() or {}
+            enabled = data.get("enabled", True)
+
+            cache = DHIS2CacheService.get_instance()
+
+            if enabled:
+                cache.enable()
+            else:
+                cache.disable()
+
+            return self.response(200, result={
+                "enabled": cache.is_enabled,
+            })
+        except Exception as e:
+            logger.error(f"Failed to toggle DHIS2 cache: {e}")
+            return self.response_500(message=str(e))
+
+    @expose("/query_async", methods=["POST"])
+    @safe
+    @protect()
+    @permission_name("read")
+    def query_async(self) -> Response:
+        """
+        Trigger an async dataset query in the background.
+
+        This allows the frontend to start loading data without blocking,
+        and poll for results when ready.
+
+        ---
+        post:
+          summary: Start async dataset query
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - database_id
+                    - sql_query
+                  properties:
+                    database_id:
+                      type: integer
+                      description: DHIS2 database ID
+                    sql_query:
+                      type: string
+                      description: SQL query with DHIS2 params
+                    cache_key:
+                      type: string
+                      description: Optional cache key for results
+          responses:
+            200:
+              description: Query task started
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      task_id:
+                        type: string
+                      status:
+                        type: string
+        """
+        try:
+            data = request.get_json() or {}
+            database_id = data.get("database_id")
+            sql_query = data.get("sql_query")
+            cache_key = data.get("cache_key")
+
+            if not database_id:
+                return self.response_400(message="database_id is required")
+            if not sql_query:
+                return self.response_400(message="sql_query is required")
+
+            try:
+                from superset.tasks.dhis2_cache import query_dataset_async
+                task = query_dataset_async.delay(
+                    database_id=database_id,
+                    sql_query=sql_query,
+                    cache_key=cache_key,
+                )
+
+                return self.response(200, result={
+                    "status": "queued",
+                    "task_id": task.id,
+                    "cache_key": cache_key,
+                    "message": "Query started in background",
+                })
+            except Exception as e:
+                logger.warning(f"Celery not available for async query: {e}")
+                return self.response_500(message="Background task service unavailable")
+
+        except Exception as e:
+            logger.error(f"Failed to start async query: {e}")
+            return self.response_500(message=str(e))
+
+    @expose("/query_status/<task_id>", methods=["GET"])
+    @safe
+    @protect()
+    @permission_name("read")
+    def query_status(self, task_id: str) -> Response:
+        """
+        Get status of an async query task.
+
+        ---
+        get:
+          summary: Get async query status
+          parameters:
+            - in: path
+              name: task_id
+              required: true
+              schema:
+                type: string
+          responses:
+            200:
+              description: Task status
+        """
+        try:
+            from celery.result import AsyncResult
+            from superset.extensions import celery_app
+
+            result = AsyncResult(task_id, app=celery_app)
+
+            response = {
+                "task_id": task_id,
+                "status": result.status,
+                "ready": result.ready(),
+            }
+
+            if result.ready():
+                if result.successful():
+                    response["result"] = result.result
+                else:
+                    response["error"] = str(result.result)
+            elif result.status == 'PROGRESS':
+                response["progress"] = result.info
+
+            return self.response(200, result=response)
+
+        except Exception as e:
+            logger.error(f"Failed to get task status: {e}")
+            return self.response_500(message=str(e))
+
+    @expose("/query_result/<cache_key>", methods=["GET"])
+    @safe
+    @protect()
+    @permission_name("read")
+    def query_result(self, cache_key: str) -> Response:
+        """
+        Get cached result of an async query.
+
+        ---
+        get:
+          summary: Get cached query result
+          parameters:
+            - in: path
+              name: cache_key
+              required: true
+              schema:
+                type: string
+          responses:
+            200:
+              description: Query result
+            404:
+              description: Result not found in cache
+        """
+        try:
+            from superset.extensions import cache_manager
+
+            cached = cache_manager.data_cache.get(f"dhis2_async_query_{cache_key}")
+
+            if cached is None:
+                return self.response_404()
+
+            return self.response(200, result=cached)
+
+        except Exception as e:
+            logger.error(f"Failed to get cached result: {e}")
+            return self.response_500(message=str(e))
+
+    @expose("/prefetch_dashboard", methods=["POST"])
+    @safe
+    @protect()
+    @permission_name("read")
+    def prefetch_dashboard(self) -> Response:
+        """
+        Prefetch all DHIS2 chart data for a dashboard.
+
+        Call this when a user opens a dashboard to start loading
+        all chart data in the background.
+
+        ---
+        post:
+          summary: Prefetch dashboard data
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - dashboard_id
+                  properties:
+                    dashboard_id:
+                      type: integer
+                      description: Dashboard ID to prefetch
+                    database_ids:
+                      type: array
+                      items:
+                        type: integer
+                      description: Optional list of DHIS2 database IDs
+          responses:
+            200:
+              description: Prefetch started
+        """
+        try:
+            data = request.get_json() or {}
+            dashboard_id = data.get("dashboard_id")
+            database_ids = data.get("database_ids")
+
+            if not dashboard_id:
+                return self.response_400(message="dashboard_id is required")
+
+            try:
+                from superset.tasks.dhis2_cache import prefetch_dashboard_data
+                task = prefetch_dashboard_data.delay(
+                    dashboard_id=dashboard_id,
+                    database_ids=database_ids,
+                )
+
+                return self.response(200, result={
+                    "status": "started",
+                    "task_id": task.id,
+                    "dashboard_id": dashboard_id,
+                    "message": "Dashboard prefetch started",
+                })
+            except Exception as e:
+                logger.warning(f"Celery not available for prefetch: {e}")
+                return self.response_500(message="Background task service unavailable")
+
+        except Exception as e:
+            logger.error(f"Failed to start dashboard prefetch: {e}")
+            return self.response_500(message=str(e))

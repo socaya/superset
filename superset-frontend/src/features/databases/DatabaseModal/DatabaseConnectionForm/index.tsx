@@ -19,7 +19,11 @@
 import { SupersetTheme, t } from '@superset-ui/core';
 import { Form, Button } from '@superset-ui/core/components';
 import { FormFieldOrder, FORM_FIELD_MAP } from './constants';
-import { formScrollableStyles, validatedFormStyles, wideButton } from '../styles';
+import {
+  formScrollableStyles,
+  validatedFormStyles,
+  wideButton,
+} from '../styles';
 import { DatabaseConnectionFormProps } from '../../types';
 
 const DatabaseConnectionForm = ({

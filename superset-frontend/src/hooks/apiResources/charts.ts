@@ -32,8 +32,13 @@ const ownerNamesQuery = rison.encode({
 });
 
 export function useChartOwnerNames(chartId: number) {
+  // Don't fetch for unsaved charts (chartId of 0 or falsy values)
+  const endpoint = chartId
+    ? `/api/v1/chart/${chartId}?q=${ownerNamesQuery}`
+    : null;
+
   return useTransformedResource(
-    useApiV1Resource<Chart>(`/api/v1/chart/${chartId}?q=${ownerNamesQuery}`),
+    useApiV1Resource<Chart>(endpoint),
     extractOwnerNames,
   );
 }

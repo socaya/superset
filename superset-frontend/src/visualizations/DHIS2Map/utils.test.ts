@@ -21,36 +21,42 @@ import { formatValue, parseCoordinates } from './utils';
 
 describe('DHIS2Map Utils', () => {
   describe('formatValue', () => {
-    it('should format millions', () => {
+    test('should format millions', () => {
       expect(formatValue(1500000)).toBe('1.5M');
     });
 
-    it('should format thousands', () => {
+    test('should format thousands', () => {
       expect(formatValue(1500)).toBe('1.5K');
     });
 
-    it('should format small numbers', () => {
+    test('should format small numbers', () => {
       expect(formatValue(500)).toBe('500');
     });
 
-    it('should handle zero', () => {
+    test('should handle zero', () => {
       expect(formatValue(0)).toBe('0');
     });
   });
 
   describe('parseCoordinates', () => {
-    it('should parse valid GeoJSON coordinates', () => {
+    test('should parse valid GeoJSON coordinates', () => {
       const json = '[[[0, 0], [1, 1], [1, 0]]]';
       const result = parseCoordinates(json);
-      expect(result).toEqual([[[0, 0], [1, 1], [1, 0]]]);
+      expect(result).toEqual([
+        [
+          [0, 0],
+          [1, 1],
+          [1, 0],
+        ],
+      ]);
     });
 
-    it('should return null for invalid JSON', () => {
+    test('should return null for invalid JSON', () => {
       const result = parseCoordinates('invalid');
       expect(result).toBeNull();
     });
 
-    it('should handle empty coordinates', () => {
+    test('should handle empty coordinates', () => {
       const json = '[]';
       const result = parseCoordinates(json);
       expect(result).toEqual([]);

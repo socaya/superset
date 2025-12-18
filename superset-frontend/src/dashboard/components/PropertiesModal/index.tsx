@@ -167,6 +167,7 @@ const PropertiesModal = ({
         is_managed_externally,
         theme,
         css,
+        display_order,
       } = dashboardData;
       const dashboardInfo = {
         id,
@@ -177,6 +178,7 @@ const PropertiesModal = ({
         isManagedExternally: is_managed_externally || false,
         css: css || '',
         metadata,
+        displayOrder: display_order,
       };
 
       form.setFieldsValue(dashboardInfo);
@@ -280,7 +282,7 @@ const PropertiesModal = ({
   };
 
   const onFinish = () => {
-    const { title, slug, certifiedBy, certificationDetails } =
+    const { title, slug, certifiedBy, certificationDetails, displayOrder } =
       form.getFieldsValue();
     let currentJsonMetadata = jsonMetadata;
 
@@ -367,6 +369,7 @@ const PropertiesModal = ({
       certificationDetails,
       themeId: selectedThemeId,
       css: customCss,
+      displayOrder,
       ...moreOnSubmitProps,
     };
     if (onlyApply) {
@@ -391,6 +394,7 @@ const PropertiesModal = ({
           certifiedBy && certificationDetails ? certificationDetails : null,
         css: customCss || null,
         theme_id: selectedThemeId,
+        display_order: displayOrder || null,
         ...morePutProps,
       };
 

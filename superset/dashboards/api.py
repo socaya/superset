@@ -225,6 +225,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         "tags.name",
         "tags.type",
         "uuid",
+        "display_order",
     ]
 
     list_select_columns = list_columns + ["changed_on", "created_on", "changed_by_fk"]
@@ -235,6 +236,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         "dashboard_title",
         "published",
         "changed_on",
+        "display_order",
     ]
 
     add_columns = [
@@ -249,6 +251,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         "theme_id",
         "json_metadata",
         "published",
+        "display_order",
     ]
     edit_columns = add_columns
 
@@ -1903,13 +1906,20 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         """
         try:
             # Only return dashboards marked as published (public)
-            dashboards = db.session.query(Dashboard).filter(Dashboard.published == True).all()
+            # Sort by display_order (ascending, nulls last) then by id
+            dashboards = (
+                db.session.query(Dashboard)
+                .filter(Dashboard.published == True)
+                .order_by(Dashboard.display_order.asc().nullslast(), Dashboard.id.asc())
+                .all()
+            )
             result = [
                 {
                     "id": dash.id,
                     "dashboard_title": dash.dashboard_title,
                     "slug": dash.slug or "",
                     "url": f"/superset/dashboard/{dash.slug or dash.id}/",
+                    "display_order": dash.display_order,
                 }
                 for dash in dashboards
             ]

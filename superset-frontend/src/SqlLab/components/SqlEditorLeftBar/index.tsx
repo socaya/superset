@@ -246,9 +246,13 @@ const SqlEditorLeftBar = ({
       <div className="divider" />
 
       {/* DHIS2 Query Builder - Show only for DHIS2 databases */}
-      {isDHIS2Database && (
+      {isDHIS2Database && userSelectedDb?.id && (
         <>
-          <DHIS2QueryBuilder onInsertSQL={handleInsertDHIS2SQL} />
+          <DHIS2QueryBuilder
+            onInsertSQL={handleInsertDHIS2SQL}
+            databaseId={userSelectedDb.id}
+            endpoint="analytics"
+          />
           <div className="divider" />
         </>
       )}
