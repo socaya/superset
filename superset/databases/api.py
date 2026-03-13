@@ -4052,8 +4052,34 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
             else:
                 auth = (uri.username, uri.password) if uri.username else None
 
-            expanded_ids = fetch_org_unit_descendants(base_url, auth, ou_ids)
-            return self.response(200, count=len(expanded_ids))
+            max_expanded_ous = app.config.get(
+                "DHIS2_PREVIEW_MAX_EXPANDED_ORG_UNITS",
+                3000,
+            )
+            expansion_time_budget = app.config.get(
+                "DHIS2_PREVIEW_EXPANSION_TIME_BUDGET_SECONDS",
+                20,
+            )
+            expansion_batch_size = app.config.get(
+                "DHIS2_PREVIEW_EXPANSION_BATCH_SIZE",
+                100,
+            )
+
+            expanded_ids, expansion_capped, expansion_timed_out = fetch_org_unit_descendants(
+                base_url=base_url,
+                auth=auth,
+                parent_ou_ids=ou_ids,
+                max_total_org_units=max_expanded_ous,
+                time_budget_seconds=expansion_time_budget,
+                batch_size=expansion_batch_size,
+            )
+            return self.response(
+                200,
+                count=len(expanded_ids),
+                exact=not (expansion_capped or expansion_timed_out),
+                expansion_capped=expansion_capped,
+                expansion_timed_out=expansion_timed_out,
+            )
         except Exception as ex:
             logger.exception("Failed to expand DHIS2 org units")
             return self.response_500(message=str(ex))
@@ -4389,7 +4415,44 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
                             total_rows = len(all_rows)
                             logger.info(f"[DHIS2 Data Preview] Total rows from analytics: {total_rows}")
                             if total_rows == 0:
-                                logger.warning(f"[DHIS2 Data Preview] No rows returned from analytics. Full response: {data_values}")
+                                logger.warning(
+                                    "[DHIS2 Data Preview] No rows returned from analytics. "
+                                    f"Full response: {data_values}"
+                                )
+
+                            # Fallback for Step 5 "No data" false negatives:
+                            # if scoped query (children/grandchildren/all_levels) returns 0 rows,
+                            # retry with selected org units only.
+                            if total_rows == 0 and data_level_scope != "selected":
+                                selected_only_ou_dimension = build_ou_dimension_with_levels(
+                                    ou_ids=ou_ids,
+                                    ou_levels=ou_levels,
+                                    data_level_scope="selected",
+                                    max_org_unit_level=max_org_unit_level,
+                                )
+                                logger.info(
+                                    "[DHIS2 Data Preview] Retrying with selected scope only. "
+                                    f"ou_dimension={selected_only_ou_dimension}"
+                                )
+                                fallback_values = connection.fetch_analytics_data(
+                                    de_ids=de_ids,
+                                    period_ids=period_ids,
+                                    ou_ids=ou_ids,
+                                    include_children=False,
+                                    ou_dimension=selected_only_ou_dimension,
+                                    limit=limit,
+                                    offset=offset,
+                                )
+                                if fallback_values and isinstance(fallback_values, dict):
+                                    fallback_rows = fallback_values.get("rows", [])
+                                    fallback_total_rows = len(fallback_rows)
+                                    logger.info(
+                                        "[DHIS2 Data Preview] Fallback selected-scope rows: "
+                                        f"{fallback_total_rows}"
+                                    )
+                                    if fallback_total_rows > 0:
+                                        data_values = fallback_values
+                                        total_rows = fallback_total_rows
                     else:
                         logger.error(f"[DHIS2 Data Preview] Connection does not have fetch_analytics_data method. Available methods: {[m for m in dir(connection) if not m.startswith('_')]}")
 

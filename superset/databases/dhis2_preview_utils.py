@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 import requests
@@ -284,31 +285,52 @@ def fetch_org_unit_descendants(
     base_url: str,
     auth: tuple[str, str] | None,
     parent_ou_ids: list[str],
-) -> list[str]:
+    max_total_org_units: int | None = None,
+    time_budget_seconds: float | None = None,
+    batch_size: int = 100,
+) -> tuple[list[str], bool, bool]:
     """
     Fetch all descendant org units for given parent org units.
 
-    Returns a list of all descendant org unit IDs (including the parents themselves).
+    Returns:
+        - list of descendant org unit IDs (including the parents themselves)
+        - whether expansion was capped by max_total_org_units
+        - whether expansion stopped due to time budget
     Uses recursive fetching to handle tree structure.
     """
     all_ou_ids: set[str] = set(parent_ou_ids)
     to_process = list(parent_ou_ids)
+    expansion_capped = False
+    expansion_timed_out = False
+    started_at = time.monotonic()
 
     if not parent_ou_ids:
-        return list(all_ou_ids)
+        return list(all_ou_ids), expansion_capped, expansion_timed_out
 
     try:
         logger.info(f"[DHIS2 Utils] Fetching descendants for {len(parent_ou_ids)} parent org units (recursive)")
+        session = get_dhis2_session()
 
         while to_process:
-            current_ids = to_process[:100]
-            to_process = to_process[100:]
+            if (
+                time_budget_seconds
+                and (time.monotonic() - started_at) >= time_budget_seconds
+            ):
+                expansion_timed_out = True
+                logger.warning(
+                    "[DHIS2 Utils] Stopping descendant expansion due to time budget "
+                    f"({time_budget_seconds}s)"
+                )
+                break
+
+            current_ids = to_process[:batch_size]
+            to_process = to_process[batch_size:]
 
             ou_filter = ",".join(current_ids)
             url = f"{base_url}/organisationUnits.json?filter=parent.id:in:[{ou_filter}]&fields=id&paging=false"
             logger.info(f"[DHIS2 Utils] Fetching direct children of {len(current_ids)} org units")
 
-            resp = requests.get(url, auth=auth, timeout=30)
+            resp = session.get(url, auth=auth, timeout=30)
             if resp.status_code == 200:
                 children = resp.json().get("organisationUnits", [])
                 logger.info(f"[DHIS2 Utils] Found {len(children)} direct children")
@@ -317,13 +339,27 @@ def fetch_org_unit_descendants(
                     if ou_id and ou_id not in all_ou_ids:
                         all_ou_ids.add(ou_id)
                         to_process.append(ou_id)
+                        if (
+                            max_total_org_units
+                            and len(all_ou_ids) >= max_total_org_units
+                        ):
+                            expansion_capped = True
+                            logger.warning(
+                                "[DHIS2 Utils] Stopping descendant expansion due to max size "
+                                f"cap ({max_total_org_units})"
+                            )
+                            to_process = []
+                            break
             else:
                 logger.warning(f"[DHIS2 Utils] Failed to fetch children: HTTP {resp.status_code}")
     except Exception as e:
         logger.exception(f"[DHIS2 Utils] Error fetching descendants: {e}")
 
-    logger.info(f"[DHIS2 Utils] Total org units (parents + all descendants): {len(all_ou_ids)}")
-    return list(all_ou_ids)
+    logger.info(
+        "[DHIS2 Utils] Total org units (parents + all descendants): "
+        f"{len(all_ou_ids)} (capped={expansion_capped}, timed_out={expansion_timed_out})"
+    )
+    return list(all_ou_ids), expansion_capped, expansion_timed_out
 
 
 def build_ou_hierarchy(
@@ -566,4 +602,3 @@ def build_ou_dimension_with_levels(
     dimension = ";".join(ou_parts)
     logger.info(f"[DHIS2 Utils] Built ou dimension: {dimension}")
     return dimension
-
