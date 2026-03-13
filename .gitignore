@@ -169,3 +169,8 @@ logs/*.log
 
 # Local Superset override config
 superset_config2.py
+
+# Local scripts should stay untracked
+scripts/
+logs/superset_backend.log
+superset.pid
